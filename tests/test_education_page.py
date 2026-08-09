@@ -195,21 +195,51 @@ def test_project_bridge_gives_beginners_two_traceable_call_chains(project_root):
 
 def test_service_source_lesson_matches_persistence_isolation_contract(project_root):
     text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+    service_summary = text.partition(
+        '<summary><code>service.py</code> — 应用服务</summary>'
+    )[2].partition("</details>")[0]
+    advanced_sqlite = text.partition("<h3>进阶选学：SQLite</h3>")[2].partition("</article>")[0]
     service_lesson = text.partition('path:"src/pd_diagnosis/service.py"')[2].partition(
         'path:"src/pd_diagnosis/storage.py"'
     )[0]
+    result_isolation = service_lesson.partition('title:"成功结果的保存隔离"')[2].partition(
+        'title:"诊断错误记录的保存隔离"'
+    )[0]
+    error_isolation = service_lesson.partition('title:"诊断错误记录的保存隔离"')[2]
 
-    assert service_lesson
+    assert advanced_sqlite and service_summary and service_lesson and result_isolation and error_isolation
     assert "数据库写入异常目前会传播" not in text
+    assert "保存成功结果失败时会返回附加 warning 的结果" not in text
+    assert "保存诊断错误本身失败时仍继续抛出原始" not in text
+    assert "保存失败不会抹掉已有诊断结果" not in text
     for marker in (
-        "PERSISTENCE_EXCEPTIONS",
-        "warnings=(*result.warnings, PERSISTENCE_WARNING_TEXT)",
-        "保存成功结果失败时仍返回诊断结果",
-        "记录诊断错误失败时仍抛出原始诊断异常",
+        "仅当历史保存抛出 <code>sqlite3.Error</code> 或 <code>OSError</code> 时",
+        "诊断结果仍会返回并附加 warning",
+        "其他异常继续传播",
     ):
-        assert marker in service_lesson
-    assert "保存成功结果失败时会返回附加 warning 的结果" in text
-    assert "保存诊断错误本身失败时仍继续抛出原始 <code>DiagnosisError</code>" in text
+        assert marker in advanced_sqlite
+    for marker in (
+        "仅当保存抛出 <code>sqlite3.Error</code> 或 <code>OSError</code> 时",
+        "其他异常继续传播",
+        "可能替代原始 <code>DiagnosisError</code>",
+    ):
+        assert marker in service_summary
+    for marker in (
+        "PERSISTENCE_EXCEPTIONS（当前是 sqlite3.Error、OSError）",
+        "warnings=(*result.warnings, PERSISTENCE_WARNING_TEXT)",
+        "才返回附加 PERSISTENCE_WARNING_TEXT 的结果",
+        "其他异常继续传播",
+    ):
+        assert marker in result_isolation
+    for marker in (
+        "PERSISTENCE_EXCEPTIONS（当前是 sqlite3.Error、OSError）",
+        "才保留并抛出原始 DiagnosisError",
+        "其他异常继续传播，并可能替代原始 DiagnosisError",
+    ):
+        assert marker in error_isolation
+    assert service_lesson.count("PERSISTENCE_EXCEPTIONS（当前是 sqlite3.Error、OSError）") >= 4
+    assert service_lesson.count("其他异常继续传播") >= 4
+    assert service_lesson.count("可能替代原始 DiagnosisError") >= 3
 
 
 def test_foundation_examples_are_complete_python(project_root):
