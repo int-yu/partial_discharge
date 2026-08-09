@@ -145,13 +145,13 @@ def test_default_model_path_falls_back_to_installed_data(monkeypatch, tmp_path):
 - `SingleDiagnosisTask` reads the selected file exactly once and emits an outcome that binds samples and result to the same path.
 - `MainWindow` uses a local `QThreadPool` with `maxThreadCount(1)`.
 
-- [ ] **Step 1: Write a failing direct worker test asserting one read, one persisted result, and an emitted immutable outcome**
-- [ ] **Step 2: Implement `SingleDiagnosisOutcome` and diagnose a constructed `Signal` from the worker snapshot**
-- [ ] **Step 3: Write a failing UI test that changes `single_path` before rendering and asserts the outcome path/samples remain authoritative**
-- [ ] **Step 4: Update `_show_single_result` to consume the outcome and remove its second file read**
-- [ ] **Step 5: Disable path editing while a single task runs and restore it on `finished`**
-- [ ] **Step 6: Replace the global pool with a window-owned serialized pool to prevent simultaneous model access**
-- [ ] **Step 7: Run worker/UI/core tests and commit**
+- [x] **Step 1: Write a failing direct worker test asserting one read, one persisted result, and an emitted immutable outcome**
+- [x] **Step 2: Implement `SingleDiagnosisOutcome` and diagnose a constructed `Signal` from the worker snapshot**
+- [x] **Step 3: Write a failing UI test that changes `single_path` before rendering and asserts the outcome path/samples remain authoritative**
+- [x] **Step 4: Update `_show_single_result` to consume the outcome and remove its second file read**
+- [x] **Step 5: Disable path editing while a single task runs and restore it on `finished`**
+- [x] **Step 6: Replace the global pool with a window-owned serialized pool to prevent simultaneous model access**
+- [x] **Step 7: Run worker/UI/core tests and commit**
 
 ### Task 6: UI Settings, Locale, Accessibility, and Dynamic Model Information
 

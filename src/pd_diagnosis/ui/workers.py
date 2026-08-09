@@ -1,14 +1,30 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
+from pathlib import Path
 from threading import Event
 
+import numpy as np
 from PySide6.QtCore import QObject, QRunnable, Signal, Slot
 
 from ..service import DiagnosisService
-from ..types import BatchDiagnosisItem
+from ..signal_io import read_txt_signal
+from ..types import BatchDiagnosisItem, DiagnosisResult, Signal as DiagnosisSignal
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True, slots=True)
+class SingleDiagnosisOutcome:
+    path: str
+    samples: np.ndarray
+    result: DiagnosisResult
+
+    def __post_init__(self) -> None:
+        snapshot = np.array(self.samples, dtype=np.float32, copy=True)
+        snapshot.setflags(write=False)
+        object.__setattr__(self, "samples", snapshot)
 
 
 class TaskSignals(QObject):
@@ -29,7 +45,19 @@ class SingleDiagnosisTask(QRunnable):
     @Slot()
     def run(self) -> None:
         try:
-            self.signals.result.emit(self.service.diagnose_file(self.path))
+            source = Path(self.path)
+            samples = np.array(read_txt_signal(source), dtype=np.float32, copy=True)
+            samples.setflags(write=False)
+            result = self.service.diagnose(
+                DiagnosisSignal(
+                    samples,
+                    sampling_rate_hz=self.service.engine.bundle.sampling_rate_hz,
+                    source_id=str(source.resolve()),
+                )
+            )
+            self.signals.result.emit(
+                SingleDiagnosisOutcome(path=self.path, samples=samples, result=result)
+            )
         except Exception as exc:
             logger.exception("single_diagnosis_failed path=%s", self.path)
             self.signals.error.emit(str(exc))

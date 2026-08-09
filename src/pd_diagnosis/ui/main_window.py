@@ -31,12 +31,11 @@ from PySide6.QtWidgets import (
 )
 
 from ..service import DiagnosisService
-from ..signal_io import read_txt_signal
 from ..storage import HistoryRecord, HistoryRepository
-from ..types import BatchDiagnosisItem, DiagnosisResult
+from ..types import BatchDiagnosisItem
 from .charts import ProbabilityCanvas, PrpdCanvas, WaveformCanvas
 from .theme import build_stylesheet
-from .workers import BatchDiagnosisTask, SingleDiagnosisTask
+from .workers import BatchDiagnosisTask, SingleDiagnosisOutcome, SingleDiagnosisTask
 
 
 class MainWindow(QMainWindow):
@@ -51,7 +50,8 @@ class MainWindow(QMainWindow):
         self.service = service
         self.history = history
         self.model_path = model_path
-        self.thread_pool = QThreadPool.globalInstance()
+        self.thread_pool = QThreadPool(self)
+        self.thread_pool.setMaxThreadCount(1)
         self.current_batch_task: BatchDiagnosisTask | None = None
         self.dark_theme = False
 
@@ -135,12 +135,12 @@ class MainWindow(QMainWindow):
         self.single_path = QLineEdit()
         self.single_path.setPlaceholderText("选择一维信号 TXT 文件")
         self.single_path.setAccessibleName("单次诊断文件路径")
-        browse = QPushButton("选择文件")
-        browse.clicked.connect(self._browse_single)
+        self.single_browse = QPushButton("选择文件")
+        self.single_browse.clicked.connect(self._browse_single)
         self.diagnose_button = QPushButton("开始诊断", objectName="PrimaryButton")
         self.diagnose_button.clicked.connect(self.start_single_diagnosis)
         input_row.addWidget(self.single_path, 1)
-        input_row.addWidget(browse)
+        input_row.addWidget(self.single_browse)
         input_row.addWidget(self.diagnose_button)
         input_layout.addLayout(input_row)
         layout.addWidget(input_card)
@@ -353,20 +353,22 @@ class MainWindow(QMainWindow):
         if not path:
             QMessageBox.warning(self, "缺少输入", "请先选择 TXT 信号文件。")
             return
-        self.diagnose_button.setEnabled(False)
+        self._set_single_running(True)
         self.result_state.setText("分析中…")
         self.statusBar().showMessage("正在提取特征并执行模型推理…")
         task = SingleDiagnosisTask(self.service, path)
         task.signals.result.connect(self._show_single_result)
         task.signals.error.connect(self._show_single_error)
-        task.signals.finished.connect(lambda: self.diagnose_button.setEnabled(True))
+        task.signals.finished.connect(self._finish_single)
         self.thread_pool.start(task)
 
-    def _show_single_result(self, result: DiagnosisResult) -> None:
+    def _show_single_result(self, outcome: SingleDiagnosisOutcome) -> None:
+        result = outcome.result
         try:
-            samples = read_txt_signal(self.single_path.text())
-            self.waveform_canvas.plot_signal(samples)
-            self.prpd_canvas.plot_signal(samples, self.service.engine.bundle.sampling_rate_hz)
+            self.waveform_canvas.plot_signal(outcome.samples)
+            self.prpd_canvas.plot_signal(
+                outcome.samples, self.service.engine.bundle.sampling_rate_hz
+            )
         except Exception as exc:
             self.statusBar().showMessage(f"诊断完成，但图表加载失败：{exc}")
         self.result_label.setText(result.label)
@@ -388,6 +390,14 @@ class MainWindow(QMainWindow):
             )
         self.statusBar().showMessage(f"诊断完成：{result.label}（{result.confidence:.1%}）", 8000)
         self.refresh_history()
+
+    def _set_single_running(self, running: bool) -> None:
+        self.single_path.setEnabled(not running)
+        self.single_browse.setEnabled(not running)
+        self.diagnose_button.setEnabled(not running)
+
+    def _finish_single(self) -> None:
+        self._set_single_running(False)
 
     def _show_single_error(self, message: str) -> None:
         self.result_state.setText("诊断失败")
