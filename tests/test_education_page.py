@@ -242,3 +242,24 @@ def test_foundation_lessons_use_full_teaching_template(project_root):
         "过关检查",
         ):
             assert marker in content, f"{section_id} is missing {marker}"
+
+
+def test_main_window_ownership_and_qss_success_answer_are_safe(project_root):
+    """Protect the two advanced examples from teaching unsafe Qt lifetime/state patterns."""
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+
+    lessons = _LessonSectionAudit({"main-window-basics"})
+    lessons.feed(text)
+    main_window_lesson = lessons.sections["main-window-basics"]
+    assert "QApplication 负责应用级资源与事件循环，不是顶层窗口的 Qt 父对象" in main_window_lesson
+    assert "模块级 window Python 引用保活" in main_window_lesson
+
+    success_answer = text.partition("<summary>参考答案：成功状态</summary>")[2].partition("</details>")[0]
+    steps = (
+        'self.status_label.setProperty("severity", "success")',
+        'self.status_label.style().unpolish(self.status_label)',
+        'self.status_label.style().polish(self.status_label)',
+        "self.status_label.update()",
+    )
+    positions = [success_answer.index(step) for step in steps]
+    assert positions == sorted(positions)
