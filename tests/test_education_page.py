@@ -66,6 +66,30 @@ class _EducationPageAudit(HTMLParser):
             self._script_parts = None
 
 
+class _PythonExampleAudit(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.examples: dict[str, str] = {}
+        self._name: str | None = None
+        self._parts: list[str] = []
+
+    def handle_starttag(self, tag, attrs):
+        name = dict(attrs).get("data-python-example")
+        if name:
+            self._name = name
+            self._parts = []
+
+    def handle_data(self, data):
+        if self._name is not None:
+            self._parts.append(data)
+
+    def handle_endtag(self, tag):
+        if tag == "code" and self._name is not None:
+            self.examples[self._name] = "".join(self._parts)
+            self._name = None
+            self._parts = []
+
+
 def test_education_page_structure_links_and_javascript(project_root, tmp_path):
     page = project_root / "docs" / "educate" / "index.html"
     text = page.read_text(encoding="utf-8")
@@ -119,3 +143,32 @@ def test_beginner_entrypoint_and_storage_fallback(project_root):
     assert "set(key, value) { try { localStorage.setItem(key, value); } catch {} }" in text
     assert "const savedTheme = storage.get('pd-educate-theme');" in text
     assert "storage.set('pd-educate-theme', root.dataset.theme);" in text
+
+
+def test_foundation_examples_are_complete_python(project_root):
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+    audit = _PythonExampleAudit()
+    audit.feed(text)
+    required = {"first-window", "event-loop-timer"}
+    assert required <= audit.examples.keys()
+    for name in required:
+        compile(audit.examples[name], f"<{name}>", "exec")
+
+
+def test_first_lessons_use_full_teaching_template(project_root):
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+    for marker in (
+        "本节只学三件事",
+        "运行前准备",
+        "运行后应该看到什么",
+        "程序按什么顺序运行",
+        "逐行解释",
+        "关键语法放大镜",
+        "对象关系",
+        "改一个地方看变化",
+        "常见错误",
+        "最小练习",
+        "参考答案",
+        "过关检查",
+    ):
+        assert marker in text

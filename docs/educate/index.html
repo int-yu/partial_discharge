@@ -327,17 +327,95 @@
           <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 1 课</span></div>
           <h2>PySide6、Qt 和你的 Python 程序是什么关系？</h2>
           <div class="lesson-goals" aria-label="本节学习目标"><strong>本节只学三件事</strong><ol><li>说清 Qt 与 PySide6 的关系。</li><li>知道 QWidget 是界面对象的基础类型。</li><li>知道下一课为什么先创建 QApplication。</li></ol></div>
+          <p>Qt 是负责窗口、绘制、输入和事件分发的跨平台界面框架；PySide6 是让 Python 能调用 Qt 的绑定包。你在代码里持有的是 <code>QLabel</code>、<code>QApplication</code> 等 Python 对象；调用它们的方法时，PySide6 会把请求交给底层 Qt。Python 负责表达你的意图，Qt 负责实际的桌面界面行为。</p>
+          <div class="execution-steps"><strong>运行前准备</strong><ol><li>在项目目录激活准备运行示例的虚拟环境。</li><li>安装：<code>python -m pip install PySide6</code>。</li><li>依次执行下面三条命令；始终使用同一个 <code>python</code>，避免安装到另一个环境。</li></ol><pre><code>python --version
+python -m pip show PySide6
+python -c "import PySide6; print(PySide6.__version__)"</code></pre><p><code>python --version</code> 应输出类似 <code>Python 3.11.9</code>；第二条应显示 <code>Name</code>、<code>Version</code>、<code>Location</code> 等包信息；第三条应只打印一个版本号，例如 <code>6.8.0</code>。若看到 <code>No module named PySide6</code>，用同一条 <code>python -m pip install PySide6</code> 安装。若 <code>Location</code> 不在当前虚拟环境，先重新激活环境，再安装。若 pip 报当前 Python 不受支持，请安装 PySide6 支持的较新 CPython 版本，重建虚拟环境后重试。</p></div>
+          <div class="object-map"><strong>对象关系</strong><p>Python 进程启动后创建一个 <code>QApplication</code>；它管理 Qt 应用级资源。随后创建的 <code>QLabel</code> 等控件是 Python 对象，同时对应 Qt 中可显示、可接收事件的界面对象。</p></div>
+          <div class="lesson-check"><strong>过关检查</strong><p>现在请能用自己的话说出：“Qt 是界面框架，PySide6 是它的 Python 绑定；我必须用运行脚本的那个 Python 来安装和导入它。”</p></div>
           <div class="lesson-nav"><a class="button primary" href="#first-window">继续：第一个窗口</a></div>
         </section>
 
         <section class="chapter lesson" id="first-window" data-title="第一个窗口" data-level="foundation">
           <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 2 课</span></div>
-          <h2>创建、显示和保持一个窗口</h2><div class="expected-ui"><strong>预期界面</strong><p>一个带标题的空白窗口出现在桌面上。</p></div><div class="execution-steps"><strong>动手步骤</strong><ol><li>创建 QApplication。</li><li>创建 QWidget。</li><li>调用 show()。</li></ol></div>
+          <h2>创建、显示和保持一个窗口</h2><div class="expected-ui"><strong>预期界面</strong><p>一个带文字的窗口出现在桌面上。</p></div><div class="execution-steps"><strong>动手步骤</strong><ol><li>创建 QApplication。</li><li>创建 QLabel。</li><li>调用 show()，然后进入 exec()。</li></ol></div>
+          <div class="lesson-goals"><strong>本节只学三件事</strong><ol><li>先创建且只创建一个 <code>QApplication</code>。</li><li>创建 <code>QLabel</code>、设置大小并让它显示。</li><li>让 <code>app.exec()</code> 接管等待事件的工作。</li></ol></div>
+          <div class="execution-steps"><strong>运行前准备</strong><p>确认上一课的导入命令成功。把下面完整程序保存为 <code>first_window.py</code>，在包含该文件的终端执行 <code>python first_window.py</code>；不要把代码逐行贴进交互式解释器。</p></div>
+          <pre><code data-python-example="first-window">import sys
+
+from PySide6.QtWidgets import QApplication, QLabel
+
+app = QApplication(sys.argv)
+label = QLabel("你好，PySide6！")
+label.resize(320, 120)
+label.show()
+exit_code = app.exec()
+raise SystemExit(exit_code)</code></pre>
+          <div class="expected-ui"><strong>运行后应该看到什么</strong><p>桌面上会出现一个约 320×120 像素的窗口，里面显示“你好，PySide6！”。窗口会保持可点击、可拖动；关闭它后，终端回到提示符且程序以 Qt 返回的退出码结束。</p></div>
+          <div class="execution-steps"><strong>程序按什么顺序运行</strong><ol><li>Python 从上到下导入模块，再创建应用对象和标签。</li><li><code>show()</code> 向 Qt 请求把标签窗口显示到屏幕上；此时 Python 仍会继续执行下一行。</li><li><code>app.exec()</code> 启动事件循环，Qt 才开始持续处理系统发来的重绘、鼠标、键盘和关闭事件。</li><li>关闭最后一个窗口后，事件循环返回退出码，<code>SystemExit</code> 结束 Python 进程。</li></ol></div>
+          <div class="line-explanation"><strong>逐行解释</strong><table class="compare"><thead><tr><th>代码</th><th>这一行的职责</th></tr></thead><tbody><tr><td><code>import sys</code></td><td>导入标准库模块，以便取得启动命令附带的参数。</td></tr><tr><td><code>from PySide6... import QApplication, QLabel</code></td><td>导入应用管理器和能显示文字的控件类。</td></tr><tr><td><code>app = QApplication(sys.argv)</code></td><td><code>sys.argv</code> 是命令行参数列表；Qt 可读取其中的应用参数。一个桌面 Qt 应用只能有一个 <code>QApplication</code>，因为它集中管理应用级设置和事件分发。</td></tr><tr><td><code>label = QLabel(...)</code></td><td>创建文字控件；没有父控件时，它可以作为顶层窗口。</td></tr><tr><td><code>label.resize(320, 120)</code></td><td>请求窗口初始宽、高各为 320、120 像素。</td></tr><tr><td><code>label.show()</code></td><td>请求 Qt 显示窗口。显示是一次动作，不负责持续等待用户操作。</td></tr><tr><td><code>exit_code = app.exec()</code></td><td>开始事件循环并暂停这条 Python 执行路径，直到循环结束；返回值是应用结束时的状态码，通常 0 表示正常退出。</td></tr><tr><td><code>raise SystemExit(exit_code)</code></td><td>把 Qt 的退出状态交还给操作系统。这里使用异常只是 Python 进程的标准退出机制。</td></tr><tr><td><code>两处空行</code></td><td>不执行代码，只把导入、创建和运行阶段分开，方便观察结构。</td></tr></tbody></table></div>
+          <div class="syntax-zoom"><strong>关键语法放大镜</strong><p><code>from 包.模块 import 名称</code> 只把需要的类带入当前文件。<code>QApplication(sys.argv)</code> 是构造调用：先创建对象，再把引用存到 <code>app</code>。<code>label.show()</code> 的括号表示立刻调用方法；<code>app.exec()</code> 与它分开，是因为“请求显示”与“循环等待事件”是两件不同的事。</p></div>
+          <div class="object-map"><strong>对象关系</strong><p>Python 进程 → <code>QApplication</code> → <code>QLabel</code> → 事件循环。进程持有 <code>app</code> 和 <code>label</code>；<code>app</code> 的事件循环把系统事件送到当前可见的 <code>label</code>。</p></div>
+          <div class="experiment"><strong>改一个地方看变化</strong><p>把 <code>label.resize(320, 120)</code> 改为 <code>label.resize(480, 180)</code>，重新运行并观察窗口尺寸。再把 <code>你好，PySide6！</code> 改成你的名字，确认文字随对象构造参数变化。</p></div>
+          <div class="lesson-check"><strong>过关检查</strong><p>在不看代码的情况下，说出关闭窗口为什么会让 <code>exec()</code> 返回：关闭事件由事件循环处理，最后一个窗口关闭后循环结束，返回的退出码被交给 <code>SystemExit</code>。</p></div>
         </section>
 
         <section class="chapter lesson" id="event-loop" data-title="事件循环" data-level="foundation">
           <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 3 课</span></div>
           <h2>为什么 app.exec() 不会让程序卡住？</h2><div class="line-explanation">事件循环持续接收点击、键盘和重绘请求，再分发给相应对象。</div>
+          <div class="lesson-goals"><strong>本节只学三件事</strong><ol><li>区分从上到下执行的 Python 语句和事件驱动的回调。</li><li>用 <code>QTimer.singleShot</code> 安排一次未来的工作。</li><li>识别三个最常见的窗口启动错误。</li></ol></div>
+          <div class="execution-steps"><strong>运行前准备</strong><p>保存为 <code>event_loop_timer.py</code> 并运行 <code>python event_loop_timer.py</code>。这是完整程序：定时器不会阻塞 Python；它只登记一个三秒后的回调，真正调用发生在事件循环运行期间。</p></div>
+          <pre><code data-python-example="event-loop-timer">import sys
+
+from PySide6.QtCore import QTimer
+from PySide6.QtWidgets import QApplication, QLabel
+
+app = QApplication(sys.argv)
+label = QLabel("等待 3 秒…")
+label.resize(320, 120)
+label.show()
+
+def update_message():
+    label.setText("三秒到了：事件循环调用了这个函数。")
+
+QTimer.singleShot(3000, update_message)
+exit_code = app.exec()
+raise SystemExit(exit_code)</code></pre>
+          <div class="expected-ui"><strong>运行后应该看到什么</strong><p>窗口先显示“等待 3 秒…”，约三秒后自动变成“三秒到了：事件循环调用了这个函数。”；窗口在这段时间仍然能拖动和关闭。</p></div>
+          <div class="execution-steps"><strong>程序按什么顺序运行</strong><ol><li>Python 先执行到 <code>QTimer.singleShot</code>，只登记 <code>update_message</code>，并不立刻调用它。</li><li>接着 Python 调用 <code>app.exec()</code>，事件循环开始等待事件。</li><li>三秒到期时，事件循环调用 <code>update_message</code>；回调修改标签文字。</li><li>关闭窗口时，关闭事件也由同一个事件循环处理，随后 <code>exec()</code> 返回。</li></ol></div>
+          <div class="line-explanation"><strong>逐行解释</strong><p><code>QTimer.singleShot(3000, update_message)</code> 中的 3000 是毫秒，第二个参数是函数对象，不写括号；写成 <code>update_message()</code> 会在登记时立即执行。事件循环不是“卡住”：它是在等待时把控制权交给 Qt，收到计时器、鼠标、键盘或关闭事件后，选择相应回调运行。</p></div>
+          <div class="syntax-zoom"><strong>关键语法放大镜</strong><p><code>def update_message():</code> 只定义函数。传给 <code>singleShot</code> 的是函数本身；稍后 Qt 再调用它。这是事件驱动与普通顺序调用的关键差别。</p></div>
+          <div class="object-map"><strong>对象关系</strong><p>Python 进程 → <code>QApplication</code> → <code>QLabel</code>；<code>QTimer</code> 向 <code>QApplication</code> 的事件循环登记回调，循环到时调用 <code>update_message</code>，后者更新 <code>QLabel</code>。</p></div>
+          <div class="experiment"><strong>改一个地方看变化</strong><p>把 <code>3000</code> 改成 <code>1000</code>，再把回调中的文字改成自己的提醒。比较两次运行：Python 的登记顺序没有变，变化的是事件循环多久后调度回调。</p></div>
+          <div class="mistake"><strong>常见错误</strong><table class="compare"><thead><tr><th>错误写法与症状</th><th>原因、修复与验证</th></tr></thead><tbody><tr><td><pre><code>label = QLabel("看不见")
+app.exec()</code></pre><p>症状：程序在运行，但没有窗口。</p></td><td>原因：创建控件不会自动显示。修复：在 <code>exec()</code> 前加入 <code>label.show()</code>。验证：运行后应看到窗口，关闭它后终端返回。</td></tr><tr><td><pre><code>app = QApplication(sys.argv)
+label = QLabel("一闪而过")
+label.show()</code></pre><p>症状：脚本立刻结束，窗口可能一闪而过或根本看不到。</p></td><td>原因：没有事件循环，Python 很快执行到文件末尾。修复：加入 <code>exit_code = app.exec()</code> 和 <code>raise SystemExit(exit_code)</code>。验证：窗口会一直保留到你关闭它。</td></tr><tr><td><pre><code>label = QLabel("太早了")
+app = QApplication(sys.argv)</code></pre><p>症状：Qt 报错“Must construct a QApplication before a QWidget”。</p></td><td>原因：控件需要应用对象提供的 Qt 环境。修复：先写 <code>app = QApplication(sys.argv)</code>，再构造 <code>QLabel</code>。验证：重排后运行不再报该错误并能显示窗口。</td></tr></tbody></table></div>
+          <div class="lesson-check"><strong>最小练习</strong><ol><li>把第一个窗口的标签文字改成“我的第一个 Qt 窗口”。</li><li>把窗口大小改为 480×180。</li><li>把定时器回调文字改成“我理解事件循环了”。</li></ol></div>
+          <details><summary>参考答案：修改标题文字与大小的完整程序</summary><div class="details-body"><pre><code>import sys
+from PySide6.QtWidgets import QApplication, QLabel
+
+app = QApplication(sys.argv)
+label = QLabel("我的第一个 Qt 窗口")
+label.resize(480, 180)
+label.show()
+raise SystemExit(app.exec())</code></pre></div></details>
+          <details><summary>参考答案：修改定时器回调文字的完整程序</summary><div class="details-body"><pre><code>import sys
+from PySide6.QtCore import QTimer
+from PySide6.QtWidgets import QApplication, QLabel
+
+app = QApplication(sys.argv)
+label = QLabel("等待回调…")
+label.resize(480, 180)
+label.show()
+
+def update_message():
+    label.setText("我理解事件循环了")
+
+QTimer.singleShot(3000, update_message)
+raise SystemExit(app.exec())</code></pre></div></details>
+          <div class="lesson-check"><strong>过关检查</strong><p>请画出并解释四个对象关系：Python 进程 → <code>QApplication</code> → <code>QLabel</code> → 事件循环。说明 <code>QApplication</code> 为什么只能有一个、<code>QLabel</code> 为什么先 <code>show()</code>、以及事件循环为什么能在计时器到期和关闭窗口时分别调度工作与结束。</p></div>
         </section>
 
         <section class="chapter lesson" id="widgets" data-title="控件" data-level="foundation">
