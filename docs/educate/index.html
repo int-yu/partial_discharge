@@ -331,6 +331,19 @@
           <div class="execution-steps"><strong>运行前准备</strong><ol><li>在项目目录激活准备运行示例的虚拟环境。</li><li>安装：<code>python -m pip install PySide6</code>。</li><li>依次执行下面三条命令；始终使用同一个 <code>python</code>，避免安装到另一个环境。</li></ol><pre><code>python --version
 python -m pip show PySide6
 python -c "import PySide6; print(PySide6.__version__)"</code></pre><p><code>python --version</code> 应输出类似 <code>Python 3.11.9</code>；第二条应显示 <code>Name</code>、<code>Version</code>、<code>Location</code> 等包信息；第三条应只打印一个版本号，例如 <code>6.8.0</code>。若看到 <code>No module named PySide6</code>，用同一条 <code>python -m pip install PySide6</code> 安装。若 <code>Location</code> 不在当前虚拟环境，先重新激活环境，再安装。若 pip 报当前 Python 不受支持，请安装 PySide6 支持的较新 CPython 版本，重建虚拟环境后重试。</p></div>
+          <pre><code data-python-example="pyside-import-check">import PySide6
+
+print(f"PySide6 {PySide6.__version__} 已成功导入")</code></pre>
+          <div class="expected-ui"><strong>运行后应该看到什么</strong><p>终端会输出一行类似 <code>PySide6 6.8.0 已成功导入</code> 的文字；它不是窗口程序，而是先确认“当前 Python 解释器能找到 PySide6”的最小验证。</p></div>
+          <div class="execution-steps"><strong>程序按什么顺序运行</strong><ol><li>Python 先定位并导入 <code>PySide6</code> 包。</li><li>如果导入成功，下一行读取包的 <code>__version__</code> 属性并打印版本。</li><li>文件末尾没有事件循环，因此输出后正常结束；窗口和事件循环会在下一课出现。</li></ol></div>
+          <div class="line-explanation"><strong>逐行解释</strong><table class="compare"><thead><tr><th>代码</th><th>作用</th></tr></thead><tbody><tr><td><code>import PySide6</code></td><td>让当前 Python 进程载入绑定包；这一步失败就说明环境还不能运行 PySide6 代码。</td></tr><tr><td><code>print(f"...")</code></td><td>f 字符串把 <code>PySide6.__version__</code> 的实际值放入输出，既验证导入，也记录正在使用的版本。</td></tr></tbody></table></div>
+          <div class="syntax-zoom"><strong>关键语法放大镜</strong><p><code>模块.属性</code> 用点号读取模块暴露的信息；前缀 <code>f</code> 让字符串中的花括号表达式在运行时求值。这里不讲 Python 字符串基础，只把它当成“把版本显示出来”的工具。</p></div>
+          <div class="experiment"><strong>改一个地方看变化</strong><p>把输出文字中的“已成功导入”改成你的项目名，重新运行；版本号应保持不变。然后分别在已激活和未激活虚拟环境的终端运行，比较输出或错误信息。</p></div>
+          <div class="mistake"><strong>常见错误</strong><table class="compare"><thead><tr><th>症状</th><th>原因、修复与验证</th></tr></thead><tbody><tr><td><code>ModuleNotFoundError: No module named 'PySide6'</code></td><td>当前解释器没有安装该包。修复：执行 <code>python -m pip install PySide6</code>。验证：重跑本程序，看到版本行。</td></tr><tr><td>pip 显示已安装，但程序仍导入失败。</td><td>安装与运行用了不同的 Python/虚拟环境。修复：激活目标环境，并用同一个 <code>python -m pip</code> 安装。验证：比较 <code>python -m pip show PySide6</code> 的 <code>Location</code>。</td></tr><tr><td>pip 提示当前 Python 版本不受支持。</td><td>解释器版本不在当前 PySide6 发布包的支持范围。修复：安装受支持的 CPython，重建虚拟环境。验证：先运行 <code>python --version</code>，再执行本程序。</td></tr></tbody></table></div>
+          <div class="lesson-check"><strong>最小练习</strong><p>只改 <code>print</code> 的文字，让它输出“我的环境已准备好：”和实际 PySide6 版本；不要删除 <code>PySide6.__version__</code>。</p></div>
+          <details><summary>参考答案：环境验证的完整程序</summary><div class="details-body"><pre><code>import PySide6
+
+print(f"我的环境已准备好：PySide6 {PySide6.__version__}")</code></pre></div></details>
           <div class="object-map"><strong>对象关系</strong><p>Python 进程启动后创建一个 <code>QApplication</code>；它管理 Qt 应用级资源。随后创建的 <code>QLabel</code> 等控件是 Python 对象，同时对应 Qt 中可显示、可接收事件的界面对象。</p></div>
           <div class="lesson-check"><strong>过关检查</strong><p>现在请能用自己的话说出：“Qt 是界面框架，PySide6 是它的 Python 绑定；我必须用运行脚本的那个 Python 来安装和导入它。”</p></div>
           <div class="lesson-nav"><a class="button primary" href="#first-window">继续：第一个窗口</a></div>
@@ -358,6 +371,19 @@ raise SystemExit(exit_code)</code></pre>
           <div class="object-map"><strong>对象关系</strong><p>Python 进程 → <code>QApplication</code> → <code>QLabel</code> → 事件循环。进程持有 <code>app</code> 和 <code>label</code>；<code>app</code> 的事件循环把系统事件送到当前可见的 <code>label</code>。</p></div>
           <div class="experiment"><strong>改一个地方看变化</strong><p>把 <code>label.resize(320, 120)</code> 改为 <code>label.resize(480, 180)</code>，重新运行并观察窗口尺寸。再把 <code>你好，PySide6！</code> 改成你的名字，确认文字随对象构造参数变化。</p></div>
           <div class="lesson-check"><strong>过关检查</strong><p>在不看代码的情况下，说出关闭窗口为什么会让 <code>exec()</code> 返回：关闭事件由事件循环处理，最后一个窗口关闭后循环结束，返回的退出码被交给 <code>SystemExit</code>。</p></div>
+          <div class="mistake"><strong>常见错误</strong><table class="compare"><thead><tr><th>错误与症状</th><th>原因、修复与验证</th></tr></thead><tbody><tr><td><pre><code>label = QLabel("看不见")
+exit_code = app.exec()</code></pre><p>症状：程序在运行，却没有可见窗口。</p></td><td>原因：构造控件不会自动显示。修复：在 <code>exec()</code> 前调用 <code>label.show()</code>。验证：运行后看到文字窗口，关闭后终端返回。</td></tr><tr><td><pre><code>label.show()
+# 文件到此结束</code></pre><p>症状：窗口一闪而过或程序立刻结束。</p></td><td>原因：没有事件循环，Python 直接执行到文件末尾。修复：加入 <code>raise SystemExit(app.exec())</code>。验证：窗口保持可操作，直到你关闭它。</td></tr></tbody></table></div>
+          <div class="lesson-check"><strong>最小练习</strong><ol><li>把标签文字改为“我的第一个 Qt 窗口”。</li><li>把 <code>resize</code> 改为 <code>480, 180</code>。</li><li>运行并在关闭窗口后确认终端返回。</li></ol></div>
+          <details><summary>参考答案：修改文字和窗口大小的完整程序</summary><div class="details-body"><pre><code>import sys
+
+from PySide6.QtWidgets import QApplication, QLabel
+
+app = QApplication(sys.argv)
+label = QLabel("我的第一个 Qt 窗口")
+label.resize(480, 180)
+label.show()
+raise SystemExit(app.exec())</code></pre></div></details>
         </section>
 
         <section class="chapter lesson" id="event-loop" data-title="事件循环" data-level="foundation">

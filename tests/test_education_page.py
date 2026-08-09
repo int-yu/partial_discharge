@@ -90,6 +90,38 @@ class _PythonExampleAudit(HTMLParser):
             self._parts = []
 
 
+class _LessonSectionAudit(HTMLParser):
+    def __init__(self, section_ids: set[str]) -> None:
+        super().__init__(convert_charrefs=True)
+        self.sections: dict[str, str] = {}
+        self._section_ids = section_ids
+        self._active_id: str | None = None
+        self._depth = 0
+        self._parts: list[str] = []
+
+    def handle_starttag(self, tag, attrs):
+        section_id = dict(attrs).get("id")
+        if self._active_id is None and tag == "section" and section_id in self._section_ids:
+            self._active_id = section_id
+            self._depth = 1
+            self._parts = []
+        elif self._active_id is not None:
+            self._depth += 1
+
+    def handle_data(self, data):
+        if self._active_id is not None:
+            self._parts.append(data)
+
+    def handle_endtag(self, tag):
+        if self._active_id is None:
+            return
+        self._depth -= 1
+        if self._depth == 0:
+            self.sections[self._active_id] = "".join(self._parts)
+            self._active_id = None
+            self._parts = []
+
+
 def test_education_page_structure_links_and_javascript(project_root, tmp_path):
     page = project_root / "docs" / "educate" / "index.html"
     text = page.read_text(encoding="utf-8")
@@ -149,7 +181,7 @@ def test_foundation_examples_are_complete_python(project_root):
     text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
     audit = _PythonExampleAudit()
     audit.feed(text)
-    required = {"first-window", "event-loop-timer"}
+    required = {"pyside-import-check", "first-window", "event-loop-timer"}
     assert required <= audit.examples.keys()
     for name in required:
         compile(audit.examples[name], f"<{name}>", "exec")
@@ -157,7 +189,12 @@ def test_foundation_examples_are_complete_python(project_root):
 
 def test_first_lessons_use_full_teaching_template(project_root):
     text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
-    for marker in (
+    required_sections = {"pyside-intro", "first-window", "event-loop"}
+    audit = _LessonSectionAudit(required_sections)
+    audit.feed(text)
+    assert required_sections == audit.sections.keys()
+    for section_id, content in audit.sections.items():
+        for marker in (
         "本节只学三件事",
         "运行前准备",
         "运行后应该看到什么",
@@ -170,5 +207,5 @@ def test_first_lessons_use_full_teaching_template(project_root):
         "最小练习",
         "参考答案",
         "过关检查",
-    ):
-        assert marker in text
+        ):
+            assert marker in content, f"{section_id} is missing {marker}"
