@@ -1574,7 +1574,7 @@ result = engine.<span class="fn">diagnose_file</span>(signal_path)
             </details>
             <details class="file-item" data-keywords="service 业务 保存 history 编排">
               <summary><code>service.py</code> — 应用服务</summary>
-              <div class="details-body"><p><code>DiagnosisService</code> 组合引擎与历史仓库。诊断成功保存结果，失败保存错误再继续抛出。这让 UI 不用重复写保存逻辑。</p></div>
+              <div class="details-body"><p><code>DiagnosisService</code> 组合引擎与历史仓库。保存成功结果失败时会返回附加 warning 的结果；保存诊断错误本身失败时仍继续抛出原始 <code>DiagnosisError</code>。这让 UI 不用重复写保存隔离逻辑。</p></div>
             </details>
             <details class="file-item" data-keywords="sqlite database history repository wal 持久化">
               <summary><code>storage.py</code> — SQLite 历史记录仓库</summary>
@@ -2070,14 +2070,15 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"应用与存储", path:"src/pd_diagnosis/service.py", lines:51,
-        role:"应用服务：把纯推理与可选历史持久化组合成一次业务动作。", depends:"DiagnosisEngine、HistoryRepository、types", usedBy:"PySide6 workers、需要审计记录的调用者",
+        group:"应用与存储", path:"src/pd_diagnosis/service.py", lines:80,
+        role:"应用服务：把纯推理与可选历史持久化组合成一次业务动作，并隔离可预期的持久化失败。", depends:"DiagnosisEngine、HistoryRepository、errors、types、sqlite3、dataclasses", usedBy:"PySide6 workers、需要审计记录的调用者",
         parts:[
-          {range:"1–11",title:"业务层导入",code:`from datetime import datetime, timezone\nfrom uuid import uuid4\nfrom .engine import DiagnosisEngine\nfrom .storage import HistoryRepository`,explain:"时间和 UUID 用于失败记录；成功结果自己的 run_id/created_at 已由 DiagnosisResult 生成。",why:"失败没有 DiagnosisResult，因此 service 必须为错误事件补齐审计字段。",risk:"使用 UTC 而不是本地时间，显示时再做本地化。"},
-          {range:"13–18",title:"组合而非继承",code:`class DiagnosisService:\n    def __init__(self, engine, history=None):\n        self.engine = engine\n        self.history = history`,explain:"Service 持有 engine 与可选 repository，而不是继承它们。history=None 时仍可诊断但不写磁盘。",why:"组合让纯 SDK、带历史应用和测试使用同一引擎。",risk:"不要在 engine 内部偷偷创建数据库，否则纯 API 会产生意外副作用。"},
-          {range:"20–27",title:"内存信号业务流程",code:`try:\n    result = self.engine.diagnose(signal)\nexcept DiagnosisError as exc:\n    self._save_error(signal.source_id, str(exc))\n    raise\nself._save_result(result)`,explain:"只捕获领域异常，先保存错误再使用裸 raise 原样抛回调用者；成功则保存并返回。",why:"UI 得到错误，同时历史也保留失败证据。",risk:"写成 raise exc 会改变 traceback；捕获 Exception 可能把程序 bug 当业务失败。"},
-          {range:"29–37",title:"文件业务流程",code:`source = str(Path(path).resolve())\ntry: result = self.engine.diagnose_file(path)\nexcept DiagnosisError as exc: ...`,explain:"在读取前就解析绝对来源，因此即使文件格式失败也能记录出错文件。",why:"错误审计必须知道来源。",risk:"路径解析不会保证文件存在，存在性仍由 signal_io 检查。"},
-          {range:"39–51",title:"私有保存辅助方法",code:`if self.history is not None:\n    self.history.save_result(result)\n...\nself.history.save_error(run_id=str(uuid4()), created_at=datetime.now(timezone.utc), ...)`,explain:"集中处理 history=None 分支；失败记录使用当前引擎的模型版本。",why:"避免 diagnose 与 diagnose_file 复制 SQLite 调用细节。",risk:"数据库写入异常目前会传播；产品可按策略决定是否允许“诊断成功但保存失败”。"}
+          {range:"1–19",title:"业务层导入与持久化策略",code:`import logging\nimport sqlite3\nfrom dataclasses import replace\n...\nPERSISTENCE_WARNING_TEXT = str(\n    PersistenceWarning("诊断已完成，但历史记录保存失败；诊断结果仍然有效，请检查日志。")\n)\nPERSISTENCE_EXCEPTIONS = (sqlite3.Error, OSError)`,explain:"日志保留持久化异常细节；replace 用来在不改写原结果的前提下附加警告。只有 SQLite 与文件系统异常属于可隔离的持久化失败。",why:"先定义可识别的警告文字和精确异常边界，不用捕获 Exception 掩盖程序 bug。",risk:"新的 repository 实现若抛出其他可预期 I/O 异常，必须明确评估后才能加入 PERSISTENCE_EXCEPTIONS。"},
+          {range:"22–27",title:"组合而非继承",code:`class DiagnosisService:\n    def __init__(self, engine, history=None):\n        self.engine = engine\n        self.history = history`,explain:"Service 持有 engine 与可选 repository，而不是继承它们。history=None 时仍可诊断但不写磁盘。",why:"组合让纯 SDK、带历史应用和测试使用同一引擎。",risk:"不要在 engine 内部偷偷创建数据库，否则纯 API 会产生意外副作用。"},
+          {range:"29–35",title:"内存信号业务流程",code:`try:\n    result = self.engine.diagnose(signal)\nexcept DiagnosisError as exc:\n    self._save_error(signal.source_id, str(exc))\n    raise\nreturn self._save_result(result)`,explain:"只捕获领域异常：先尝试保存错误，再用裸 raise 原样抛回调用者；成功结果则交给 _save_result 并返回它的结果。",why:"UI 始终得到原始诊断失败或有效诊断结果，历史只是可选副作用。",risk:"写成 raise exc 会改变 traceback；捕获 Exception 可能把程序 bug 当业务失败。"},
+          {range:"37–44",title:"文件业务流程",code:`source = str(Path(path).resolve())\ntry:\n    result = self.engine.diagnose_file(path)\nexcept DiagnosisError as exc:\n    self._save_error(source, str(exc))\n    raise\nreturn self._save_result(result)`,explain:"在读取前就解析绝对来源，因此即使文件格式失败也能尝试记录出错文件。成功路径与内存信号共用同一保存策略。",why:"错误审计必须知道来源，两个公共入口也必须保持一致持久化契约。",risk:"路径解析不会保证文件存在，存在性仍由 signal_io 检查。"},
+          {range:"46–61",title:"成功结果的保存隔离",code:`try:\n    self.history.save_result(result)\nexcept PERSISTENCE_EXCEPTIONS:\n    logger.exception("history_save_result_failed ...")\n    return replace(\n        result,\n        warnings=(*result.warnings, PERSISTENCE_WARNING_TEXT),\n    )\nreturn result`,explain:"保存成功结果失败时仍返回诊断结果，但返回的新对象会在原 warnings 后附加 PERSISTENCE_WARNING_TEXT，日志保留 traceback。",why:"诊断已完成时，历史库短暂不可写不应让用户丢失结果；同时警告使副作用失败可见。",risk:"调用者应显示 warnings；若完全忽略警告，用户可能误以为历史已经保存。"},
+          {range:"63–80",title:"诊断错误记录的保存隔离",code:`try:\n    self.history.save_error(\n        run_id=run_id,\n        created_at=datetime.now(timezone.utc),\n        source_id=source_id,\n        model_version=self.engine.bundle.model_version,\n        message=message,\n    )\nexcept PERSISTENCE_EXCEPTIONS:\n    logger.exception("history_save_error_failed ...")`,explain:"记录诊断错误失败时仍抛出原始诊断异常：_save_error 只记录持久化失败并返回，外层 diagnose/diagnose_file 的裸 raise 继续传播原异常和原 traceback。",why:"审计库失败不能把真正的诊断错误替换成第二个异常，否则 UI 和 SDK 调用者会丢失原因。",risk:"这种情况下历史库可能没有失败记录，必须依靠 application.log 追查持久化问题。"}
         ]
       },
       {

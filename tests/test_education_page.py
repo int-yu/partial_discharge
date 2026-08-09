@@ -193,6 +193,25 @@ def test_project_bridge_gives_beginners_two_traceable_call_chains(project_root):
         assert marker in text
 
 
+def test_service_source_lesson_matches_persistence_isolation_contract(project_root):
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+    service_lesson = text.partition('path:"src/pd_diagnosis/service.py"')[2].partition(
+        'path:"src/pd_diagnosis/storage.py"'
+    )[0]
+
+    assert service_lesson
+    assert "数据库写入异常目前会传播" not in text
+    for marker in (
+        "PERSISTENCE_EXCEPTIONS",
+        "warnings=(*result.warnings, PERSISTENCE_WARNING_TEXT)",
+        "保存成功结果失败时仍返回诊断结果",
+        "记录诊断错误失败时仍抛出原始诊断异常",
+    ):
+        assert marker in service_lesson
+    assert "保存成功结果失败时会返回附加 warning 的结果" in text
+    assert "保存诊断错误本身失败时仍继续抛出原始 <code>DiagnosisError</code>" in text
+
+
 def test_foundation_examples_are_complete_python(project_root):
     text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
     audit = _PythonExampleAudit()
