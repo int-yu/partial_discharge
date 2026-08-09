@@ -491,7 +491,32 @@ raise SystemExit(app.exec())</code></pre>
           <div class="object-map"><strong>对象关系</strong><p><code>ProfileForm</code> 持有输入框、下拉框、按钮和结果框；布局持有它们的摆放关系。按钮的 <code>clicked</code> 信号到达 <code>show_profile</code>，槽从输入控件读取值，写入结果控件。</p></div>
           <div class="experiment"><strong>改一个地方看变化</strong><p>把 <code>QLineEdit("小林")</code> 改成 <code>QLineEdit()</code>，重新运行并点击按钮：结果仍会生成，但姓名部分为空。再把 <code>setReadOnly(True)</code> 暂时改为 <code>False</code>，观察结果框可以被直接编辑。</p></div>
           <div class="mistake"><strong>常见错误</strong><table class="compare"><thead><tr><th>错误</th><th>原因、修复与验证</th></tr></thead><tbody><tr><td><code>name_input = QLineEdit()</code> 后在槽中写 <code>self.name_input.text()</code></td><td>前者只是构造方法中的局部名字，窗口没有对应属性。修复为 <code>self.name_input = ...</code>；点击按钮后应能读取输入而不是得到 <code>AttributeError</code>。</td></tr><tr><td>把结果框当成输入框</td><td>用户可以改写程序结果，界面语义混乱。对“程序输出”调用 <code>setReadOnly(True)</code>；验证结果框不能键入但点击仍会更新文字。</td></tr></tbody></table></div>
-          <div class="lesson-check"><strong>最小练习</strong><p>在表单中加入一个“清空”按钮：点击后清空姓名输入框、把下拉框选回第一项，并清空结果框。</p></div>
+          <div class="lesson-check"><strong>最小练习：显示已输入文本</strong><p>另建一个小窗口，放入一个姓名输入框、一个“显示已输入文本”按钮和一个结果标签。点击按钮后，用 <code>self.name_input.text()</code> 读取当前输入，并让结果标签显示“你输入了：”和该文字。</p></div>
+          <details><summary>参考答案：显示已输入文本的完整程序</summary><div class="details-body"><pre><code data-python-example="widgets-show-entered-text-answer">import sys
+from PySide6.QtCore import Slot
+from PySide6.QtWidgets import QApplication, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
+
+class ShowEnteredText(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.name_input = QLineEdit()
+        self.show_button = QPushButton("显示已输入文本")
+        self.result_label = QLabel("你输入了：")
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.name_input)
+        layout.addWidget(self.show_button)
+        layout.addWidget(self.result_label)
+        self.show_button.clicked.connect(self.show_entered_text)
+
+    @Slot()
+    def show_entered_text(self):
+        self.result_label.setText(f"你输入了：{self.name_input.text()}")
+
+app = QApplication(sys.argv)
+window = ShowEnteredText()
+window.show()
+raise SystemExit(app.exec())</code></pre></div></details>
+          <div class="lesson-check"><strong>扩展练习：清空表单</strong><p>在表单中加入一个“清空”按钮：点击后清空姓名输入框、把下拉框选回第一项，并清空结果框。</p></div>
           <details><summary>参考答案：带清空按钮的完整程序</summary><div class="details-body"><pre><code>import sys
 from PySide6.QtCore import Slot
 from PySide6.QtWidgets import QApplication, QComboBox, QFormLayout, QLineEdit, QPushButton, QTextEdit, QVBoxLayout, QWidget

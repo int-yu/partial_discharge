@@ -193,6 +193,18 @@ def test_foundation_examples_are_complete_python(project_root):
         compile(audit.examples[name], f"<{name}>", "exec")
 
 
+def test_widgets_show_entered_text_exercise_has_compilable_answer(project_root):
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+    lesson_audit = _LessonSectionAudit({"widgets"})
+    lesson_audit.feed(text)
+    assert "显示已输入文本" in lesson_audit.sections["widgets"]
+
+    example_audit = _PythonExampleAudit()
+    example_audit.feed(text)
+    answer = example_audit.examples["widgets-show-entered-text-answer"]
+    compile(answer, "<widgets-show-entered-text-answer>", "exec")
+
+
 def test_foundation_lessons_use_full_teaching_template(project_root):
     text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
     required_sections = {
