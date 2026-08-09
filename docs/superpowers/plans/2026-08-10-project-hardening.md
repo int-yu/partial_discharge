@@ -94,15 +94,15 @@ def test_default_model_path_falls_back_to_installed_data(monkeypatch, tmp_path):
 - `DiagnosisEngine.diagnose` rejects non-finite features, normalized inputs, logits, and probabilities.
 - `BatchDiagnosisItem` enforces exactly one of `result` or `error`.
 
-- [ ] **Step 1: Write a failing `OSError` wrapping test for `read_txt_signal`**
-- [ ] **Step 2: Implement `except OSError as exc: raise InvalidSignalError(...) from exc`**
-- [ ] **Step 3: Write a failing signal-snapshot test that mutates the caller array after validation**
-- [ ] **Step 4: Make `validate_signal` return `np.array(..., copy=True)` without changing golden features**
-- [ ] **Step 5: Write failing engine tests using monkeypatched features/model outputs containing NaN or infinity**
-- [ ] **Step 6: Add finite checks with `DiagnosisError` messages at preprocessing and inference boundaries**
-- [ ] **Step 7: Write failing tests for invalid `BatchDiagnosisItem` states and implement `__post_init__`**
-- [ ] **Step 8: Replace hard-coded warning threshold and input size with bundle threshold and `len(FEATURE_NAMES)`**
-- [ ] **Step 9: Run all core SDK tests and commit**
+- [x] **Step 1: Write a failing `OSError` wrapping test for `read_txt_signal`**
+- [x] **Step 2: Implement `except OSError as exc: raise InvalidSignalError(...) from exc`**
+- [x] **Step 3: Write a failing signal-snapshot test that mutates the caller array after validation**
+- [x] **Step 4: Make `validate_signal` return `np.array(..., copy=True)` without changing golden features**
+- [x] **Step 5: Write failing engine tests using monkeypatched features/model outputs containing NaN or infinity**
+- [x] **Step 6: Add finite checks with `DiagnosisError` messages at preprocessing and inference boundaries**
+- [x] **Step 7: Write failing tests for invalid `BatchDiagnosisItem` states and implement `__post_init__`**
+- [x] **Step 8: Replace hard-coded warning threshold and input size with bundle threshold and `len(FEATURE_NAMES)`**
+- [x] **Step 9: Run all core SDK tests and commit**
 
 ### Task 4: Persistence Semantics, Schema, and Logging
 

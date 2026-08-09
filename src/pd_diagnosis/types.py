@@ -34,6 +34,10 @@ class BatchDiagnosisItem:
     result: DiagnosisResult | None = None
     error: str | None = None
 
+    def __post_init__(self) -> None:
+        if (self.result is None) == (self.error is None):
+            raise ValueError("result 与 error 必须且只能提供一个")
+
     @property
     def succeeded(self) -> bool:
         return self.result is not None

@@ -18,6 +18,8 @@ def read_txt_signal(path: Pathish) -> np.ndarray:
         text = source.read_text(encoding="utf-8-sig")
     except UnicodeDecodeError as exc:
         raise InvalidSignalError(f"TXT 必须使用 UTF-8 或 ASCII 编码：{source}") from exc
+    except OSError as exc:
+        raise InvalidSignalError(f"无法读取信号文件：{source}：{exc}") from exc
     values: list[float] = []
     for line_number, line in enumerate(text.splitlines(), start=1):
         for token_number, token in enumerate(line.split(), start=1):

@@ -40,3 +40,13 @@ def test_legacy_feature_vector_matches_golden_sample(project_root):
 def test_invalid_signal_is_rejected(samples, message):
     with pytest.raises(InvalidSignalError, match=message):
         validate_signal(samples)
+
+
+def test_validate_signal_returns_owned_snapshot():
+    original = np.arange(100, dtype=np.float32)
+
+    validated = validate_signal(original)
+    original[0] = 999.0
+
+    assert validated[0] == 0.0
+    assert not np.shares_memory(validated, original)

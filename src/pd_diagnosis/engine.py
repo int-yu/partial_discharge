@@ -8,7 +8,7 @@ import torch
 
 from .bundle import ModelBundle
 from .errors import ArtifactCompatibilityError, DiagnosisError, InvalidSignalError
-from .features import extract_feature_vector, feature_mapping
+from .features import FEATURE_NAMES, extract_feature_vector, feature_mapping
 from .model import ClassificationModel
 from .signal_io import read_txt_signal
 from .types import (
@@ -32,7 +32,9 @@ class DiagnosisEngine:
     def from_bundle(cls, path: Pathish, *, device: str = "auto") -> "DiagnosisEngine":
         bundle = ModelBundle.load(path)
         resolved_device = _resolve_device(device)
-        model = ClassificationModel(input_size=10, num_classes=len(bundle.classes))
+        model = ClassificationModel(
+            input_size=len(FEATURE_NAMES), num_classes=len(bundle.classes)
+        )
         try:
             state = torch.load(bundle.weights_path, map_location=resolved_device, weights_only=True)
             model.load_state_dict(state, strict=True)
@@ -55,20 +57,37 @@ class DiagnosisEngine:
             sampling_rate_hz=signal.sampling_rate_hz,
             min_samples=self.bundle.min_samples,
         )
+        if not np.all(np.isfinite(features)):
+            raise DiagnosisError("特征提取结果必须全部是有限数值")
         mean = self.bundle.scaler_mean.astype(np.float32)
         scale = self.bundle.scaler_scale.astype(np.float32)
-        normalized = ((features - mean) / scale).astype(np.float32)
+        with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
+            normalized = ((features - mean) / scale).astype(np.float32)
+        if not np.all(np.isfinite(normalized)):
+            raise DiagnosisError("标准化后的模型输入必须全部是有限数值")
         tensor = torch.from_numpy(normalized).unsqueeze(0).to(self.device)
         try:
             with torch.inference_mode():
-                probabilities = torch.softmax(self._model(tensor), dim=1)[0].cpu().numpy()
+                logits = self._model(tensor)
+                if logits.shape != (1, len(self.bundle.classes)):
+                    raise DiagnosisError(
+                        "模型 logits 形状与 bundle 类别数量不一致"
+                    )
+                if not bool(torch.isfinite(logits).all().item()):
+                    raise DiagnosisError("模型 logits 必须全部是有限数值")
+                probability_tensor = torch.softmax(logits, dim=1)
+                if not bool(torch.isfinite(probability_tensor).all().item()):
+                    raise DiagnosisError("模型概率必须全部是有限数值")
+                probabilities = probability_tensor[0].cpu().numpy()
+        except DiagnosisError:
+            raise
         except Exception as exc:
             raise DiagnosisError(f"模型推理失败：{exc}") from exc
         class_id = int(np.argmax(probabilities))
         class_definition = self.bundle.classes[class_id]
         confidence = float(probabilities[class_id])
         warnings: tuple[str, ...] = ()
-        if confidence < 0.6:
+        if confidence < self.bundle.confidence_warning_threshold:
             warnings = ("模型置信度较低，请结合波形、PRPD 和人工经验复核。",)
         return DiagnosisResult(
             class_id=class_definition.id,

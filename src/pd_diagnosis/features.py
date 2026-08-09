@@ -25,7 +25,7 @@ FEATURE_SCHEMA = "legacy-v1"
 
 def validate_signal(samples: Sequence[float], *, min_samples: int = 100) -> np.ndarray:
     try:
-        values = np.asarray(samples, dtype=np.float32)
+        values = np.array(samples, dtype=np.float32, copy=True)
     except (TypeError, ValueError) as exc:
         raise InvalidSignalError("信号必须是一维数值序列") from exc
     if values.ndim != 1:
