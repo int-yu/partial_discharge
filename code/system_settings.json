@@ -1,0 +1,6 @@
+{
+    "data_path": "D:/mycode/detect/save",
+    "model_path": "D:/mycode/detect/save/best_model.pth",
+    "file_path": "D:/mycode/train/1/b2.txt",
+    "traindata_path": "D:/mycode/detect/train"
+}

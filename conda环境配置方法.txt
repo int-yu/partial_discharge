@@ -1,0 +1,5 @@
+# 创建环境
+conda env create -f environment.yml
+
+# 激活环境
+conda activate DP_learn

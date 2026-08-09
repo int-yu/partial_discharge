@@ -1,0 +1,27 @@
+# environment.yml
+name: DP_learn
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9.23
+  - pytorch=2.6.0
+  - torchvision=0.21.0
+  - torchaudio=2.6.0
+  - pytorch-cuda=12.6
+  - cudatoolkit=12.7
+  - numpy=1.26.3
+  - scipy=1.13.1
+  - pandas=2.3.1
+  - scikit-learn=1.6.1
+  - matplotlib=3.9.4
+  - jupyter
+  - pillow=11.0.0
+  - pip=25.2
+  - pip:
+    - prettytable==3.16.0
+    - filelock==3.13.1
+    - fsspec==2024.6.1
+    - threadpoolctl==3.6.0

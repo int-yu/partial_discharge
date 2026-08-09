@@ -1,0 +1,36 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE and notebook metadata
+.idea/
+.vscode/
+.ipynb_checkpoints/
+
+# Build and packaging output
+build/
+dist/
+*.egg-info/
+
+# Runtime-generated exports and logs
+save/*.csv
+save/*.txt
+
+# Local settings and databases
+*.db
+*.sqlite3
+.env
+
+# OS metadata
+.DS_Store
+Thumbs.db

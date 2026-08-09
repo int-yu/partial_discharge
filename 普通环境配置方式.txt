@@ -1,0 +1,6 @@
+在当前界面上方输入框输入powershell
+# 安装所有包
+pip install -r requirements.txt
+
+# 或者单独安装PyTorch（如果上面的命令有问题）
+pip install torch==2.6.0+cu126 torchvision==0.21.0+cu126 torchaudio==2.6.0+cu126 --index-url https://download.pytorch.org/whl/cu126

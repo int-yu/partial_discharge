@@ -1,0 +1,65 @@
+# requirements.txt
+# 这个文件包含可以通过pip安装的Python包
+# 对于CUDA相关的包，请根据您的CUDA版本选择合适的安装命令
+
+# 核心科学计算和数据处理
+numpy==1.26.3
+scipy==1.13.1
+pandas==2.3.1
+scikit-learn==1.6.1
+joblib==1.5.1
+
+# PyTorch相关 (CUDA 12.6版本)
+torch==2.6.0+cu126
+torchvision==0.21.0+cu126
+torchaudio==2.6.0+cu126
+
+# 图像处理
+Pillow==11.0.0
+contourpy==1.3.0
+
+# 数据可视化和绘图
+matplotlib==3.9.4
+cycler==0.12.1
+kiwisolver==1.4.7
+pyparsing==3.2.3
+fonttools==4.59.0
+
+# 网络和图形处理
+networkx==3.2.1
+
+# 符号计算
+sympy==1.13.1
+mpmath==1.3.0
+
+# 工具类
+prettytable==3.16.0
+filelock==3.13.1
+fsspec==2024.6.1
+threadpoolctl==3.6.0
+wcwidth==0.2.13
+
+# Web框架
+tornado==6.5.1
+
+# 模板引擎
+Jinja2==3.1.4
+MarkupSafe==2.1.5
+
+# 日期时间处理
+python-dateutil==2.9.0
+pytz==2025.2
+tzdata==2025.2
+
+# 类型提示
+typing-extensions==4.12.2
+
+# 包管理工具
+setuptools==80.9.0
+wheel==0.45.1
+pip==25.2
+
+# 其他工具
+zipp==3.23.0
+tomli==2.2.1
+six==1.17.0
