@@ -4,7 +4,6 @@ import os
 
 import numpy as np
 
-
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 os.environ.setdefault("MPLBACKEND", "QtAgg")
 

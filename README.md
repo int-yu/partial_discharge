@@ -17,6 +17,15 @@
 python -m pip install -e ".[gui,train,dev]"
 ```
 
+建议在干净虚拟环境中安装，避免系统环境中的 Qt、NumPy 或 PyTorch 版本互相影响：
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -e ".[gui,dev]"
+```
+
 ## Python SDK
 
 ```python
@@ -48,7 +57,23 @@ result = engine.diagnose(
 pd-diagnosis
 ```
 
-默认模型位于 `models/default`。也可通过环境变量 `PD_DIAGNOSIS_MODEL` 指定模型 bundle。
+默认模型按以下优先级解析：
+
+1. 环境变量 `PD_DIAGNOSIS_MODEL` 指定的 bundle；
+2. 当前仓库的 `models/default`；
+3. 随 Python 包安装到共享数据目录的默认模型。
+
+运行日志默认写入平台用户数据目录下的 `logs/application.log`，采用滚动文件，便于排查启动、推理、持久化和后台任务错误。
+
+## 开发检查
+
+```powershell
+ruff check .
+mypy src/pd_diagnosis
+pytest --cov=pd_diagnosis --cov-report=term-missing
+```
+
+GUI 测试使用无窗口平台插件；本地自动化环境可设置 `QT_QPA_PLATFORM=offscreen` 和 `MPLBACKEND=QtAgg`。
 
 ## 旧模型迁移
 

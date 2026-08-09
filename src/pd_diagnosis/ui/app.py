@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import platform
 import sys
-from pathlib import Path
 from typing import Sequence
 
 from PySide6.QtCore import QLocale, Qt

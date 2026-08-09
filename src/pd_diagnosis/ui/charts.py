@@ -10,7 +10,6 @@ from matplotlib.figure import Figure
 from ..prpd import generate_prpd_matrix
 from .theme import chart_colors
 
-
 for _font_path in (
     Path("C:/Windows/Fonts/msyh.ttc"),
     Path("C:/Windows/Fonts/Deng.ttf"),

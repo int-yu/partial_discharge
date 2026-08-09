@@ -212,13 +212,13 @@ def test_default_model_path_falls_back_to_installed_data(monkeypatch, tmp_path):
 - CI installs `.[gui,dev]`, runs Ruff, mypy, and pytest on Windows with Python 3.10, 3.11, and 3.12.
 - Packaging includes `py.typed` and model data files.
 
-- [ ] **Step 1: Write failing project-config tests for CI matrix, package data, project URL, and tool configuration**
-- [ ] **Step 2: Add Ruff and mypy to dev dependencies with compatible version ranges**
-- [ ] **Step 3: Add conservative Ruff rules and mypy configuration that checks the package without requiring strict third-party stubs**
-- [ ] **Step 4: Add Windows CI with `QT_QPA_PLATFORM=offscreen` and `MPLBACKEND=QtAgg`**
-- [ ] **Step 5: Add repository URL metadata and `py.typed`; do not select a license without explicit owner approval**
-- [ ] **Step 6: Document clean virtual-environment installation, model resolution precedence, logs, and test commands**
-- [ ] **Step 7: Run config tests, full tests, available local quality checks, and commit**
+- [x] **Step 1: Write failing project-config tests for CI matrix, package data, project URL, and tool configuration**
+- [x] **Step 2: Add Ruff and mypy to dev dependencies with compatible version ranges**
+- [x] **Step 3: Add conservative Ruff rules and mypy configuration that checks the package without requiring strict third-party stubs**
+- [x] **Step 4: Add Windows CI with `QT_QPA_PLATFORM=offscreen` and `MPLBACKEND=QtAgg`**
+- [x] **Step 5: Add repository URL metadata and `py.typed`; do not select a license without explicit owner approval**
+- [x] **Step 6: Document clean virtual-environment installation, model resolution precedence, logs, and test commands**
+- [x] **Step 7: Run config tests, full tests, available local quality checks, and commit**
 
 ### Task 9: Installed Artifact and Regression Verification
 

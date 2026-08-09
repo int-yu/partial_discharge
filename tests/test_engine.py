@@ -7,9 +7,8 @@ import pytest
 import torch
 
 import pd_diagnosis.engine as engine_module
-from pd_diagnosis import DiagnosisError, DiagnosisEngine, InvalidSignalError, Signal
+from pd_diagnosis import DiagnosisEngine, DiagnosisError, InvalidSignalError, Signal
 from pd_diagnosis.features import FEATURE_NAMES
-
 
 GOLDEN = {
     "0/a1.txt": (0, [0.9635154009, 0.0097595816, 0.0115856454, 0.0151393125]),

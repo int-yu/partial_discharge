@@ -4,7 +4,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 from threading import Event
-from typing import Callable
+from typing import Callable, Sized, cast
 
 import numpy as np
 import torch
@@ -113,7 +113,7 @@ def train(
             loss.backward()
             optimizer.step()
             train_loss += loss.item() * len(inputs)
-        train_loss /= len(train_loader.dataset)
+        train_loss /= len(cast(Sized, train_loader.dataset))
 
         model.eval()
         validation_loss = 0.0
@@ -121,7 +121,7 @@ def train(
             for inputs, batch_labels in validation_loader:
                 inputs, batch_labels = inputs.to(device), batch_labels.to(device)
                 validation_loss += criterion(model(inputs), batch_labels).item() * len(inputs)
-        validation_loss /= len(validation_loader.dataset)
+        validation_loss /= len(cast(Sized, validation_loader.dataset))
         completed_epochs = epoch
         if progress is not None:
             progress(epoch, config.epochs, train_loss, validation_loss)

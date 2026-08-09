@@ -11,7 +11,8 @@ from PySide6.QtCore import QObject, QRunnable, Signal, Slot
 from ..service import DiagnosisService
 from ..signal_io import read_txt_signal
 from ..storage import HistoryRepository
-from ..types import BatchDiagnosisItem, DiagnosisResult, Signal as DiagnosisSignal
+from ..types import BatchDiagnosisItem, DiagnosisResult
+from ..types import Signal as DiagnosisSignal
 from .history_export import export_history_csv
 
 logger = logging.getLogger(__name__)

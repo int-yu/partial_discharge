@@ -6,10 +6,12 @@ from os import PathLike
 from typing import Mapping, Sequence
 from uuid import uuid4
 
+import numpy as np
+
 
 @dataclass(frozen=True, slots=True)
 class Signal:
-    samples: Sequence[float]
+    samples: Sequence[float] | np.ndarray
     sampling_rate_hz: int = 1_000_000
     source_id: str | None = None
 
