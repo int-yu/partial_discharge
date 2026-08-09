@@ -34,7 +34,7 @@
 - Produces: `pd_diagnosis.launcher.main(argv: Sequence[str] | None = None) -> int`.
 - Consumes: `PD_DIAGNOSIS_MODEL`, repository-local `models/default`, and setuptools-installed `share/partial-discharge-diagnosis/models/default`.
 
-- [ ] **Step 1: Write failing installed-model path tests**
+- [x] **Step 1: Write failing installed-model path tests**
 
 ```python
 def test_default_model_path_falls_back_to_installed_data(monkeypatch, tmp_path):
@@ -47,12 +47,12 @@ def test_default_model_path_falls_back_to_installed_data(monkeypatch, tmp_path):
     assert paths.default_model_path() == installed
 ```
 
-- [ ] **Step 2: Run `python -m pytest tests/test_paths.py -v` and verify failure because `installed_model_path` does not exist**
-- [ ] **Step 3: Implement environment → repository → installed-data precedence using `sysconfig.get_path("data")`**
-- [ ] **Step 4: Add setuptools `data-files` entries for manifest, weights, and scaler**
-- [ ] **Step 5: Write and fail a launcher test that simulates a missing `PySide6` import and expects an actionable Chinese error plus exit code 2**
-- [ ] **Step 6: Implement the lazy launcher and point `pd-diagnosis` plus `__main__.py` to it**
-- [ ] **Step 7: Run path/launcher/public API tests and commit**
+- [x] **Step 2: Run `python -m pytest tests/test_paths.py -v` and verify failure because `installed_model_path` does not exist**
+- [x] **Step 3: Implement environment → repository → installed-data precedence using `sysconfig.get_path("data")`**
+- [x] **Step 4: Add setuptools `data-files` entries for manifest, weights, and scaler**
+- [x] **Step 5: Write and fail a launcher test that simulates a missing `PySide6` import and expects an actionable Chinese error plus exit code 2**
+- [x] **Step 6: Implement the lazy launcher and point `pd-diagnosis` plus `__main__.py` to it**
+- [x] **Step 7: Run path/launcher/public API tests and commit**
 
 ### Task 2: Strict Model Bundle Contract
 
@@ -238,4 +238,3 @@ def test_default_model_path_falls_back_to_installed_data(monkeypatch, tmp_path):
 - [ ] **Step 5: Run full pytest, Ruff, mypy, and JavaScript/HTML checks for the education page**
 - [ ] **Step 6: Update API, bundle, and educational documentation to match final behavior**
 - [ ] **Step 7: Review `git diff`, confirm no dataset changes, and create the final implementation commit**
-

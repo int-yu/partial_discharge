@@ -31,11 +31,18 @@ dev = [
 ]
 
 [project.scripts]
-pd-diagnosis = "pd_diagnosis.ui.app:main"
+pd-diagnosis = "pd_diagnosis.launcher:main"
 pd-migrate-model = "pd_diagnosis.migration:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.data-files]
+"share/partial-discharge-diagnosis/models/default" = [
+    "models/default/manifest.json",
+    "models/default/scaler.npz",
+    "models/default/weights.pth",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
