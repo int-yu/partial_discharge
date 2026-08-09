@@ -10,7 +10,9 @@ from PySide6.QtCore import QObject, QRunnable, Signal, Slot
 
 from ..service import DiagnosisService
 from ..signal_io import read_txt_signal
+from ..storage import HistoryRepository
 from ..types import BatchDiagnosisItem, DiagnosisResult, Signal as DiagnosisSignal
+from .history_export import export_history_csv
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +27,12 @@ class SingleDiagnosisOutcome:
         snapshot = np.array(self.samples, dtype=np.float32, copy=True)
         snapshot.setflags(write=False)
         object.__setattr__(self, "samples", snapshot)
+
+
+@dataclass(frozen=True, slots=True)
+class HistoryExportOutcome:
+    path: Path
+    count: int
 
 
 class TaskSignals(QObject):
@@ -92,3 +100,48 @@ class BatchDiagnosisTask(QRunnable):
             self.signals.item.emit(index, item)
             self.signals.progress.emit(index + 1, total)
         self.signals.finished.emit()
+
+
+class HistoryExportTask(QRunnable):
+    def __init__(
+        self,
+        repository: HistoryRepository,
+        path: str | Path,
+        *,
+        query: str = "",
+    ) -> None:
+        super().__init__()
+        self.repository = repository
+        self.path = Path(path).expanduser().resolve()
+        self.query = query
+        self.signals = TaskSignals()
+
+    @Slot()
+    def run(self) -> None:
+        try:
+            total = self.repository.count(query=self.query)
+
+            def records():
+                completed = 0
+                while completed < total:
+                    page = self.repository.list(
+                        limit=1000,
+                        offset=completed,
+                        query=self.query,
+                    )
+                    if not page:
+                        break
+                    for record in page:
+                        yield record
+                    completed += len(page)
+                    self.signals.progress.emit(completed, total)
+
+            count = export_history_csv(records(), self.path)
+            if total == 0:
+                self.signals.progress.emit(0, 0)
+            self.signals.result.emit(HistoryExportOutcome(self.path, count))
+        except Exception as exc:
+            logger.exception("history_export_failed path=%s", self.path)
+            self.signals.error.emit(str(exc))
+        finally:
+            self.signals.finished.emit()

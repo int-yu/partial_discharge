@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import csv
 from pathlib import Path
 
 from PySide6.QtCore import QLocale, QSettings, Qt, QThreadPool
@@ -36,7 +35,15 @@ from ..types import BatchDiagnosisItem
 from .charts import ProbabilityCanvas, PrpdCanvas, WaveformCanvas
 from .formatting import display_time
 from .theme import build_stylesheet
-from .workers import BatchDiagnosisTask, SingleDiagnosisOutcome, SingleDiagnosisTask
+from .workers import (
+    BatchDiagnosisTask,
+    HistoryExportOutcome,
+    HistoryExportTask,
+    SingleDiagnosisOutcome,
+    SingleDiagnosisTask,
+)
+
+PAGE_SIZE = 100
 
 
 class MainWindow(QMainWindow):
@@ -56,6 +63,8 @@ class MainWindow(QMainWindow):
         self.thread_pool = QThreadPool(self)
         self.thread_pool.setMaxThreadCount(1)
         self.current_batch_task: BatchDiagnosisTask | None = None
+        self.current_history_export: HistoryExportTask | None = None
+        self.history_offset = 0
         self.dark_theme = self.settings.value("ui/dark_theme", False, type=bool)
 
         self.setWindowTitle("局部放电类型智能诊断")
@@ -264,26 +273,40 @@ class MainWindow(QMainWindow):
         self.history_query = QLineEdit()
         self.history_query.setAccessibleName("历史记录搜索")
         self.history_query.setPlaceholderText("搜索文件、诊断类型或模型版本")
-        self.history_query.returnPressed.connect(self.refresh_history)
+        self.history_query.returnPressed.connect(self._search_history)
         search = QPushButton("搜索")
-        search.clicked.connect(self.refresh_history)
+        search.clicked.connect(self._search_history)
         detail = QPushButton("查看详情")
         detail.clicked.connect(self.show_history_detail)
-        export = QPushButton("导出 CSV")
-        export.clicked.connect(self.export_history)
+        self.history_export_button = QPushButton("导出 CSV")
+        self.history_export_button.clicked.connect(self.export_history)
         delete = QPushButton("删除", objectName="DangerButton")
         delete.clicked.connect(self.delete_history)
         row.addWidget(self.history_query, 1)
         row.addWidget(search)
         row.addWidget(detail)
-        row.addWidget(export)
+        row.addWidget(self.history_export_button)
         row.addWidget(delete)
         toolbar.addLayout(row)
         layout.addWidget(toolbar_card)
 
         table_card, table_layout = card()
+        summary_row = QHBoxLayout()
         self.history_summary = QLabel(objectName="MutedLabel")
-        table_layout.addWidget(self.history_summary)
+        summary_row.addWidget(self.history_summary)
+        summary_row.addStretch()
+        self.history_previous = QPushButton("上一页")
+        self.history_previous.setAccessibleName("历史记录上一页")
+        self.history_previous.clicked.connect(self._previous_history_page)
+        self.history_page_label = QLabel(objectName="MutedLabel")
+        self.history_page_label.setAccessibleName("历史记录页码")
+        self.history_next = QPushButton("下一页")
+        self.history_next.setAccessibleName("历史记录下一页")
+        self.history_next.clicked.connect(self._next_history_page)
+        summary_row.addWidget(self.history_previous)
+        summary_row.addWidget(self.history_page_label)
+        summary_row.addWidget(self.history_next)
+        table_layout.addLayout(summary_row)
         self.history_table = QTableWidget(0, 6)
         self.history_table.setAccessibleName("诊断历史记录表")
         self.history_table.setAccessibleDescription("显示已保存的诊断和错误记录")
@@ -491,9 +514,17 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("批量任务已结束", 5000)
 
     def refresh_history(self) -> None:
-        records = self.history.list(limit=500, query=self.history_query.text() if hasattr(self, "history_query") else "")
         if not hasattr(self, "history_table"):
             return
+        query = self.history_query.text().strip()
+        total = self.history.count(query=query)
+        if self.history_offset >= total and self.history_offset > 0:
+            self.history_offset = max(0, ((max(total, 1) - 1) // PAGE_SIZE) * PAGE_SIZE)
+        records = self.history.list(
+            limit=PAGE_SIZE,
+            offset=self.history_offset,
+            query=query,
+        )
         self.history_table.setRowCount(len(records))
         for row, record in enumerate(records):
             values = [
@@ -509,7 +540,27 @@ class MainWindow(QMainWindow):
                 if column == 0:
                     item.setData(Qt.UserRole, record.run_id)
                 self.history_table.setItem(row, column, item)
-        self.history_summary.setText(f"显示 {len(records)} 条 · 数据库共 {self.history.count()} 条")
+        start = self.history_offset + 1 if records else 0
+        end = self.history_offset + len(records)
+        page = self.history_offset // PAGE_SIZE + 1
+        page_count = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
+        self.history_summary.setText(f"显示 {start}–{end} 条 · 当前筛选共 {total} 条")
+        self.history_page_label.setText(f"第 {page}/{page_count} 页")
+        self.history_previous.setEnabled(self.history_offset > 0)
+        self.history_next.setEnabled(end < total)
+
+    def _search_history(self) -> None:
+        self.history_offset = 0
+        self.refresh_history()
+
+    def _previous_history_page(self) -> None:
+        self.history_offset = max(0, self.history_offset - PAGE_SIZE)
+        self.refresh_history()
+
+    def _next_history_page(self) -> None:
+        if self.history_next.isEnabled():
+            self.history_offset += PAGE_SIZE
+            self.refresh_history()
 
     def _selected_history(self) -> HistoryRecord | None:
         row = self.history_table.currentRow()
@@ -552,29 +603,38 @@ class MainWindow(QMainWindow):
         self.refresh_history()
 
     def export_history(self) -> None:
-        records = self.history.list(limit=1000, query=self.history_query.text())
-        if not records:
+        query = self.history_query.text().strip()
+        if self.history.count(query=query) == 0:
             QMessageBox.information(self, "没有记录", "当前没有可导出的诊断记录。")
             return
         path, _ = QFileDialog.getSaveFileName(self, "导出诊断历史", "diagnosis-history.csv", "CSV (*.csv)")
         if not path:
             return
-        with Path(path).open("w", encoding="utf-8-sig", newline="") as stream:
-            writer = csv.writer(stream)
-            writer.writerow(["时间", "来源", "模型建议", "置信度", "模型版本", "状态", "错误"])
-            for record in records:
-                writer.writerow(
-                    [
-                        record.created_at,
-                        record.source_id,
-                        record.label,
-                        record.confidence,
-                        record.model_version,
-                        record.status,
-                        record.error_message,
-                    ]
-                )
-        self.statusBar().showMessage(f"已导出：{path}", 6000)
+        self.history_export_button.setEnabled(False)
+        self.statusBar().showMessage("正在后台导出诊断历史…")
+        task = HistoryExportTask(self.history, path, query=query)
+        task.signals.progress.connect(self._show_history_export_progress)
+        task.signals.result.connect(self._show_history_export_result)
+        task.signals.error.connect(self._show_history_export_error)
+        task.signals.finished.connect(self._finish_history_export)
+        self.current_history_export = task
+        self.thread_pool.start(task)
+
+    def _show_history_export_progress(self, completed: int, total: int) -> None:
+        self.statusBar().showMessage(f"正在导出诊断历史：{completed}/{total}")
+
+    def _show_history_export_result(self, outcome: HistoryExportOutcome) -> None:
+        self.statusBar().showMessage(
+            f"已导出 {outcome.count} 条记录：{outcome.path}", 6000
+        )
+
+    def _show_history_export_error(self, message: str) -> None:
+        QMessageBox.critical(self, "导出失败", message)
+        self.statusBar().showMessage("诊断历史导出失败", 6000)
+
+    def _finish_history_export(self) -> None:
+        self.history_export_button.setEnabled(True)
+        self.current_history_export = None
 
     def _change_theme(self, index: int) -> None:
         self.dark_theme = index == 1
@@ -614,4 +674,3 @@ def format_feature(value: float) -> str:
     if absolute >= 100_000 or (absolute and absolute < 0.001):
         return f"{value:.4e}"
     return f"{value:.4f}"
-

@@ -82,3 +82,50 @@ def test_main_window_renders_result(engine, project_root, tmp_path):
     settings.sync()
     assert settings.value("window/geometry") is not None
     assert settings.value("window/diagnosis_splitter") is not None
+
+
+def test_history_pagination_and_query_reset(engine, project_root, tmp_path):
+    from datetime import datetime, timezone
+
+    from PySide6.QtCore import QSettings
+    from PySide6.QtWidgets import QApplication
+
+    from pd_diagnosis.service import DiagnosisService
+    from pd_diagnosis.storage import HistoryRepository
+    from pd_diagnosis.ui.main_window import MainWindow
+
+    QApplication.instance() or QApplication([])
+    history = HistoryRepository(tmp_path / "pages.sqlite3")
+    for index in range(205):
+        history.save_error(
+            run_id=f"run-{index:03d}",
+            created_at=datetime.now(timezone.utc),
+            source_id=f"source-{index:03d}.txt",
+            model_version="test",
+            message="bad input",
+        )
+    window = MainWindow(
+        DiagnosisService(engine, history),
+        history,
+        model_path=project_root / "models" / "default",
+        settings=QSettings(str(tmp_path / "pages.ini"), QSettings.IniFormat),
+    )
+
+    assert window.history_table.rowCount() == 100
+    assert not window.history_previous.isEnabled()
+    assert window.history_next.isEnabled()
+
+    window._next_history_page()
+    window._next_history_page()
+
+    assert window.history_offset == 200
+    assert window.history_table.rowCount() == 5
+    assert window.history_previous.isEnabled()
+    assert not window.history_next.isEnabled()
+
+    window.history_query.setText("source-000")
+    window._search_history()
+
+    assert window.history_offset == 0
+    assert window.history_table.rowCount() == 1
+    window.close()

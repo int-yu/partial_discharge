@@ -213,9 +213,15 @@ class HistoryRepository:
             connection.executemany("DELETE FROM diagnosis_history WHERE run_id = ?", values)
             return connection.total_changes - before
 
-    def count(self) -> int:
+    def count(self, *, query: str = "") -> int:
+        sql = "SELECT COUNT(*) FROM diagnosis_history"
+        parameters: list[object] = []
+        if query.strip():
+            sql += " WHERE source_id LIKE ? OR label LIKE ? OR model_version LIKE ?"
+            pattern = f"%{query.strip()}%"
+            parameters.extend([pattern, pattern, pattern])
         with self._connect() as connection:
-            return int(connection.execute("SELECT COUNT(*) FROM diagnosis_history").fetchone()[0])
+            return int(connection.execute(sql, parameters).fetchone()[0])
 
     @staticmethod
     def _to_record(row: sqlite3.Row) -> HistoryRecord:

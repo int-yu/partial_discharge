@@ -191,13 +191,13 @@ def test_default_model_path_falls_back_to_installed_data(monkeypatch, tmp_path):
 - Produces: `HistoryExportTask` progress/error/finished signals.
 - History UI pages through repository results using fixed `PAGE_SIZE = 100` and offset.
 
-- [ ] **Step 1: Write failing CSV tests for UTF-8 BOM, field order, quoting, and exported row count**
-- [ ] **Step 2: Extract and implement pure CSV export**
-- [ ] **Step 3: Write failing worker tests for progress, errors, and completion**
-- [ ] **Step 4: Implement background export and keep all QWidget updates in the GUI thread**
-- [ ] **Step 5: Write failing UI tests for next/previous page boundaries**
-- [ ] **Step 6: Add paging controls and query-reset behavior using `limit=100, offset=...`**
-- [ ] **Step 7: Run history/storage/UI tests and commit**
+- [x] **Step 1: Write failing CSV tests for UTF-8 BOM, field order, quoting, and exported row count**
+- [x] **Step 2: Extract and implement pure CSV export**
+- [x] **Step 3: Write failing worker tests for progress, errors, and completion**
+- [x] **Step 4: Implement background export and keep all QWidget updates in the GUI thread**
+- [x] **Step 5: Write failing UI tests for next/previous page boundaries**
+- [x] **Step 6: Add paging controls and query-reset behavior using `limit=100, offset=...`**
+- [x] **Step 7: Run history/storage/UI tests and commit**
 
 ### Task 8: Project Quality and CI Contract
 
