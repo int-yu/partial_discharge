@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import logging
 from threading import Event
 
 from PySide6.QtCore import QObject, QRunnable, Signal, Slot
 
 from ..service import DiagnosisService
 from ..types import BatchDiagnosisItem
+
+logger = logging.getLogger(__name__)
 
 
 class TaskSignals(QObject):
@@ -28,6 +31,7 @@ class SingleDiagnosisTask(QRunnable):
         try:
             self.signals.result.emit(self.service.diagnose_file(self.path))
         except Exception as exc:
+            logger.exception("single_diagnosis_failed path=%s", self.path)
             self.signals.error.emit(str(exc))
         finally:
             self.signals.finished.emit()
@@ -53,6 +57,9 @@ class BatchDiagnosisTask(QRunnable):
             try:
                 item = BatchDiagnosisItem(source=path, result=self.service.diagnose_file(path))
             except Exception as exc:
+                logger.exception(
+                    "batch_diagnosis_item_failed index=%s path=%s", index, path
+                )
                 item = BatchDiagnosisItem(source=path, error=str(exc))
             self.signals.item.emit(index, item)
             self.signals.progress.emit(index + 1, total)

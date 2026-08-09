@@ -8,3 +8,7 @@ class InvalidSignalError(DiagnosisError, ValueError):
 
 class ArtifactCompatibilityError(DiagnosisError):
     """The model bundle is missing, corrupt, or incompatible."""
+
+
+class PersistenceWarning(RuntimeWarning):
+    """A diagnosis completed, but its history record could not be saved."""

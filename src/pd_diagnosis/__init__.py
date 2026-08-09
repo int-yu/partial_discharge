@@ -5,6 +5,7 @@ from .errors import (
     ArtifactCompatibilityError,
     DiagnosisError,
     InvalidSignalError,
+    PersistenceWarning,
 )
 from .types import (
     BatchDiagnosisItem,
@@ -21,6 +22,7 @@ __all__ = [
     "DiagnosisError",
     "DiagnosisResult",
     "InvalidSignalError",
+    "PersistenceWarning",
     "Signal",
 ]
 

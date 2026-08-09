@@ -17,6 +17,10 @@ def default_database_path() -> Path:
     return app_data_dir() / "diagnosis.sqlite3"
 
 
+def default_log_path() -> Path:
+    return app_data_dir() / "logs" / "application.log"
+
+
 def installed_model_path() -> Path:
     data_root = Path(sysconfig.get_path("data"))
     return data_root / "share" / "partial-discharge-diagnosis" / "models" / "default"

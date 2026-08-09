@@ -123,14 +123,14 @@ def test_default_model_path_falls_back_to_installed_data(monkeypatch, tmp_path):
 - Produces: `PersistenceWarning` text appended to `DiagnosisResult.warnings` when inference succeeds but history persistence fails.
 - Storage retains schema version 1 compatibility and uses SQLite UPSERT instead of REPLACE.
 
-- [ ] **Step 1: Write a failing service test where `save_result` raises and the diagnosis result is still returned with a persistence warning**
-- [ ] **Step 2: Write a failing service test where saving an error fails but the original `DiagnosisError` remains the raised exception**
-- [ ] **Step 3: Implement narrow persistence exception handling, `dataclasses.replace`, and structured logger calls**
-- [ ] **Step 4: Write failing storage tests proving an UPSERT updates without delete semantics and schema metadata contains exactly one version row**
-- [ ] **Step 5: Replace `INSERT OR REPLACE` with `ON CONFLICT(run_id) DO UPDATE` and harden schema version storage**
-- [ ] **Step 6: Write a failing rotating-log initialization test using a temporary path**
-- [ ] **Step 7: Implement application log setup, log startup context, and preserve worker tracebacks with `logger.exception`**
-- [ ] **Step 8: Run service/storage/logging tests and commit**
+- [x] **Step 1: Write a failing service test where `save_result` raises and the diagnosis result is still returned with a persistence warning**
+- [x] **Step 2: Write a failing service test where saving an error fails but the original `DiagnosisError` remains the raised exception**
+- [x] **Step 3: Implement narrow persistence exception handling, `dataclasses.replace`, and structured logger calls**
+- [x] **Step 4: Write failing storage tests proving an UPSERT updates without delete semantics and schema metadata contains exactly one version row**
+- [x] **Step 5: Replace `INSERT OR REPLACE` with `ON CONFLICT(run_id) DO UPDATE` and harden schema version storage**
+- [x] **Step 6: Write a failing rotating-log initialization test using a temporary path**
+- [x] **Step 7: Implement application log setup, log startup context, and preserve worker tracebacks with `logger.exception`**
+- [x] **Step 8: Run service/storage/logging tests and commit**
 
 ### Task 5: Immutable Qt Task Results and Controlled Concurrency
 

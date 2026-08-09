@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+import platform
 import sys
 from pathlib import Path
 from typing import Sequence
@@ -9,13 +11,17 @@ from PySide6.QtGui import QColor, QFont, QPainter, QPixmap
 from PySide6.QtWidgets import QApplication, QMessageBox, QSplashScreen
 
 from ..engine import DiagnosisEngine
+from ..logging_config import configure_logging
 from ..paths import default_database_path, default_model_path
 from ..service import DiagnosisService
 from ..storage import HistoryRepository
 from .theme import ensure_chinese_font
 
+logger = logging.getLogger(__name__)
+
 
 def main(argv: Sequence[str] | None = None) -> int:
+    log_path = configure_logging()
     application = QApplication(list(argv) if argv is not None else sys.argv)
     application.setApplicationName("局部放电类型智能诊断")
     application.setOrganizationName("int-yu")
@@ -27,6 +33,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     splash.show()
     application.processEvents()
     model_path = default_model_path().resolve()
+    database_path = default_database_path()
+    logger.info(
+        "application_start python=%s platform=%s model_path=%s database_path=%s log_path=%s",
+        platform.python_version(),
+        platform.platform(),
+        model_path,
+        database_path,
+        log_path,
+    )
     try:
         splash.showMessage(
             "正在校验并加载诊断模型…",
@@ -35,9 +50,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         application.processEvents()
         engine = DiagnosisEngine.from_bundle(model_path)
-        history = HistoryRepository(default_database_path())
+        history = HistoryRepository(database_path)
         service = DiagnosisService(engine, history)
     except Exception as exc:
+        logger.exception("application_start_failed model_path=%s", model_path)
         splash.close()
         QMessageBox.critical(
             None,
