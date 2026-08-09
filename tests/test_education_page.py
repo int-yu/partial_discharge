@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+from html import unescape
 from html.parser import HTMLParser
+import re
 
 import pytest
 
@@ -211,6 +213,44 @@ def test_guided_diagnosis_ui_uses_six_explicit_stages(project_root):
         "步骤 6：错误恢复",
     ):
         assert stage in text
+
+
+def test_guided_diagnosis_stages_keep_prior_capabilities(project_root):
+    """Each step must remain a runnable cumulative program, not a replacement demo."""
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+    sections = re.findall(
+        r"<h3>步骤 [1-6]：.*?</h3>.*?<pre><code(?: [^>]*)?>(.*?)</code></pre>",
+        text,
+        flags=re.DOTALL,
+    )
+    assert len(sections) == 6
+    programs = [unescape(section) for section in sections]
+    requirements = (
+        ("self.setWindowTitle", "self.status_label", "layout = QVBoxLayout", "window = DiagnosisWindow"),
+        ("self.file_label", "self.choose_button", "def choose_file"),
+        ("class UiState", "self.start_button", "def set_state"),
+        ("QTimer.singleShot", "def start_diagnosis", "def finish_simulation"),
+        ("self.result_label", "self.result_label.setText"),
+        ("UiState.ERROR", "self.fail_button", "def start_failure", "def reset"),
+    )
+    for index, program in enumerate(programs):
+        compile(program, f"<diagnosis-stage-{index + 1}>", "exec")
+        for prior_requirements in requirements[: index + 1]:
+            for marker in prior_requirements:
+                assert marker in program
+
+
+def test_thread_pool_mapping_preserves_service_result_and_affinity_roles(project_root):
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+
+    assert "class DemoDiagnosisService" in text
+    assert "self.service.diagnose(self.filename)" in text
+    assert "<code>DemoDiagnosisService</code></td><td><code>DiagnosisService</code>" in text
+    assert "<code>self.signals.result.emit(result)</code></td><td><code>SingleDiagnosisOutcome</code> / <code>DiagnosisResult</code>" in text
+    assert "QRunnable 不是 QObject" in text
+    assert "没有 QObject thread affinity" in text
+    assert "WorkerSignals 在 GUI 主线程创建" in text
+    assert "不会因被 runnable 持有而自动迁移" in text
 
 
 def test_widgets_show_entered_text_exercise_has_compilable_answer(project_root):
