@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import shutil
 import subprocess
 from html import unescape
@@ -238,6 +239,79 @@ def test_guided_diagnosis_stages_keep_prior_capabilities(project_root):
         for prior_requirements in requirements[: index + 1]:
             for marker in prior_requirements:
                 assert marker in program
+
+
+def test_guided_diagnosis_stages_introduce_apis_at_the_claimed_step(project_root):
+    """Catch future imports, renamed callbacks, and unexplained state-machine rewrites."""
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+    sections = re.findall(
+        r"<h3>步骤 [1-6]：.*?</h3>.*?<pre><code(?: [^>]*)?>(.*?)</code></pre>",
+        text,
+        flags=re.DOTALL,
+    )
+    programs = [ast.parse(unescape(section)) for section in sections]
+
+    def imports(tree):
+        names = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                names.update(alias.name for alias in node.names)
+            elif isinstance(node, ast.Import):
+                names.update(alias.name for alias in node.names)
+        return names
+
+    def methods(tree):
+        return {
+            node.name: node
+            for node in ast.walk(tree)
+            if isinstance(node, ast.FunctionDef) and node.name != "__init__"
+        }
+
+    imported = [imports(program) for program in programs]
+    assert {"Enum", "auto", "Path", "QTimer", "Slot", "QFileDialog", "QPushButton"}.isdisjoint(imported[0])
+    assert {"Path", "Slot", "QFileDialog", "QPushButton"} <= imported[1]
+    assert {"Enum", "auto", "QTimer"}.isdisjoint(imported[1])
+    assert "Enum" in imported[2]
+    assert "auto" not in set().union(*imported)
+    assert "QTimer" not in imported[2]
+    assert "QTimer" in imported[3]
+
+    stage_methods = [methods(program) for program in programs]
+    assert "choose_file" not in stage_methods[0]
+    assert "choose_file" in stage_methods[1]
+    assert "set_state" in stage_methods[2]
+    assert {"start_diagnosis", "finish_simulation"} <= stage_methods[3].keys()
+    assert "show_result" not in stage_methods[3]
+    assert "show_result" in stage_methods[4]
+    assert "self.show_result()" in ast.unparse(stage_methods[4]["finish_simulation"])
+    assert {"start_failure", "reset"} <= stage_methods[5].keys()
+    introduced_methods = (
+        set(),
+        {"choose_file"},
+        {"set_state"},
+        {"start_diagnosis", "finish_simulation"},
+        {"show_result"},
+        {"start_failure", "reset"},
+    )
+    all_later_methods = set().union(*introduced_methods)
+    expected_methods = set()
+    for index, stage in enumerate(stage_methods):
+        expected_methods.update(introduced_methods[index])
+        assert expected_methods <= stage.keys()
+        assert not (stage.keys() & (all_later_methods - expected_methods))
+    assert "result_label" not in ast.unparse(stage_methods[3]["finish_simulation"])
+    assert "self.show_result()" in ast.unparse(stage_methods[5]["finish_simulation"])
+
+    for tree in programs[2:]:
+        states = next(
+            node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "UiState"
+        )
+        assert all(
+            isinstance(item, ast.Assign)
+            and isinstance(item.value, ast.Constant)
+            and isinstance(item.value.value, str)
+            for item in states.body
+        )
 
 
 def test_thread_pool_mapping_preserves_service_result_and_affinity_roles(project_root):
