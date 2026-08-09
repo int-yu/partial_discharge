@@ -199,15 +199,27 @@ def test_service_source_lesson_matches_persistence_isolation_contract(project_ro
         '<summary><code>service.py</code> — 应用服务</summary>'
     )[2].partition("</details>")[0]
     advanced_sqlite = text.partition("<h3>进阶选学：SQLite</h3>")[2].partition("</article>")[0]
-    service_lesson = text.partition('path:"src/pd_diagnosis/service.py"')[2].partition(
+    service_entry = text.partition('path:"src/pd_diagnosis/service.py"')[2].partition(
         'path:"src/pd_diagnosis/storage.py"'
     )[0]
-    result_isolation = service_lesson.partition('title:"成功结果的保存隔离"')[2].partition(
-        'title:"诊断错误记录的保存隔离"'
-    )[0]
-    error_isolation = service_lesson.partition('title:"诊断错误记录的保存隔离"')[2]
+    role_match = re.search(r'role:"([^"]+)"', service_entry.partition("parts:[")[0])
 
-    assert advanced_sqlite and service_summary and service_lesson and result_isolation and error_isolation
+    def source_part(title):
+        marker = f'title:"{title}"'
+        marker_offset = service_entry.index(marker)
+        line_start = service_entry.rfind('{range:"', 0, marker_offset)
+        line_end = service_entry.index("\n", marker_offset)
+        return service_entry[line_start:line_end]
+
+    parts = {
+        "policy": source_part("业务层导入与持久化策略"),
+        "memory": source_part("内存信号业务流程"),
+        "file": source_part("文件业务流程"),
+        "result": source_part("成功结果的保存隔离"),
+        "error": source_part("诊断错误记录的保存隔离"),
+    }
+
+    assert advanced_sqlite and service_summary and service_entry and role_match
     assert "数据库写入异常目前会传播" not in text
     assert "保存成功结果失败时会返回附加 warning 的结果" not in text
     assert "保存诊断错误本身失败时仍继续抛出原始" not in text
@@ -224,22 +236,25 @@ def test_service_source_lesson_matches_persistence_isolation_contract(project_ro
         "可能替代原始 <code>DiagnosisError</code>",
     ):
         assert marker in service_summary
+    boundary = "PERSISTENCE_EXCEPTIONS（当前是 sqlite3.Error、OSError）"
+    role = role_match.group(1)
+    assert boundary in role
+    assert "其他异常继续传播" in role
+    for name, part in parts.items():
+        assert boundary in part, name
+        assert "其他异常继续传播" in part, name
     for marker in (
-        "PERSISTENCE_EXCEPTIONS（当前是 sqlite3.Error、OSError）",
         "warnings=(*result.warnings, PERSISTENCE_WARNING_TEXT)",
         "才返回附加 PERSISTENCE_WARNING_TEXT 的结果",
-        "其他异常继续传播",
     ):
-        assert marker in result_isolation
+        assert marker in parts["result"]
     for marker in (
-        "PERSISTENCE_EXCEPTIONS（当前是 sqlite3.Error、OSError）",
         "才保留并抛出原始 DiagnosisError",
         "其他异常继续传播，并可能替代原始 DiagnosisError",
     ):
-        assert marker in error_isolation
-    assert service_lesson.count("PERSISTENCE_EXCEPTIONS（当前是 sqlite3.Error、OSError）") >= 4
-    assert service_lesson.count("其他异常继续传播") >= 4
-    assert service_lesson.count("可能替代原始 DiagnosisError") >= 3
+        assert marker in parts["error"]
+    for name in ("memory", "file", "error"):
+        assert "可能替代原始 DiagnosisError" in parts[name], name
 
 
 def test_foundation_examples_are_complete_python(project_root):

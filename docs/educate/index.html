@@ -2071,7 +2071,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"应用与存储", path:"src/pd_diagnosis/service.py", lines:80,
-        role:"应用服务：把纯推理与可选历史持久化组合成一次业务动作，并隔离可预期的持久化失败。", depends:"DiagnosisEngine、HistoryRepository、errors、types、sqlite3、dataclasses", usedBy:"PySide6 workers、需要审计记录的调用者",
+        role:"应用服务：把纯推理与可选历史持久化组合成一次业务动作；仅隔离 PERSISTENCE_EXCEPTIONS（当前是 sqlite3.Error、OSError），其他异常继续传播。", depends:"DiagnosisEngine、HistoryRepository、errors、types、sqlite3、dataclasses", usedBy:"PySide6 workers、需要审计记录的调用者",
         parts:[
           {range:"1–19",title:"业务层导入与持久化策略",code:`import logging\nimport sqlite3\nfrom dataclasses import replace\n...\nPERSISTENCE_WARNING_TEXT = str(\n    PersistenceWarning("诊断已完成，但历史记录保存失败；诊断结果仍然有效，请检查日志。")\n)\nPERSISTENCE_EXCEPTIONS = (sqlite3.Error, OSError)`,explain:"日志保留持久化异常细节；replace 用来在不改写原结果的前提下附加警告。仅 PERSISTENCE_EXCEPTIONS（当前是 sqlite3.Error、OSError）属于可隔离的持久化失败；其他异常继续传播。",why:"先定义可识别的警告文字和精确异常白名单，不用捕获 Exception 掩盖程序 bug。",risk:"新的 repository 实现若抛出其他可预期 I/O 异常，在明确评估并加入 PERSISTENCE_EXCEPTIONS 前，它仍会向调用者传播。"},
           {range:"22–27",title:"组合而非继承",code:`class DiagnosisService:\n    def __init__(self, engine, history=None):\n        self.engine = engine\n        self.history = history`,explain:"Service 持有 engine 与可选 repository，而不是继承它们。history=None 时仍可诊断但不写磁盘。",why:"组合让纯 SDK、带历史应用和测试使用同一引擎。",risk:"不要在 engine 内部偷偷创建数据库，否则纯 API 会产生意外副作用。"},
