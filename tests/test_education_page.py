@@ -191,10 +191,26 @@ def test_foundation_examples_are_complete_python(project_root):
         "file-dialog",
         "stacked-pages",
         "qss-states",
+        "diagnosis-ui",
+        "thread-pool",
     }
     assert required <= audit.examples.keys()
     for name in required:
         compile(audit.examples[name], f"<{name}>", "exec")
+
+
+def test_guided_diagnosis_ui_uses_six_explicit_stages(project_root):
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+
+    for stage in (
+        "步骤 1：窗口骨架",
+        "步骤 2：文件选择",
+        "步骤 3：输入状态",
+        "步骤 4：模拟诊断",
+        "步骤 5：结果卡片",
+        "步骤 6：错误恢复",
+    ):
+        assert stage in text
 
 
 def test_widgets_show_entered_text_exercise_has_compilable_answer(project_root):

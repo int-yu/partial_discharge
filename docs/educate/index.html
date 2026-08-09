@@ -907,12 +907,382 @@ self.status_label.setText("已完成")</code></pre></div></details>
 
         <section class="chapter lesson" id="mini-project" data-title="小型项目" data-level="project">
           <div class="lesson-meta"><span class="level-badge project">椤圭洰蹇呭</span><span>项目练习</span></div>
-          <h2>把前十课组合成一个可运行的小工具</h2><p>窗口、布局、信号、对话框和样式在一个小型任务中各司其职。</p>
+          <h2>把前十课组合成一个可运行的小工具</h2><p>窗口、布局、信号、对话框和样式在一个小型任务中各司其职。最终程序不读取本项目、不加载模型：<code>QTimer.singleShot</code> 只是在“诊断中”后返回演示结果。</p>
+
+          <h3>步骤 1：窗口骨架</h3>
+          <p><strong>本阶段新增：</strong><code>DiagnosisWindow</code>、标题、状态文字和垂直布局。相对上一课，屏幕上出现了一个可以承载诊断流程的窗口。</p>
+          <pre><code>import sys
+from PySide6.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget
+
+class DiagnosisWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("简化局放诊断")
+        layout = QVBoxLayout(self)
+        layout.addWidget(QLabel("请选择一个信号文件。"))
+
+app = QApplication(sys.argv)
+window = DiagnosisWindow()
+window.show()
+raise SystemExit(app.exec())</code></pre>
+          <div class="lesson-check"><strong>检查点</strong><p>运行后应看见标题为“简化局放诊断”的窗口；此时还没有业务按钮。</p></div>
+
+          <h3>步骤 2：文件选择</h3>
+          <p><strong>本阶段新增：</strong><code>QPushButton</code>、<code>QFileDialog.getOpenFileName()</code> 和 <code>choose_file()</code> 槽。相对步骤 1，用户可以选择文件，窗口显示其文件名。</p>
+          <pre><code>import sys
+from pathlib import Path
+from PySide6.QtCore import Slot
+from PySide6.QtWidgets import QApplication, QFileDialog, QLabel, QPushButton, QVBoxLayout, QWidget
+
+class DiagnosisWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.file_label = QLabel("尚未选择文件")
+        choose = QPushButton("选择信号文件")
+        choose.clicked.connect(self.choose_file)
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.file_label)
+        layout.addWidget(choose)
+
+    @Slot()
+    def choose_file(self):
+        path, _ = QFileDialog.getOpenFileName(self, "选择信号文件")
+        if path:
+            self.file_label.setText(f"已选择：{Path(path).name}")
+
+app = QApplication(sys.argv)
+window = DiagnosisWindow()
+window.show()
+raise SystemExit(app.exec())</code></pre>
+          <div class="lesson-check"><strong>检查点</strong><p>取消对话框不会改变文字；选择文件后只显示文件名。</p></div>
+
+          <h3>步骤 3：输入状态</h3>
+          <p><strong>本阶段新增：</strong><code>UiState</code>、<code>set_state()</code> 和禁用的“开始诊断”按钮。相对步骤 2，界面开始根据输入是否有效改变可点击的控件。</p>
+          <pre><code>import sys
+from enum import Enum, auto
+from PySide6.QtCore import Slot
+from PySide6.QtWidgets import QApplication, QFileDialog, QLabel, QPushButton, QVBoxLayout, QWidget
+
+class UiState(Enum):
+    IDLE = auto()
+    FILE_SELECTED = auto()
+
+class DiagnosisWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.file_label = QLabel()
+        self.status_label = QLabel()
+        self.choose_button = QPushButton("选择文件")
+        self.start_button = QPushButton("开始诊断")
+        self.choose_button.clicked.connect(self.choose_file)
+        layout = QVBoxLayout(self)
+        for widget in (self.file_label, self.status_label, self.choose_button, self.start_button): layout.addWidget(widget)
+        self.set_state(UiState.IDLE)
+
+    def set_state(self, state):
+        self.start_button.setEnabled(state is UiState.FILE_SELECTED)
+        self.status_label.setText("请选择文件" if state is UiState.IDLE else "文件已就绪")
+
+    @Slot()
+    def choose_file(self):
+        path, _ = QFileDialog.getOpenFileName(self, "选择信号文件")
+        if path:
+            self.file_label.setText(path)
+            self.set_state(UiState.FILE_SELECTED)
+
+app = QApplication(sys.argv)
+window = DiagnosisWindow()
+window.show()
+raise SystemExit(app.exec())</code></pre>
+          <div class="lesson-check"><strong>检查点</strong><p>未选文件时“开始诊断”不能点击；选中后才变为可用。</p></div>
+
+          <h3>步骤 4：模拟诊断</h3>
+          <p><strong>本阶段新增：</strong><code>RUNNING</code> 状态、<code>QTimer.singleShot</code> 和 <code>start_diagnosis()</code>。相对步骤 3，点击开始后窗口仍能移动和重绘，并会在短暂等待后完成。</p>
+          <pre><code>import sys
+from enum import Enum, auto
+from PySide6.QtCore import QTimer, Slot
+from PySide6.QtWidgets import QApplication, QFileDialog, QLabel, QPushButton, QVBoxLayout, QWidget
+
+class UiState(Enum): IDLE = auto(); FILE_SELECTED = auto(); RUNNING = auto(); SUCCESS = auto()
+
+class DiagnosisWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.status = QLabel()
+        self.choose = QPushButton("选择文件")
+        self.start = QPushButton("开始诊断")
+        self.choose.clicked.connect(self.choose_file)
+        self.start.clicked.connect(self.start_diagnosis)
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.status); layout.addWidget(self.choose); layout.addWidget(self.start)
+        self.set_state(UiState.IDLE)
+    def set_state(self, state):
+        self.choose.setEnabled(state is not UiState.RUNNING)
+        self.start.setEnabled(state is UiState.FILE_SELECTED)
+        self.status.setText({UiState.IDLE: "请选择文件", UiState.FILE_SELECTED: "文件已就绪", UiState.RUNNING: "诊断中…", UiState.SUCCESS: "完成"}[state])
+    @Slot()
+    def choose_file(self):
+        if QFileDialog.getOpenFileName(self, "选择信号文件")[0]: self.set_state(UiState.FILE_SELECTED)
+    @Slot()
+    def start_diagnosis(self):
+        self.set_state(UiState.RUNNING)
+        QTimer.singleShot(700, lambda: self.set_state(UiState.SUCCESS))
+
+app = QApplication(sys.argv)
+window = DiagnosisWindow()
+window.show()
+raise SystemExit(app.exec())</code></pre>
+          <div class="lesson-check"><strong>检查点</strong><p>诊断期间两个按钮都不可用，说明不会重复启动任务。</p></div>
+
+          <h3>步骤 5：结果卡片</h3>
+          <p><strong>本阶段新增：</strong>只读的 <code>result_label</code> 和 <code>show_result()</code>。相对步骤 4，成功不再只是状态文字，而是显示类别和置信度摘要。</p>
+          <pre><code>import sys
+from PySide6.QtCore import QTimer, Slot
+from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QVBoxLayout, QWidget
+
+class DiagnosisWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.status = QLabel("文件已就绪")
+        self.result_label = QLabel("结果将在这里显示。")
+        self.start = QPushButton("开始诊断")
+        self.start.clicked.connect(self.start_diagnosis)
+        layout = QVBoxLayout(self)
+        for widget in (self.status, self.result_label, self.start): layout.addWidget(widget)
+    @Slot()
+    def start_diagnosis(self):
+        self.status.setText("诊断中…")
+        self.start.setEnabled(False)
+        QTimer.singleShot(700, self.show_result)
+    def show_result(self):
+        self.result_label.setText("诊断结果：悬浮放电（演示），置信度 92%。")
+        self.status.setText("完成")
+
+app = QApplication(sys.argv)
+window = DiagnosisWindow()
+window.show()
+raise SystemExit(app.exec())</code></pre>
+          <div class="lesson-check"><strong>检查点</strong><p>等待结束后，结果区域显示固定摘要；这证明示例不依赖真实模型。</p></div>
+
+          <h3>步骤 6：错误恢复</h3>
+          <p><strong>本阶段新增：</strong><code>ERROR</code>、故障演示按钮、<code>reset()</code>，以及让成功和失败在 <code>finally</code> 中共用状态收尾。相对步骤 5，用户可从失败恢复，不会被永久禁用的按钮困住。</p>
+          <pre><code data-python-example="diagnosis-ui">import sys
+from enum import Enum, auto
+from pathlib import Path
+
+from PySide6.QtCore import QTimer, Slot
+from PySide6.QtWidgets import QApplication, QFileDialog, QLabel, QPushButton, QVBoxLayout, QWidget
+
+
+class UiState(Enum):
+    IDLE = auto()
+    FILE_SELECTED = auto()
+    RUNNING = auto()
+    SUCCESS = auto()
+    ERROR = auto()
+
+
+class DiagnosisWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("简化局放诊断")
+        self.pending_failure = False
+        self.file_label = QLabel("尚未选择文件")
+        self.status_label = QLabel()
+        self.result_label = QLabel("结果将在这里显示。")
+        self.choose_button = QPushButton("选择信号文件")
+        self.start_button = QPushButton("开始诊断")
+        self.fail_button = QPushButton("模拟失败")
+        self.reset_button = QPushButton("回到空闲")
+        self.choose_button.clicked.connect(self.choose_file)
+        self.start_button.clicked.connect(self.start_diagnosis)
+        self.fail_button.clicked.connect(self.start_failure)
+        self.reset_button.clicked.connect(self.reset)
+        layout = QVBoxLayout(self)
+        for widget in (self.file_label, self.status_label, self.result_label, self.choose_button, self.start_button, self.fail_button, self.reset_button):
+            layout.addWidget(widget)
+        self.set_state(UiState.IDLE)
+
+    def set_state(self, state, message=None):
+        self.state = state
+        selected = state is UiState.FILE_SELECTED
+        running = state is UiState.RUNNING
+        self.choose_button.setEnabled(not running)
+        self.start_button.setEnabled(selected)
+        self.fail_button.setEnabled(selected)
+        self.reset_button.setEnabled(state in {UiState.FILE_SELECTED, UiState.SUCCESS, UiState.ERROR})
+        messages = {
+            UiState.IDLE: "请选择一个信号文件。",
+            UiState.FILE_SELECTED: "文件已就绪，可以开始诊断。",
+            UiState.RUNNING: "正在模拟诊断，请稍候…",
+            UiState.SUCCESS: "诊断完成；可回到空闲或选择另一个文件。",
+            UiState.ERROR: "诊断失败；请查看提示后回到空闲。",
+        }
+        self.status_label.setText(message or messages[state])
+
+    @Slot()
+    def choose_file(self):
+        path, _ = QFileDialog.getOpenFileName(self, "选择信号文件", "", "文本文件 (*.txt);;所有文件 (*)")
+        if path:
+            self.file_label.setText(f"已选择：{Path(path).name}")
+            self.result_label.setText("结果将在这里显示。")
+            self.set_state(UiState.FILE_SELECTED)
+
+    @Slot()
+    def start_diagnosis(self):
+        self.start_simulation(False)
+
+    @Slot()
+    def start_failure(self):
+        self.start_simulation(True)
+
+    def start_simulation(self, should_fail):
+        if self.state is not UiState.FILE_SELECTED:
+            return
+        self.pending_failure = should_fail
+        self.set_state(UiState.RUNNING)
+        QTimer.singleShot(700, self.finish_simulation)
+
+    def finish_simulation(self):
+        next_state = UiState.ERROR
+        message = "诊断失败：未知错误。"
+        try:
+            if self.pending_failure:
+                raise RuntimeError("演示用的读取错误")
+            self.result_label.setText("诊断结果：悬浮放电（演示），置信度 92%。")
+            next_state = UiState.SUCCESS
+            message = "诊断完成；可回到空闲或选择另一个文件。"
+        except Exception as error:
+            self.result_label.setText(f"诊断失败：{error}")
+            message = "诊断失败；按钮已恢复，可回到空闲。"
+        finally:
+            self.pending_failure = False
+            self.set_state(next_state, message)
+
+    @Slot()
+    def reset(self):
+        self.file_label.setText("尚未选择文件")
+        self.result_label.setText("结果将在这里显示。")
+        self.set_state(UiState.IDLE)
+
+
+app = QApplication(sys.argv)
+window = DiagnosisWindow()
+window.resize(380, 260)
+window.show()
+raise SystemExit(app.exec())</code></pre>
+          <div class="lesson-check"><strong>检查点</strong><p>选择文件后分别点“开始诊断”和“模拟失败”。两条路径结束时都应重新出现可用的“回到空闲”按钮。</p></div>
+
+          <h3>把 UI 状态写成状态机</h3>
+          <p>不要用零散布尔变量猜测当前界面。状态流是 <code>idle → file selected → running → success/error → idle</code>；<code>set_state()</code> 是唯一集中改变按钮和提示的地方。</p>
+          <div class="table-wrap"><table class="compare"><thead><tr><th>状态</th><th>可用控件</th><th>可见信息</th><th>允许的下一步</th></tr></thead><tbody>
+            <tr><td><code>idle</code></td><td>选择信号文件</td><td>“请选择一个信号文件”</td><td>选择文件</td></tr>
+            <tr><td><code>file selected</code></td><td>选择文件、开始诊断、模拟失败、回到空闲</td><td>文件名与“文件已就绪”</td><td>开始、模拟失败、重置</td></tr>
+            <tr><td><code>running</code></td><td>无</td><td>“正在模拟诊断”</td><td>等待结果</td></tr>
+            <tr><td><code>success</code></td><td>选择文件、回到空闲</td><td>结果卡片与完成提示</td><td>重置或选择新文件</td></tr>
+            <tr><td><code>error</code></td><td>选择文件、回到空闲</td><td>可读错误文字</td><td>重置或选择新文件</td></tr>
+          </tbody></table></div>
+          <p>运行时禁用按钮不是装饰：它阻止用户并发启动两次相同任务，避免两个回调争抢同一份结果。成功与失败必须共享最终清理路径；否则异常分支很容易遗漏“恢复按钮”的一句代码，界面就会卡死在运行态。</p>
         </section>
 
         <section class="chapter lesson" id="threading" data-title="线程" data-level="advanced">
           <div class="lesson-meta"><span class="level-badge advanced">杩涢樁閫夊</span><span>进阶</span></div>
-          <h2>耗时任务为什么不能堵住界面线程</h2><div class="advanced-note">完成基础窗口交互后，再学习后台任务和跨线程信号。</div>
+          <h2>耗时任务为什么不能堵住界面线程</h2><div class="advanced-note">完成基础窗口交互后，再学习后台任务和跨线程信号。上一节的 <code>QTimer</code> 只是在演示延迟；真实读取和推理要放到线程池。</div>
+          <h3>完整线程池示例</h3>
+          <p>这个例子把工作结果、错误和收尾分别用信号送回主线程。<strong><code>run()</code> 内没有任何 QWidget 调用。</strong></p>
+          <pre><code data-python-example="thread-pool">import sys
+import time
+import traceback
+
+from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal, Slot
+from PySide6.QtWidgets import QApplication, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
+
+
+class WorkerSignals(QObject):
+    result = Signal(str)
+    error = Signal(str)
+    finished = Signal()
+
+
+class DiagnosisRunnable(QRunnable):
+    def __init__(self, filename):
+        super().__init__()
+        self.filename = filename
+        self.signals = WorkerSignals()
+
+    @Slot()
+    def run(self):
+        try:
+            if not self.filename.strip():
+                raise ValueError("请输入文件名")
+            time.sleep(0.4)
+            self.signals.result.emit(f"{self.filename}：模拟诊断完成，置信度 92%")
+        except Exception:
+            self.signals.error.emit(traceback.format_exc())
+        finally:
+            self.signals.finished.emit()
+
+
+class ThreadPoolWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("线程池诊断演示")
+        self.pool = QThreadPool.globalInstance()
+        self.task = None
+        self.filename_input = QLineEdit("signal.txt")
+        self.start_button = QPushButton("在线程池中诊断")
+        self.status_label = QLabel("空闲")
+        self.start_button.clicked.connect(self.start_task)
+        layout = QVBoxLayout(self)
+        for widget in (self.filename_input, self.start_button, self.status_label):
+            layout.addWidget(widget)
+
+    @Slot()
+    def start_task(self):
+        self.start_button.setEnabled(False)
+        self.status_label.setText("后台工作中…")
+        self.task = DiagnosisRunnable(self.filename_input.text())
+        self.task.signals.result.connect(self.show_result)
+        self.task.signals.error.connect(self.show_error)
+        self.task.signals.finished.connect(self.finish_task)
+        self.pool.start(self.task)
+
+    @Slot(str)
+    def show_result(self, text):
+        self.status_label.setText(text)
+
+    @Slot(str)
+    def show_error(self, text):
+        self.status_label.setText(f"失败：{text.splitlines()[-1]}")
+
+    @Slot()
+    def finish_task(self):
+        self.start_button.setEnabled(True)
+        self.task = None
+
+
+app = QApplication(sys.argv)
+window = ThreadPoolWindow()
+window.resize(420, 160)
+window.show()
+raise SystemExit(app.exec())</code></pre>
+          <p><strong>线程边界：</strong><code>DiagnosisRunnable</code> 由线程池工作线程调用；它持有的 <code>WorkerSignals</code> 只传递数据。窗口及标签属于 GUI 主线程，Qt 会把连到窗口槽的跨线程信号排队，随后在主线程调用 <code>show_result()</code> 或 <code>show_error()</code>。因此 <code>run()</code> 可以计算、读取、构造结果，却绝不能 <code>setText()</code>。</p>
+          <p><code>traceback.format_exc()</code> 将异常转换成字符串，再经 <code>error</code> 信号传回；<code>finished</code> 放在 <code>finally</code> 中，保证无论成功或失败，主线程的 <code>finish_task()</code> 都能恢复按钮并释放任务引用。</p>
+          <h3>五个常见失败模式</h3>
+          <ul>
+            <li><strong>在槽函数里同步 <code>time.sleep()</code>：</strong>主线程停止处理鼠标、重绘和定时器。把耗时工作移入 <code>QRunnable.run()</code>。</li>
+            <li><strong>在 <code>run()</code> 里访问 QWidget：</strong>线程亲和性错误，可能随机崩溃或显示异常。只发普通数据，由主线程槽更新控件。</li>
+            <li><strong>没有 <code>error</code> 信号：</strong>异常只留在后台，用户只看见永不结束的“工作中”。转换为字符串并显示可读错误。</li>
+            <li><strong>重复启动任务：</strong>一次点击一个任务会互相覆盖状态。开始时立刻禁用按钮，并只在 <code>finished</code> 后恢复。</li>
+            <li><strong>失败后永不恢复按钮：</strong>把收尾逻辑写在成功分支会漏掉异常。工作者用 <code>finally</code> 发 <code>finished</code>，主线程统一清理。</li>
+          </ul>
+          <h3>回到本项目</h3>
+          <div class="table-wrap"><table class="compare"><thead><tr><th>教程名称</th><th>本项目对应物</th><th>职责</th></tr></thead><tbody>
+            <tr><td><code>DiagnosisRunnable</code></td><td><code>SingleDiagnosisTask</code></td><td>在后台读取单个文件并调用诊断服务。</td></tr>
+            <tr><td><code>WorkerSignals</code></td><td><code>TaskSignals</code>（同一信号容器角色）</td><td>传递 result、error、finished 等事件。</td></tr>
+            <tr><td>演示中的字符串结果</td><td><code>DiagnosisService</code></td><td>把核心推理和历史保存组合成真实业务结果。</td></tr>
+            <tr><td><code>show_result()</code> / <code>show_error()</code> / <code>finish_task()</code></td><td><code>MainWindow._show_single_result()</code> / <code>_show_single_error()</code> / <code>_finish_single()</code></td><td>仅在主线程更新结果卡、错误提示和按钮状态。</td></tr>
+          </tbody></table></div>
         </section>
 
         <section class="chapter lesson" id="project-map" data-title="项目地图" data-level="project">
