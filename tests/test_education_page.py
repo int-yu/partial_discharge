@@ -7,6 +7,25 @@ from html.parser import HTMLParser
 import pytest
 
 
+BEGINNER_SECTION_IDS = {
+    "pyside-intro",
+    "first-window",
+    "event-loop",
+    "widgets",
+    "layouts",
+    "signals-slots",
+    "main-window-basics",
+    "dialogs",
+    "stacked-pages",
+    "qss",
+    "mini-project",
+    "threading",
+    "sdk",
+    "project-map",
+    "source-course",
+}
+
+
 class _EducationPageAudit(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
@@ -15,6 +34,7 @@ class _EducationPageAudit(HTMLParser):
         self.fragment_links: set[str] = set()
         self.landmarks: set[str] = set()
         self.scripts: list[str] = []
+        self.text_parts: list[str] = []
         self._script_parts: list[str] | None = None
 
     def handle_starttag(self, tag, attrs):
@@ -34,6 +54,9 @@ class _EducationPageAudit(HTMLParser):
             self._script_parts = []
 
     def handle_data(self, data):
+        stripped = data.strip()
+        if stripped:
+            self.text_parts.append(stripped)
         if self._script_parts is not None:
             self._script_parts.append(data)
 
@@ -69,3 +92,18 @@ def test_education_page_structure_links_and_javascript(project_root, tmp_path):
             check=False,
         )
         assert completed.returncode == 0, completed.stderr
+
+
+def test_beginner_curriculum_and_offline_contract(project_root):
+    page = project_root / "docs" / "educate" / "index.html"
+    text = page.read_text(encoding="utf-8")
+    audit = _EducationPageAudit()
+    audit.feed(text)
+
+    assert BEGINNER_SECTION_IDS <= audit.ids
+    assert {"鍩虹蹇呭", "椤圭洰蹇呭", "杩涢樁閫夊"} <= set(audit.text_parts)
+    assert 'data-level="foundation"' in text
+    assert 'data-level="project"' in text
+    assert 'data-level="advanced"' in text
+    assert "http://" not in text
+    assert "https://" not in text

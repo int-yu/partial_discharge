@@ -110,6 +110,23 @@
     .chapter { padding: 38px 0 30px; border-bottom: 1px solid var(--line); }
     .chapter-kicker { display: inline-block; margin-bottom: 9px; color: var(--brand-strong); font-size: .8rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
     .chapter-intro { max-width: 860px; color: var(--muted); font-size: 1.05rem; }
+    .lesson-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; color: var(--muted); font-size: .85rem; }
+    .level-badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px; font-weight: 800; }
+    .level-badge.foundation { background: var(--brand-soft); color: var(--brand-strong); }
+    .level-badge.project { background: color-mix(in srgb, var(--success) 14%, var(--surface)); color: var(--success); }
+    .level-badge.advanced { background: color-mix(in srgb, var(--warning) 14%, var(--surface)); color: var(--warning); }
+    .lesson-goals, .expected-ui, .execution-steps, .line-explanation, .syntax-zoom, .object-map, .experiment, .mistake, .lesson-check, .advanced-note { margin: 18px 0; padding: 16px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+    .lesson-goals { border-left: 4px solid var(--brand); }
+    .expected-ui { background: var(--surface-2); }
+    .execution-steps ol, .lesson-goals ol { margin-bottom: 0; }
+    .line-explanation { border-left: 4px solid var(--success); }
+    .syntax-zoom { font-family: "Cascadia Code", Consolas, monospace; background: var(--code-bg); color: var(--code-text); }
+    .object-map { border-style: dashed; }
+    .experiment { border-left: 4px solid var(--accent); }
+    .mistake { border-left: 4px solid var(--warning); background: color-mix(in srgb, var(--warning) 10%, var(--surface)); }
+    .lesson-check { border-left: 4px solid var(--success); }
+    .lesson-nav { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+    .advanced-note { border-left: 4px solid var(--warning); }
 
     .button {
       display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -257,21 +274,28 @@
         <span class="brand-mark">PD</span>
         <span><strong>工程精讲</strong><small>从语法到可维护应用</small></span>
       </a>
-      <p class="nav-title">理解项目</p>
       <nav class="toc" id="toc">
-        <a href="#start">学习路线</a>
-        <a href="#sdk">01 · 什么是 SDK</a>
-        <a href="#architecture">02 · 项目分层</a>
-        <a href="#folders">03 · 目录地图</a>
-        <a href="#files">04 · 逐文件说明</a>
-        <a href="#source-course">源码课堂 · 逐块精读</a>
-        <a href="#pyside">05 · PySide6 核心</a>
-        <a href="#flows">06 · 跟着程序运行</a>
-        <a href="#write">07 · 亲手修改</a>
-        <a href="#run">08 · 安装运行调试</a>
-        <a href="#hardening">当前版本 · 工程加固</a>
-        <a href="#exercises">09 · 练习</a>
-        <a href="#quiz">10 · 自测</a>
+        <p class="nav-title">PySide6 鍩虹</p>
+        <a href="#pyside-intro">PySide6 入门</a>
+        <a href="#first-window">第一个窗口</a>
+        <a href="#event-loop">事件循环</a>
+        <a href="#widgets">控件</a>
+        <a href="#layouts">布局</a>
+        <a href="#signals-slots">信号与槽</a>
+        <a href="#main-window-basics">主窗口</a>
+        <a href="#dialogs">对话框</a>
+        <a href="#stacked-pages">多页面</a>
+        <a href="#qss">QSS</a>
+        <p class="nav-title">杩炴帴鐪熷疄椤圭洰</p>
+        <a href="#mini-project">小型项目</a>
+        <a href="#project-map">项目地图</a>
+        <p class="nav-title">杩涢樁涓庡弬鑰僠</p>
+        <a href="#threading">线程</a>
+        <a href="#sdk">SDK</a>
+        <a href="#source-course">源码课堂</a>
+        <a href="#hardening">工程加固</a>
+        <a href="#exercises">练习</a>
+        <a href="#quiz">自测</a>
         <a href="#glossary">术语表</a>
       </nav>
       <div class="sidebar-actions">
@@ -284,7 +308,7 @@
       <header class="hero" id="top">
         <span class="eyebrow">基于本仓库真实代码 · 离线教程</span>
         <h1>从 Python 基础<br>走进 PySide6 工程</h1>
-        <p class="lead">你已经会 Python 和一些 PySide6 语法。下一步不是再背控件，而是理解：代码为什么要分层、SDK 怎样成为稳定能力、界面怎样调用后台任务，以及每个文件在整个系统里扮演什么角色。</p>
+        <p class="lead course-promise">这门课从 PySide6 开始：先亲手创建窗口、理解事件循环和控件协作，再把这些基础连接到真实项目的 SDK 与架构。</p>
         <div class="meta-row">
           <span class="pill">🎯 适合：Python 入门后</span>
           <span class="pill">⏱ 建议：分 12 次学习</span>
@@ -299,6 +323,73 @@
       </header>
 
       <div class="content">
+        <section class="chapter lesson" id="pyside-intro" data-title="认识 PySide6" data-level="foundation">
+          <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 1 课</span></div>
+          <h2>PySide6、Qt 和你的 Python 程序是什么关系？</h2>
+          <div class="lesson-goals" aria-label="本节学习目标"><strong>本节只学三件事</strong><ol><li>说清 Qt 与 PySide6 的关系。</li><li>知道 QWidget 是界面对象的基础类型。</li><li>知道下一课为什么先创建 QApplication。</li></ol></div>
+          <div class="lesson-nav"><a class="button primary" href="#first-window">继续：第一个窗口</a></div>
+        </section>
+
+        <section class="chapter lesson" id="first-window" data-title="第一个窗口" data-level="foundation">
+          <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 2 课</span></div>
+          <h2>创建、显示和保持一个窗口</h2><div class="expected-ui"><strong>预期界面</strong><p>一个带标题的空白窗口出现在桌面上。</p></div><div class="execution-steps"><strong>动手步骤</strong><ol><li>创建 QApplication。</li><li>创建 QWidget。</li><li>调用 show()。</li></ol></div>
+        </section>
+
+        <section class="chapter lesson" id="event-loop" data-title="事件循环" data-level="foundation">
+          <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 3 课</span></div>
+          <h2>为什么 app.exec() 不会让程序卡住？</h2><div class="line-explanation">事件循环持续接收点击、键盘和重绘请求，再分发给相应对象。</div>
+        </section>
+
+        <section class="chapter lesson" id="widgets" data-title="控件" data-level="foundation">
+          <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 4 课</span></div>
+          <h2>用控件表达界面意图</h2><div class="object-map">QLabel 显示文字，QPushButton 触发动作，QLineEdit 接收输入。</div>
+        </section>
+
+        <section class="chapter lesson" id="layouts" data-title="布局" data-level="foundation">
+          <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 5 课</span></div>
+          <h2>让窗口尺寸变化时界面仍然可靠</h2><div class="mistake"><strong>常见错误</strong><p>不要用固定坐标堆放控件；把控件交给布局管理器。</p></div>
+        </section>
+
+        <section class="chapter lesson" id="signals-slots" data-title="信号与槽" data-level="foundation">
+          <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 6 课</span></div>
+          <h2>把用户动作连接到 Python 方法</h2><div class="syntax-zoom">button.clicked.connect(handle_click)</div><div class="experiment">改变按钮文字，观察同一个槽函数如何复用。</div>
+        </section>
+
+        <section class="chapter lesson" id="main-window-basics" data-title="主窗口基础" data-level="foundation">
+          <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 7 课</span></div>
+          <h2>何时从 QWidget 走向 QMainWindow</h2><div class="lesson-check">能区分中央内容区、菜单栏、工具栏和状态栏。</div>
+        </section>
+
+        <section class="chapter lesson" id="dialogs" data-title="对话框" data-level="foundation">
+          <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 8 课</span></div>
+          <h2>把需要确认或选择的操作放进对话框</h2><p>对话框让短暂的输入和明确的结果保持在一个可控边界内。</p>
+        </section>
+
+        <section class="chapter lesson" id="stacked-pages" data-title="多页面" data-level="foundation">
+          <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 9 课</span></div>
+          <h2>用 QStackedWidget 管理多个工作页面</h2><p>导航只切换当前页面，不必创建多个顶层窗口。</p>
+        </section>
+
+        <section class="chapter lesson" id="qss" data-title="QSS" data-level="foundation">
+          <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 10 课</span></div>
+          <h2>用 QSS 统一界面外观</h2><p>QSS 类似 CSS，但服务于 Qt 控件树；把主题规则集中管理。</p>
+        </section>
+
+        <section class="chapter lesson" id="mini-project" data-title="小型项目" data-level="project">
+          <div class="lesson-meta"><span class="level-badge project">椤圭洰蹇呭</span><span>项目练习</span></div>
+          <h2>把前十课组合成一个可运行的小工具</h2><p>窗口、布局、信号、对话框和样式在一个小型任务中各司其职。</p>
+        </section>
+
+        <section class="chapter lesson" id="threading" data-title="线程" data-level="advanced">
+          <div class="lesson-meta"><span class="level-badge advanced">杩涢樁閫夊</span><span>进阶</span></div>
+          <h2>耗时任务为什么不能堵住界面线程</h2><div class="advanced-note">完成基础窗口交互后，再学习后台任务和跨线程信号。</div>
+        </section>
+
+        <section class="chapter lesson" id="project-map" data-title="项目地图" data-level="project">
+          <div class="lesson-meta"><span class="level-badge project">椤圭洰蹇呭</span><span>连接真实项目</span></div>
+          <h2>带着 PySide6 基础阅读本项目</h2><p>现在再看目录、SDK 与源码，能把每个界面对象放回真实应用的边界中。</p>
+        </section>
+
         <section class="chapter" id="start" data-title="学习路线">
           <span class="chapter-kicker">Start here</span>
           <h2>先建立一张“地图”</h2>
