@@ -69,14 +69,14 @@ def test_default_model_path_falls_back_to_installed_data(monkeypatch, tmp_path):
 - Produces: `resolve_bundle_artifact(root: Path, relative_name: object, field: str) -> Path`.
 - Extends: `ModelBundle.confidence_warning_threshold: float`.
 
-- [ ] **Step 1: Add failing tests for missing hashes, unsupported architecture, path traversal, empty/duplicate classes, non-positive scaler scale, and malformed required fields**
-- [ ] **Step 2: Run each new test and confirm it fails for the intended missing validation**
-- [ ] **Step 3: Implement strict manifest key/type validation and require `classification-mlp-v1`**
-- [ ] **Step 4: Resolve artifacts and verify `artifact.is_relative_to(root)` after `.resolve()`**
-- [ ] **Step 5: Require non-empty SHA-256 strings, non-empty unique class names, continuous IDs, finite means, and strictly positive scales**
-- [ ] **Step 6: Add optional manifest threshold validation in `[0.0, 1.0]`, defaulting to `0.6` for schema version 1 compatibility**
-- [ ] **Step 7: Replace private `_sha256` imports with `artifacts.sha256_file` and update bundle writers**
-- [ ] **Step 8: Run bundle, migration, engine, and golden tests and commit**
+- [x] **Step 1: Add failing tests for missing hashes, unsupported architecture, path traversal, empty/duplicate classes, non-positive scaler scale, and malformed required fields**
+- [x] **Step 2: Run each new test and confirm it fails for the intended missing validation**
+- [x] **Step 3: Implement strict manifest key/type validation and require `classification-mlp-v1`**
+- [x] **Step 4: Resolve artifacts and verify `artifact.is_relative_to(root)` after `.resolve()`**
+- [x] **Step 5: Require non-empty SHA-256 strings, non-empty unique class names, continuous IDs, finite means, and strictly positive scales**
+- [x] **Step 6: Add optional manifest threshold validation in `[0.0, 1.0]`, defaulting to `0.6` for schema version 1 compatibility**
+- [x] **Step 7: Replace private `_sha256` imports with `artifacts.sha256_file` and update bundle writers**
+- [x] **Step 8: Run bundle, migration, engine, and golden tests and commit**
 
 ### Task 3: Inference and Input Failure Boundaries
 

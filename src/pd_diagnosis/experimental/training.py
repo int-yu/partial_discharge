@@ -11,7 +11,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from ..bundle import _sha256
+from ..artifacts import sha256_file
 from ..features import FEATURE_NAMES, FEATURE_SCHEMA, extract_feature_vector
 from ..migration import DEFAULT_CLASSES
 from ..model import ClassificationModel
@@ -160,11 +160,12 @@ def train(
         "feature_names": list(FEATURE_NAMES),
         "sampling_rate_hz": 1_000_000,
         "min_samples": 100,
+        "confidence_warning_threshold": 0.6,
         "classes": [{"id": index, "name": name} for index, name in enumerate(DEFAULT_CLASSES)],
         "weights_file": weights_path.name,
-        "weights_sha256": _sha256(weights_path),
+        "weights_sha256": sha256_file(weights_path),
         "scaler_file": scaler_path.name,
-        "scaler_sha256": _sha256(scaler_path),
+        "scaler_sha256": sha256_file(scaler_path),
     }
     (output / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
