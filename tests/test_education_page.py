@@ -284,14 +284,14 @@ def test_guided_diagnosis_stages_introduce_apis_at_the_claimed_step(project_root
     assert "show_result" not in stage_methods[3]
     assert "show_result" in stage_methods[4]
     assert "self.show_result()" in ast.unparse(stage_methods[4]["finish_simulation"])
-    assert {"start_failure", "reset"} <= stage_methods[5].keys()
+    assert {"start_failure", "complete_simulation", "reset"} <= stage_methods[5].keys()
     introduced_methods = (
         set(),
         {"choose_file"},
         {"set_state"},
         {"start_diagnosis", "finish_simulation"},
         {"show_result"},
-        {"start_failure", "reset"},
+        {"start_failure", "complete_simulation", "reset"},
     )
     all_later_methods = set().union(*introduced_methods)
     expected_methods = set()
@@ -300,7 +300,8 @@ def test_guided_diagnosis_stages_introduce_apis_at_the_claimed_step(project_root
         assert expected_methods <= stage.keys()
         assert not (stage.keys() & (all_later_methods - expected_methods))
     assert "result_label" not in ast.unparse(stage_methods[3]["finish_simulation"])
-    assert "self.show_result()" in ast.unparse(stage_methods[5]["finish_simulation"])
+    assert "self.complete_simulation(None)" in ast.unparse(stage_methods[5]["finish_simulation"])
+    assert "self.show_result()" in ast.unparse(stage_methods[5]["complete_simulation"])
 
     for tree in programs[2:]:
         states = next(
@@ -312,6 +313,103 @@ def test_guided_diagnosis_stages_introduce_apis_at_the_claimed_step(project_root
             and isinstance(item.value.value, str)
             for item in states.body
         )
+
+
+def test_guided_diagnosis_stage_metadata_matches_ast_changes(project_root):
+    """Prevent an undocumented future API, callback rewrite, or state-value drift."""
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+    sections = re.findall(
+        r"<h3>步骤 [1-6]：.*?</h3>.*?<pre><code(?: [^>]*)?>(.*?)</code></pre>",
+        text,
+        flags=re.DOTALL,
+    )
+    contract_tags = re.findall(r'<div class="stage-contract"([^>]*)>', text)
+    assert len(sections) == len(contract_tags) == 6
+
+    def metadata(tag):
+        values = dict(re.findall(r'data-([\w-]+)="([^"]*)"', tag))
+        return {
+            key: set(values.get(key, "").split()) - {""}
+            for key in ("added-imports", "added-methods", "modified-methods", "added-attributes", "added-states", "modified-states")
+        }
+
+    def class_node(tree):
+        return next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "DiagnosisWindow")
+
+    def imports(tree):
+        return {
+            alias.name
+            for node in ast.walk(tree)
+            if isinstance(node, (ast.Import, ast.ImportFrom))
+            for alias in node.names
+        }
+
+    def methods(node):
+        return {item.name: item for item in node.body if isinstance(item, ast.FunctionDef)}
+
+    def attributes(node):
+        return {
+            target.attr
+            for item in ast.walk(node)
+            if isinstance(item, ast.Assign)
+            for target in item.targets
+            if isinstance(target, ast.Attribute) and isinstance(target.value, ast.Name) and target.value.id == "self"
+        }
+
+    def states(tree):
+        enum = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "UiState")
+        return {
+            item.targets[0].id: item.value.value
+            for item in enum.body
+            if isinstance(item, ast.Assign)
+            and isinstance(item.targets[0], ast.Name)
+            and isinstance(item.value, ast.Constant)
+            and isinstance(item.value.value, str)
+        }
+
+    prior_imports: set[str] = set()
+    prior_methods: dict[str, ast.FunctionDef] = {}
+    prior_attributes: set[str] = set()
+    prior_states: dict[str, str] = {}
+    for source, tag in zip(sections, contract_tags, strict=True):
+        tree = ast.parse(unescape(source))
+        contract = metadata(tag)
+        current_imports = imports(tree)
+        current_methods = methods(class_node(tree))
+        current_attributes = attributes(class_node(tree))
+        current_states = states(tree) if any(node.name == "UiState" for node in tree.body if isinstance(node, ast.ClassDef)) else {}
+
+        assert current_imports - prior_imports == contract["added-imports"]
+        assert current_methods.keys() - prior_methods.keys() == contract["added-methods"]
+        assert current_attributes - prior_attributes == contract["added-attributes"]
+        assert current_states.keys() - prior_states.keys() == contract["added-states"]
+        assert prior_imports <= current_imports
+        assert prior_methods.keys() <= current_methods.keys()
+        assert prior_attributes <= current_attributes
+
+        actual_modified_methods = {
+            name
+            for name in prior_methods.keys() & current_methods.keys()
+            if ast.dump(prior_methods[name], include_attributes=False) != ast.dump(current_methods[name], include_attributes=False)
+        }
+        assert actual_modified_methods == contract["modified-methods"]
+        actual_modified_states = {
+            name for name in prior_states.keys() & current_states.keys() if prior_states[name] != current_states[name]
+        }
+        assert actual_modified_states == contract["modified-states"]
+
+        prior_imports = current_imports
+        prior_methods = current_methods
+        prior_attributes = current_attributes
+        prior_states = current_states
+
+    final_tree = ast.parse(unescape(sections[-1]))
+    stage_five_methods = methods(class_node(ast.parse(unescape(sections[4]))))
+    final_methods = methods(class_node(final_tree))
+    assert ast.dump(final_methods["start_diagnosis"], include_attributes=False) == ast.dump(stage_five_methods["start_diagnosis"], include_attributes=False)
+    assert ast.dump(final_methods["choose_file"], include_attributes=False) == ast.dump(stage_five_methods["choose_file"], include_attributes=False)
+    assert states(final_tree)["SUCCESS"] == states(ast.parse(unescape(sections[4])))["SUCCESS"]
+    assert "start_simulation" not in final_methods
 
 
 def test_thread_pool_mapping_preserves_service_result_and_affinity_roles(project_root):
