@@ -316,7 +316,7 @@
           <span class="pill">📦 对应版本：0.1.0</span>
         </div>
         <div class="hero-actions">
-          <a class="button primary" href="#start">开始学习 ↓</a>
+          <a class="button primary" href="#pyside-intro">开始学习 ↓</a>
           <a class="button" href="#folders">先看项目地图</a>
           <a class="button" href="#source-course">进入源码课堂</a>
         </div>
@@ -1483,7 +1483,11 @@ mypy src/pd_diagnosis</code></pre></div>
       const menuButton = document.getElementById('menuButton');
       const tocLinks = [...document.querySelectorAll('#toc a')];
       const sections = [...document.querySelectorAll('.chapter')];
-      const savedTheme = localStorage.getItem('pd-educate-theme');
+      const storage = {
+        get(key) { try { return localStorage.getItem(key); } catch { return null; } },
+        set(key, value) { try { localStorage.setItem(key, value); } catch {} },
+      };
+      const savedTheme = storage.get('pd-educate-theme');
       const preferredDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
       root.dataset.theme = savedTheme || (preferredDark ? 'dark' : 'light');
@@ -1491,7 +1495,7 @@ mypy src/pd_diagnosis</code></pre></div>
       document.querySelectorAll('.theme-toggle').forEach(button => {
         button.addEventListener('click', () => {
           root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
-          localStorage.setItem('pd-educate-theme', root.dataset.theme);
+          storage.set('pd-educate-theme', root.dataset.theme);
         });
       });
 

@@ -107,3 +107,15 @@ def test_beginner_curriculum_and_offline_contract(project_root):
     assert 'data-level="advanced"' in text
     assert "http://" not in text
     assert "https://" not in text
+
+
+def test_beginner_entrypoint_and_storage_fallback(project_root):
+    page = project_root / "docs" / "educate" / "index.html"
+    text = page.read_text(encoding="utf-8")
+
+    assert '<a class="button primary" href="#pyside-intro"' in text
+    assert "const storage = {" in text
+    assert "get(key) { try { return localStorage.getItem(key); } catch { return null; } }" in text
+    assert "set(key, value) { try { localStorage.setItem(key, value); } catch {} }" in text
+    assert "const savedTheme = storage.get('pd-educate-theme');" in text
+    assert "storage.set('pd-educate-theme', root.dataset.theme);" in text
