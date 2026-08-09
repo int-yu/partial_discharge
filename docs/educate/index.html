@@ -1389,7 +1389,20 @@ raise SystemExit(app.exec())</code></pre>
 
         <section class="chapter lesson" id="project-map" data-title="项目地图" data-level="project">
           <div class="lesson-meta"><span class="level-badge project">椤圭洰蹇呭</span><span>连接真实项目</span></div>
-          <h2>带着 PySide6 基础阅读本项目</h2><p>现在再看目录、SDK 与源码，能把每个界面对象放回真实应用的边界中。</p>
+          <h2>把教程里的对象换成项目里的对象</h2>
+          <p class="chapter-intro">前面学过的事件循环、信号与槽、窗口和线程池都没有失效；真实项目只是把练习名换成了更明确的工程名。<strong>第一次阅读只追这一条线</strong>：按钮 → 槽函数 → 工作者 → 服务 → 结果信号 → 界面。</p>
+          <div class="table-wrap"><table class="compare">
+            <thead><tr><th>教程里的对象</th><th>真实项目中的文件 / 对象</th><th>它现在做什么</th><th>忘了就回看</th></tr></thead>
+            <tbody>
+              <tr><td><code>QApplication</code></td><td><code>src/pd_diagnosis/ui/app.py</code> 的 <code>main()</code></td><td>创建唯一应用对象，最后进入 <code>application.exec()</code></td><td>“事件循环与程序生命周期”</td></tr>
+              <tr><td>教程 <code>DiagnosisWindow</code></td><td><code>src/pd_diagnosis/ui/main_window.py</code> 的 <code>MainWindow</code></td><td>构建页面、接收用户操作、展示诊断结果</td><td>“QMainWindow 基础”和“引导式诊断界面”</td></tr>
+              <tr><td><code>QThreadPool</code></td><td><code>MainWindow.thread_pool</code></td><td>窗口私有线程池，<code>setMaxThreadCount(1)</code> 让模型任务串行</td><td>“长任务与线程池”</td></tr>
+              <tr><td>教程 <code>DiagnosisRunnable</code></td><td><code>src/pd_diagnosis/ui/workers.py</code> 的 <code>SingleDiagnosisTask</code></td><td>在工作线程读取一个 TXT 并调用诊断服务</td><td>“长任务与线程池”</td></tr>
+              <tr><td>教程 <code>result</code> 信号</td><td><code>TaskSignals.result</code> → <code>MainWindow._show_single_result()</code></td><td>把 <code>SingleDiagnosisOutcome</code> 送回 GUI 主线程</td><td>“信号与槽”和“长任务与线程池”</td></tr>
+              <tr><td>教程 <code>error</code> 信号</td><td><code>TaskSignals.error</code> → <code>MainWindow._show_single_error()</code></td><td>把异常文字送回主线程，由 <code>QMessageBox</code> 呈现</td><td>“信号与槽”和“错误恢复”</td></tr>
+            </tbody>
+          </table></div>
+          <div class="callout"><strong>你已经会的核心</strong><code>clicked.connect(...)</code>、<code>QRunnable.run()</code>、跨线程信号和 GUI 主线程更新，就是这个项目的界面骨架。</div>
         </section>
 
         <section class="chapter" id="start" data-title="学习路线">
@@ -1406,52 +1419,56 @@ raise SystemExit(app.exec())</code></pre>
 
         <section class="chapter" id="sdk" data-title="什么是 SDK">
           <span class="chapter-kicker">Chapter 01</span>
-          <h2>SDK 是什么？为什么项目需要它？</h2>
-          <p class="chapter-intro"><strong>SDK（Software Development Kit，软件开发工具包）</strong>是一组给开发者使用的、经过整理并承诺相对稳定的能力。你可以把它理解为“别人已经做好的专业工具箱 + 使用规则”。</p>
-          <div class="grid two">
-            <article class="card"><h3>生活类比：咖啡机</h3><p>你按“浓缩”按钮，不需要亲自控制水泵、电热丝和压力。按钮就是 API，整台咖啡机连同说明书、配件和安全规则更像 SDK。</p></article>
-            <article class="card"><h3>本项目里的对应关系</h3><p>调用 <code>DiagnosisEngine.diagnose_file()</code> 就能得到诊断结果。调用者不需要懂 NumPy 标准化、PyTorch 张量和模型权重细节。</p></article>
-          </div>
+          <h2>先不用界面：直接调用 SDK</h2>
+          <p class="chapter-intro">先把 PySide6 放在一边。如果一个普通 Python 脚本能完成诊断，就证明核心能力与界面是分开的。下面始终用同一台咖啡机来区分五个容易混淆的词。</p>
           <div class="table-wrap">
             <table class="compare">
-              <thead><tr><th>概念</th><th>一句话</th><th>本项目中的例子</th></tr></thead>
+              <thead><tr><th>概念</th><th>同一个咖啡机例子</th><th>本项目中的对应</th></tr></thead>
               <tbody>
-                <tr><td><strong>函数/类</strong></td><td>实现某项具体能力</td><td><code>extract_feature_vector()</code></td></tr>
-                <tr><td><strong>API</strong></td><td>其他代码可以依赖的调用接口</td><td><code>DiagnosisEngine.from_bundle()</code></td></tr>
-                <tr><td><strong>SDK</strong></td><td>一套可供开发者集成的 API、类型、错误和文档</td><td><code>pd_diagnosis</code> 对外导出的核心能力</td></tr>
-                <tr><td><strong>框架</strong></td><td>规定程序整体如何运行，并在合适时机调用你的代码</td><td>PySide6 / Qt 事件循环</td></tr>
-                <tr><td><strong>应用</strong></td><td>最终给用户使用的完整产品</td><td>局部放电类型智能诊断桌面程序</td></tr>
+                <tr><td><strong>库（library）</strong></td><td>可复用的研磨、控温等零件；你的代码主动取用</td><td>NumPy、PyTorch 以及项目内部特征函数</td></tr>
+                <tr><td><strong>API</strong></td><td>“做一杯浓缩”这个明确按法，规定输入和结果</td><td><code>DiagnosisEngine.diagnose_file(path)</code></td></tr>
+                <tr><td><strong>SDK</strong></td><td>咖啡机、可用按法、错误说明和使用手册组成的开发套件</td><td><code>pd_diagnosis</code> 公开的引擎、类型与异常</td></tr>
+                <tr><td><strong>框架（framework）</strong></td><td>咖啡机的控制流程持续等待按键，按下后反过来调用你连接的处理</td><td>PySide6 / Qt 事件循环</td></tr>
+                <tr><td><strong>应用（application）</strong></td><td>顾客真正操作的整台自助咖啡终端</td><td>局部放电类型智能诊断桌面程序</td></tr>
               </tbody>
             </table>
           </div>
-          <h3>同一个 SDK，可以被三个入口复用</h3>
-          <div class="flow" aria-label="SDK 被不同入口复用">
-            <div class="flow-item"><strong>桌面 UI</strong>按钮触发</div><span class="arrow">→</span>
-            <div class="flow-item"><strong>Python 脚本</strong>批处理</div><span class="arrow">→</span>
-            <div class="flow-item"><strong>自动测试</strong>验证行为</div><span class="arrow">→</span>
-            <div class="flow-item"><strong>DiagnosisEngine</strong>统一诊断</div>
-          </div>
+          <h3>一份可直接运行的 SDK 脚本</h3>
+          <p>先在仓库根目录安装项目，再把下面保存为 <code>try_sdk.py</code>并运行 <code>python try_sdk.py</code>。它不导入 PySide6，也不创建窗口。</p>
           <div class="codebox">
-            <div class="code-head"><span>最小 SDK 使用示例 · Python</span><button class="copy" type="button">复制</button></div>
-            <pre><code><span class="kw">from</span> pd_diagnosis <span class="kw">import</span> DiagnosisEngine
+            <div class="code-head"><span><code>try_sdk.py</code> · 完整脚本</span><button class="copy" type="button">复制</button></div>
+            <pre><code><span class="kw">from</span> pathlib <span class="kw">import</span> Path
 
-<span class="cm"># 1. 从模型目录创建诊断引擎。auto 会自动选择 CPU 或 CUDA。</span>
-engine = DiagnosisEngine.<span class="fn">from_bundle</span>(<span class="str">"models/default"</span>, device=<span class="str">"auto"</span>)
+<span class="kw">from</span> pd_diagnosis <span class="kw">import</span> DiagnosisEngine
 
-<span class="cm"># 2. SDK 内部会读取 TXT、提取特征、标准化并调用模型。</span>
-result = engine.<span class="fn">diagnose_file</span>(<span class="str">"data/test/sample.txt"</span>)
+model_path = <span class="fn">Path</span>(<span class="str">"models/default"</span>)
+signal_path = <span class="fn">Path</span>(<span class="str">"data/test/金属突出物缺陷/a1.txt"</span>)
+engine = DiagnosisEngine.<span class="fn">from_bundle</span>(model_path, device=<span class="str">"auto"</span>)
+result = engine.<span class="fn">diagnose_file</span>(signal_path)
 
-<span class="fn">print</span>(result.label)          <span class="cm"># 预测类别</span>
-<span class="fn">print</span>(result.confidence)     <span class="cm"># 0～1 的置信度</span>
-<span class="fn">print</span>(result.probabilities)  <span class="cm"># 各类别概率</span></code></pre>
+<span class="fn">print</span>(<span class="str">"label:"</span>, result.label)
+<span class="fn">print</span>(<span class="str">"confidence:"</span>, result.confidence)
+<span class="fn">print</span>(<span class="str">"probabilities:"</span>, <span class="fn">dict</span>(result.probabilities))
+<span class="fn">print</span>(<span class="str">"model_version:"</span>, result.model_version)
+<span class="fn">print</span>(<span class="str">"source_id:"</span>, result.source_id)
+<span class="fn">print</span>(<span class="str">"warnings:"</span>, result.warnings)</code></pre>
           </div>
+          <h3>逐行解释与预期输出</h3>
+          <ol>
+            <li><code>Path</code> 用对象表示模型目录和 TXT 路径；这两行只是准备输入。</li>
+            <li><code>from pd_diagnosis import DiagnosisEngine</code> 从包的公共出口取引擎，不穿过内部文件。</li>
+            <li><code>from_bundle(...)</code> 加载 <code>models/default</code>；<code>device="auto"</code> 在可用时选 CUDA，否则选 CPU。</li>
+            <li><code>diagnose_file(...)</code> 接收一个 TXT 路径，返回不依赖界面的 <code>DiagnosisResult</code>。</li>
+            <li>最后六行依次打印：预测名 <code>label</code>、0～1 的 <code>confidence</code>、所有类别概率 <code>probabilities</code>、模型版本、输入文件绝对路径以及警告列表。具体类别和数值由当前 bundle 决定，不应手写预测值。</li>
+          </ol>
+          <div class="callout warning"><strong>正确看待当前数据与模型</strong>当前样例模型和数据集用于演示工程接口、调用链和输入输出；在接入真实场景数据并完成相应验证前，不应把样例输出当作现场诊断结论。</div>
           <div class="callout warning"><strong>API 稳定，不等于内部永远不变</strong><code>engine.py</code> 里面可以从 PyTorch 换成其他推理方式，只要 <code>diagnose_file()</code> 的输入和返回值保持兼容，UI 和外部脚本就不必跟着大改。</div>
         </section>
 
         <section class="chapter" id="architecture" data-title="项目分层">
           <span class="chapter-kicker">Chapter 02</span>
           <h2>看懂项目分层与依赖方向</h2>
-          <p class="chapter-intro">工程设计的核心不是“文件越多越高级”，而是让每个模块只有一种主要职责。依赖方向应该从外向内：UI 可以调用 SDK，SDK 不应该反过来导入 UI。</p>
+          <p class="chapter-intro"><strong>初读只需要知道：</strong>窗口收集输入，Service 组合一次业务，Engine 完成诊断。依赖方向从外向内：UI 可以调用 SDK，SDK 不反过来导入 UI。</p>
           <div class="flow" aria-label="项目分层调用关系">
             <div class="flow-item"><strong>ui/</strong>窗口、控件、交互</div><span class="arrow">→</span>
             <div class="flow-item"><strong>service.py</strong>业务编排</div><span class="arrow">→</span>
@@ -1468,12 +1485,13 @@ result = engine.<span class="fn">diagnose_file</span>(<span class="str">"data/te
 
 <span class="cm"># 尽量不要从很深的内部路径导入私有实现：</span>
 <span class="cm"># from pd_diagnosis.model import ClassificationModel</span></code></pre></div>
+          <details><summary>进阶选学：模型内部与更细的依赖边界</summary><div class="details-body"><p><strong>初读只需要知道：</strong><code>DiagnosisEngine</code> 是界面之下的稳定入口。<strong>暂时可以跳过：</strong><code>features.py</code>、<code>model.py</code> 里的特征、张量、softmax 和网络层细节，不影响你先追通界面调用链。</p></div></details>
         </section>
 
         <section class="chapter" id="folders" data-title="目录地图">
           <span class="chapter-kicker">Chapter 03</span>
           <h2>每个文件夹里有什么？</h2>
-          <p class="chapter-intro">下面是仓库的逻辑地图。带 <strong>★</strong> 的路径最适合优先阅读；<code>legacy/</code> 是历史材料，不应继续作为新代码入口。</p>
+          <p class="chapter-intro"><strong>第一次阅读只追这一条线：</strong><code>ui/main_window.py</code> → <code>ui/workers.py</code> → <code>service.py</code> → <code>engine.py</code>。目录很多不等于都要立刻读；<code>legacy/</code> 是历史材料，不应作为新代码入口。</p>
           <div class="tree" role="figure" aria-label="项目目录树">
             <ul>
               <li><span class="folder">partial_discharge/</span> <span class="note">仓库根目录</span>
@@ -1505,6 +1523,7 @@ result = engine.<span class="fn">diagnose_file</span>(<span class="str">"data/te
             <article class="card"><h3><code>models/</code> bundle</h3><p>模型不只是一个 <code>.pth</code>。权重必须与类别、特征顺序、采样率和标准化参数一起版本化。</p></article>
             <article class="card"><h3><code>legacy/</code> 隔离</h3><p>保留旧代码便于核对算法和迁移数据，但新功能不要继续加进去，否则新旧架构会再次混在一起。</p></article>
           </div>
+          <details><summary>进阶选学：目录中还有哪些工程支撑</summary><div class="details-body"><p><strong>初读只需要知道：</strong><code>models/</code> 放模型包，<code>tests/</code> 保护行为，<code>docs/</code> 解释契约。<strong>暂时可以跳过：</strong><code>experimental/</code> 训练、打包数据、迁移和 <code>legacy/</code> 追溯细节。</p></div></details>
         </section>
 
         <section class="chapter" id="files" data-title="逐文件说明">
@@ -1732,33 +1751,36 @@ QThreadPool.<span class="fn">globalInstance</span>().<span class="fn">start</spa
         <section class="chapter" id="flows" data-title="跟着程序运行">
           <span class="chapter-kicker">Chapter 06</span>
           <h2>跟着程序完整运行一遍</h2>
-          <h3>启动流程</h3>
-          <div class="timeline">
-            <div class="timeline-item"><h3>1 · 运行命令</h3><p><code>python -m pd_diagnosis</code> 找到包内的 <code>__main__.py</code>。</p></div>
-            <div class="timeline-item"><h3>2 · 创建 QApplication</h3><p><code>ui.app.main()</code> 设置应用名、语言、Fusion 风格和中文字体。</p></div>
-            <div class="timeline-item"><h3>3 · 加载核心依赖</h3><p>启动页显示期间，创建 <code>DiagnosisEngine</code>、<code>HistoryRepository</code> 和 <code>DiagnosisService</code>。</p></div>
-            <div class="timeline-item"><h3>4 · 创建 MainWindow</h3><p>把 service 和 history 注入窗口。窗口不自己偷偷创建模型，因此依赖关系清楚，也更容易测试。</p></div>
-            <div class="timeline-item"><h3>5 · 进入事件循环</h3><p><code>application.exec()</code> 开始等待交互，直到所有窗口关闭。</p></div>
-          </div>
-          <h3>单文件诊断流程</h3>
-          <div class="flow">
-            <div class="flow-item"><strong>QPushButton</strong>clicked</div><span class="arrow">→</span>
-            <div class="flow-item"><strong>MainWindow</strong>选择路径</div><span class="arrow">→</span>
-            <div class="flow-item"><strong>SingleDiagnosisTask</strong>后台运行</div><span class="arrow">→</span>
-            <div class="flow-item"><strong>Service</strong>推理并保存</div><span class="arrow">→</span>
-            <div class="flow-item"><strong>Signal(result)</strong>返回主线程</div><span class="arrow">→</span>
-            <div class="flow-item"><strong>UI</strong>刷新卡片与图表</div>
-          </div>
-          <h3>引擎内部的 7 步</h3>
-          <ol>
-            <li><code>read_txt_signal()</code> 读取并解析 TXT。</li>
-            <li>构建带采样率和来源路径的 <code>Signal</code>。</li>
-            <li><code>extract_feature_vector()</code> 校验样本并提取 10 维特征。</li>
-            <li>使用 bundle 中的 mean/scale 做标准化。</li>
-            <li>NumPy 数组转换为 PyTorch Tensor 并移动到 CPU/CUDA。</li>
-            <li>在 <code>torch.inference_mode()</code> 下推理并用 softmax 得到概率。</li>
-            <li>组装不可变的 <code>DiagnosisResult</code>，低置信度时附加警告。</li>
-          </ol>
+          <p class="chapter-intro">下面两张表都用同七个问题阅读：谁触发、进什么、出什么、在哪个线程、会怎么错、下一步去哪。类名和方法名都来自当前源码。</p>
+          <h3>应用启动链</h3>
+          <p><strong>第一次阅读只追这一条线：</strong><code>__main__.py</code> → <code>launcher.main()</code> → <code>ui.app.main()</code> → <code>MainWindow</code> → <code>application.exec()</code>。</p>
+          <div class="table-wrap"><table class="compare">
+            <thead><tr><th>触发</th><th>精确文件与可调用对象</th><th>输入 → 输出</th><th>线程</th><th>可能错误</th><th>下一步</th></tr></thead>
+            <tbody>
+              <tr><td>运行 <code>python -m pd_diagnosis</code></td><td><code>src/pd_diagnosis/__main__.py</code> 的模块级 <code>main()</code> 调用</td><td>命令行参数 → 进程退出码</td><td>启动主线程</td><td>未处理异常会终止进程</td><td><code>launcher.main()</code></td></tr>
+              <tr><td><code>__main__.py</code> 调用</td><td><code>src/pd_diagnosis/launcher.py</code> 的 <code>main()</code> / <code>_load_application()</code></td><td><code>argv</code> 或 <code>None</code> → GUI 主函数的返回码</td><td>启动主线程</td><td>缺 PySide6 或 matplotlib 时打印安装提示并返回 <code>2</code></td><td>延迟导入 <code>ui.app.main()</code></td></tr>
+              <tr><td>轻量 launcher 导入完成</td><td><code>src/pd_diagnosis/ui/app.py</code> 的 <code>main()</code></td><td><code>argv</code> → <code>QApplication</code>、日志路径和启动页</td><td>GUI 主线程</td><td>应用对象或显示环境初始化失败</td><td>解析默认模型与数据库路径</td></tr>
+              <tr><td>启动页显示“正在校验”</td><td><code>ui/app.py: main()</code> 调用 <code>DiagnosisEngine.from_bundle()</code>、<code>HistoryRepository()</code>、<code>DiagnosisService()</code></td><td>模型路径 + SQLite 路径 → engine + history + service</td><td>GUI 主线程（此时尚未进入事件循环）</td><td>任一依赖构造失败都记录日志、显示 <code>QMessageBox</code> 并返回 <code>1</code></td><td>把三个依赖注入窗口</td></tr>
+              <tr><td>依赖构造成功</td><td><code>src/pd_diagnosis/ui/main_window.py</code> 的 <code>MainWindow(...)</code></td><td>service + history + model_path → 已构建窗口和私有 <code>QThreadPool</code></td><td>GUI 主线程</td><td>窗口构造异常会向上传播</td><td><code>window.show()</code>，再结束启动页</td></tr>
+              <tr><td>窗口已显示</td><td><code>ui/app.py: main()</code> 的 <code>application.exec()</code></td><td>已配置应用 → 用户退出时的事件循环返回码</td><td>GUI 主线程</td><td>运行期未捕获异常由对应处理边界决定</td><td>等待按钮、绘制和其他事件</td></tr>
+            </tbody>
+          </table></div>
+
+          <h3>单文件诊断链</h3>
+          <p><strong>第一次阅读只追这一条线：</strong><code>start_single_diagnosis()</code> → <code>SingleDiagnosisTask.run()</code> → <code>DiagnosisService.diagnose()</code> → <code>DiagnosisEngine.diagnose()</code> → <code>SingleDiagnosisOutcome</code> → GUI 槽。</p>
+          <div class="table-wrap"><table class="compare">
+            <thead><tr><th>触发</th><th>精确文件与可调用对象</th><th>输入 → 输出</th><th>线程</th><th>可能错误</th><th>下一步</th></tr></thead>
+            <tbody>
+              <tr><td><code>diagnose_button.clicked</code> 或 <code>Ctrl+Return</code></td><td><code>src/pd_diagnosis/ui/main_window.py</code> 的 <code>MainWindow.start_single_diagnosis()</code></td><td>输入框文本 → 去空格的 TXT 路径、“分析中”状态</td><td>GUI 主线程</td><td>路径为空时显示警告并立即返回</td><td>创建 <code>SingleDiagnosisTask(service, path)</code></td></tr>
+              <tr><td>槽函数创建任务</td><td><code>MainWindow.start_single_diagnosis()</code> 连接 <code>result/error/finished</code>，调用 <code>self.thread_pool.start(task)</code></td><td>service + path + 信号连接 → 已排队的 runnable</td><td>GUI 主线程</td><td>启动调度异常未在该槽内捕获</td><td>窗口私有、最大线程数为 1 的线程池执行 <code>run()</code></td></tr>
+              <tr><td>线程池取到任务</td><td><code>src/pd_diagnosis/ui/workers.py</code> 的 <code>SingleDiagnosisTask.run()</code></td><td>path → 只读 <code>float32</code> samples 和带采样率/绝对来源的 <code>Signal</code></td><td>私有线程池的工作线程</td><td>TXT 不存在、格式错或数值无效时进入 <code>except</code></td><td><code>self.service.diagnose(signal)</code></td></tr>
+              <tr><td>worker 提交 <code>Signal</code></td><td><code>src/pd_diagnosis/service.py</code> 的 <code>DiagnosisService.diagnose()</code></td><td><code>Signal</code> → <code>DiagnosisResult</code>（可能附加保存警告）</td><td>同一工作线程</td><td><code>DiagnosisError</code> 会尝试记录失败后重新抛出；SQLite/OSError 保存失败被隔离，已有诊断结果仍返回</td><td><code>DiagnosisEngine.diagnose()</code> 完成推理，Service 再保存</td></tr>
+              <tr><td>Service 调用引擎</td><td><code>src/pd_diagnosis/engine.py</code> 的 <code>DiagnosisEngine.diagnose()</code></td><td><code>Signal</code> → 不可变 <code>DiagnosisResult</code></td><td>同一工作线程</td><td>采样率、特征、标准化、logits 或概率无效时抛出明确诊断异常</td><td>返回 Service，再返回 worker</td></tr>
+              <tr><td>worker 获得结果</td><td><code>ui/workers.py</code> 的 <code>SingleDiagnosisOutcome(...)</code> 与 <code>TaskSignals.result.emit()</code></td><td>path + 只读 samples + result → 不可变结果快照</td><td>工作线程发信号</td><td>任意异常都转为 <code>error.emit(str(exc))</code>；<code>finally</code> 总会发 <code>finished</code></td><td>Qt 将跨线程信号排队给 GUI 槽</td></tr>
+              <tr><td><code>result</code> / <code>error</code> / <code>finished</code> 信号</td><td><code>MainWindow._show_single_result()</code> / <code>_show_single_error()</code> / <code>_finish_single()</code></td><td>快照或错误字符串 → 图表、结果卡、对话框和恢复后的控件</td><td>GUI 主线程</td><td>绘图异常被转为状态栏提示；诊断异常走错误槽</td><td>刷新历史，恢复路径和按钮</td></tr>
+            </tbody>
+          </table></div>
+          <div class="callout"><strong>线程边界</strong>文件读取、推理和保存在工作线程；所有 QWidget 更新在 GUI 主线程。<code>SingleDiagnosisOutcome</code> 把当次路径、只读波形和结果绑在一起，界面不会再读一次已可能变化的输入框。</div>
         </section>
 
         <section class="chapter" id="write" data-title="亲手修改">
@@ -1798,6 +1820,7 @@ self.clear_button.clicked.<span class="fn">connect</span>(self.clear_selection)
         <section class="chapter" id="run" data-title="安装运行调试">
           <span class="chapter-kicker">Chapter 08</span>
           <h2>安装、运行、测试与调试</h2>
+          <div class="callout"><strong>初学者最短路径</strong>先执行 <code>python -m pip install -e .</code>，运行上一节的 <code>try_sdk.py</code>；这一步不需要 PySide6。确认 SDK 脚本会输出六个字段后，再安装 <code>.[gui,dev]</code> 并进入界面调用链。</div>
           <h3>推荐开发流程（PowerShell）</h3>
           <div class="codebox"><div class="code-head"><span>在仓库根目录运行</span><button class="copy" type="button">复制</button></div><pre><code><span class="cm"># 1. 创建并激活虚拟环境</span>
 py -3.11 -m venv .venv
@@ -1830,29 +1853,23 @@ mypy src/pd_diagnosis</code></pre></div>
             <tr><td>窗口/对话框一闪而过</td><td>对象是否有父对象或被 <code>self.xxx</code> 持有</td><td>Python 引用消失导致对象被回收</td></tr>
           </tbody></table></div>
           <h3>调试顺序</h3>
-          <ol><li>先读完整错误堆栈，从最底部异常开始。</li><li>判断问题属于输入、SDK、Service、线程还是 UI。</li><li>用最小 Python 脚本绕开 UI 调用 <code>DiagnosisEngine</code>；若仍失败，问题在 SDK 或数据。</li><li>运行相关测试，再运行全部测试。</li><li>线程问题用信号记录阶段和线程 ID，不要靠反复点击猜测。</li></ol>
+          <ol><li>先运行 SDK-only 脚本：若失败，先查输入、模型路径或 SDK；若成功，再查界面连接。</li><li>读完整错误堆栈，从最底部异常开始。</li><li>判断问题属于 SDK、Service、worker 还是 GUI 槽。</li><li>运行相关测试，再运行全部测试。</li><li>线程问题用信号记录阶段和线程 ID，不要靠反复点击猜测。</li></ol>
         </section>
 
         <section class="chapter" id="hardening" data-title="当前版本工程加固">
           <span class="chapter-kicker">Current implementation</span>
-          <h2>当前版本新增的可靠性边界</h2>
-          <p class="chapter-intro">前面的源码课堂用于解释项目如何从原型演进。下面这些是当前代码已经实现并由测试固定的行为；阅读旧行号示例时，以本节和仓库源码为准。</p>
+          <h2>进阶选学：当前版本的可靠性边界</h2>
+          <p class="chapter-intro">你已经能沿启动链和单文件链读懂主干。下面是当前源码已实现的工程保护，需要时再逐项展开，不是完成入门的前置条件。</p>
           <div class="grid two">
-            <article class="card"><h3>安装与启动</h3><p><code>launcher.py</code> 延迟导入 GUI。默认模型按环境变量 → 仓库 → 安装共享目录解析；wheel 已携带模型三件套和 <code>py.typed</code>。</p></article>
-            <article class="card"><h3>严格模型契约</h3><p><code>bundle.py</code> 校验必填字段、架构、路径不能逃逸、SHA-256、连续且唯一的类别、有限 mean 与严格正 scale，以及可配置置信度阈值。</p></article>
-            <article class="card"><h3>输入与推理边界</h3><p>信号验证会复制出独立快照。特征、标准化输入、logits、概率任一层出现 NaN/Inf 都会产生明确 <code>DiagnosisError</code>。</p></article>
-            <article class="card"><h3>持久化不污染诊断</h3><p>推理成功但 SQLite 保存失败时仍返回结果并附加警告；保存错误记录失败时仍抛原始诊断异常。日志保留完整 traceback。</p></article>
-            <article class="card"><h3>线程结果不可变</h3><p><code>SingleDiagnosisOutcome</code> 把原路径、只读 samples 与结果绑定。窗口不再按当前输入框二次读取文件，并以窗口私有单线程池串行访问模型。</p></article>
-            <article class="card"><h3>可用性与大历史</h3><p>主题、窗口和分栏使用 <code>QSettings</code> 保存；时间转换到本地并按 <code>QLocale</code> 显示；历史每页 100 条，CSV 在后台导出。</p></article>
+            <article class="card"><h3>进阶选学：SQLite</h3><p><strong>初读只需要知道：</strong><code>DiagnosisService</code> 在推理后尝试保存历史。<strong>暂时可以跳过：</strong><code>storage.py</code> 的 schema、WAL、SQL 和数据库版本迁移。保存失败不会抹掉已有诊断结果。</p></article>
+            <article class="card"><h3>进阶选学：bundle 验证</h3><p><strong>初读只需要知道：</strong><code>DiagnosisEngine.from_bundle()</code> 要求模型包与当前 SDK 兼容。<strong>暂时可以跳过：</strong><code>bundle.py</code> 对 schema、架构、特征顺序、类别 ID、mean/scale 和路径逃逸的逐项验证。</p></article>
+            <article class="card"><h3>进阶选学：不可变快照</h3><p><strong>初读只需要知道：</strong><code>SingleDiagnosisOutcome</code> 把当次路径、samples 和结果绑定后再发给界面。<strong>暂时可以跳过：</strong><code>@dataclass(frozen=True, slots=True)</code>、NumPy 复制与 <code>write=False</code> 的实现细节。</p></article>
+            <article class="card"><h3>进阶选学：工件哈希</h3><p><strong>初读只需要知道：</strong>加载前会检查权重和 scaler 是否为预期文件。<strong>暂时可以跳过：</strong><code>artifacts.py: sha256_file()</code> 与 <code>bundle.py: _verify_artifact()</code> 的 SHA-256 计算和错误分支。</p></article>
+            <article class="card"><h3>进阶选学：历史分页</h3><p><strong>初读只需要知道：</strong>历史页每次只显示 <code>PAGE_SIZE = 100</code> 条。<strong>暂时可以跳过：</strong><code>MainWindow.refresh_history()</code> 的 offset 校正、页码计算与前后页按钮状态。</p></article>
+            <article class="card"><h3>进阶选学：CSV 导出</h3><p><strong>初读只需要知道：</strong><code>HistoryExportTask</code> 在后台分批读历史并导出 CSV，界面不会因大导出停止响应。<strong>暂时可以跳过：</strong><code>workers.py</code> 内部的生成器、每批 1000 条和 progress 信号。</p></article>
+            <article class="card"><h3>进阶选学：模型内部</h3><p><strong>初读只需要知道：</strong><code>DiagnosisEngine.diagnose()</code> 把 <code>Signal</code> 变成 <code>DiagnosisResult</code>。<strong>暂时可以跳过：</strong>特征提取、标准化、Tensor、<code>torch.inference_mode()</code>、logits 和 softmax；这些会在真实场景数据接入与模型验证时再深入。</p></article>
           </div>
-          <h3>一次单文件诊断的当前调用链</h3>
-          <div class="flow" aria-label="当前单文件诊断调用链">
-            <div class="flow-node"><strong>MainWindow</strong><small>锁定路径控件并创建任务</small></div><span class="arrow">→</span>
-            <div class="flow-node"><strong>SingleDiagnosisTask</strong><small>只读取一次并创建只读快照</small></div><span class="arrow">→</span>
-            <div class="flow-node"><strong>DiagnosisService</strong><small>调用引擎并隔离保存失败</small></div><span class="arrow">→</span>
-            <div class="flow-node"><strong>SingleDiagnosisOutcome</strong><small>路径、波形与结果不可分离</small></div>
-          </div>
-          <div class="callout"><strong>为什么这是 SDK 思维？</strong>可靠 API 不只提供“能跑”的函数，还明确输入所有权、错误类型、工件格式、持久化副作用和并发边界，让 UI、脚本和未来真实采集接口都能依赖同一份契约。</div>
+          <div class="callout"><strong>回到主干</strong>如果上面的词让你分心，立即跳回“单文件诊断链”：先能说清输入路径怎样到达 GUI 结果卡，就已完成本教程的项目桥接。</div>
         </section>
 
         <section class="chapter" id="exercises" data-title="练习">

@@ -180,6 +180,19 @@ def test_beginner_entrypoint_and_storage_fallback(project_root):
     assert "storage.set('pd-educate-theme', root.dataset.theme);" in text
 
 
+def test_project_bridge_gives_beginners_two_traceable_call_chains(project_root):
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+
+    for marker in (
+        "先不用界面：直接调用 SDK",
+        "把教程里的对象换成项目里的对象",
+        "应用启动链",
+        "单文件诊断链",
+        "第一次阅读只追这一条线",
+    ):
+        assert marker in text
+
+
 def test_foundation_examples_are_complete_python(project_root):
     text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
     audit = _PythonExampleAudit()
