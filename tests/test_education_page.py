@@ -315,8 +315,8 @@ def test_guided_diagnosis_stages_introduce_apis_at_the_claimed_step(project_root
         )
 
 
-def test_guided_diagnosis_stage_metadata_matches_ast_changes(project_root):
-    """Prevent an undocumented future API, callback rewrite, or state-value drift."""
+def test_guided_diagnosis_visible_stage_contract_matches_ast_changes(project_root):
+    """The learner-visible change list is the sole contract for every AST delta."""
     text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
     sections = re.findall(
         r"<h3>步骤 [1-6]：.*?</h3>.*?<pre><code(?: [^>]*)?>(.*?)</code></pre>",
@@ -324,14 +324,33 @@ def test_guided_diagnosis_stage_metadata_matches_ast_changes(project_root):
         flags=re.DOTALL,
     )
     contract_tags = re.findall(r'<div class="stage-contract"([^>]*)>', text)
-    assert len(sections) == len(contract_tags) == 6
+    contract_blocks = re.findall(r'<div class="stage-contract"[^>]*>(.*?)</div>', text, flags=re.DOTALL)
+    assert len(sections) == len(contract_tags) == len(contract_blocks) == 6
+    assert all(not tag.strip() for tag in contract_tags), "阶段契约的值必须对学员可见，不能藏在 data-* 属性中"
 
-    def metadata(tag):
-        values = dict(re.findall(r'data-([\w-]+)="([^"]*)"', tag))
-        return {
-            key: set(values.get(key, "").split()) - {""}
-            for key in ("added-imports", "added-methods", "modified-methods", "added-attributes", "added-states", "modified-states")
-        }
+    labels = {
+        "新增导入": "added-imports",
+        "新增方法": "added-methods",
+        "修改方法": "modified-methods",
+        "新增属性": "added-attributes",
+        "新增状态": "added-states",
+        "修改状态": "modified-states",
+        "新增启动语句": "added-bootstrap",
+        "修改启动语句": "modified-bootstrap",
+    }
+
+    def visible_contract(block):
+        row_pairs = re.findall(r"<dt>([^<]+)</dt>\s*<dd>(.*?)</dd>", block, flags=re.DOTALL)
+        assert len(row_pairs) == len(labels)
+        rows = dict(row_pairs)
+        assert rows.keys() == labels.keys()
+        contract = {}
+        for label, key in labels.items():
+            values = {unescape(value) for value in re.findall(r"<code>([^<]+)</code>", rows[label])}
+            plain_text = unescape(re.sub(r"<[^>]+>", "", rows[label])).strip()
+            assert values or plain_text == "无"
+            contract[key] = values
+        return contract
 
     def class_node(tree):
         return next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "DiagnosisWindow")
@@ -367,25 +386,48 @@ def test_guided_diagnosis_stage_metadata_matches_ast_changes(project_root):
             and isinstance(item.value.value, str)
         }
 
+    def bootstrap(tree):
+        statements = {}
+        for item in tree.body:
+            if isinstance(item, (ast.Import, ast.ImportFrom, ast.ClassDef)):
+                continue
+            if isinstance(item, ast.Assign) and len(item.targets) == 1 and isinstance(item.targets[0], ast.Name):
+                key = item.targets[0].id
+            elif isinstance(item, ast.Expr) and isinstance(item.value, ast.Call):
+                key = ast.unparse(item.value.func)
+            elif isinstance(item, ast.Raise) and isinstance(item.exc, ast.Call):
+                key = ast.unparse(item.exc.func)
+            else:
+                raise AssertionError(f"未识别的模块级启动语句: {ast.dump(item, include_attributes=False)}")
+            assert key not in statements
+            statements[key] = item
+        return statements
+
     prior_imports: set[str] = set()
     prior_methods: dict[str, ast.FunctionDef] = {}
     prior_attributes: set[str] = set()
     prior_states: dict[str, str] = {}
-    for source, tag in zip(sections, contract_tags, strict=True):
+    prior_bootstrap: dict[str, ast.stmt] = {}
+    for source, block in zip(sections, contract_blocks, strict=True):
         tree = ast.parse(unescape(source))
-        contract = metadata(tag)
+        contract = visible_contract(block)
         current_imports = imports(tree)
         current_methods = methods(class_node(tree))
         current_attributes = attributes(class_node(tree))
         current_states = states(tree) if any(node.name == "UiState" for node in tree.body if isinstance(node, ast.ClassDef)) else {}
+        current_bootstrap = bootstrap(tree)
 
         assert current_imports - prior_imports == contract["added-imports"]
         assert current_methods.keys() - prior_methods.keys() == contract["added-methods"]
         assert current_attributes - prior_attributes == contract["added-attributes"]
         assert current_states.keys() - prior_states.keys() == contract["added-states"]
+        assert current_bootstrap.keys() - prior_bootstrap.keys() == contract["added-bootstrap"]
         assert prior_imports <= current_imports
         assert prior_methods.keys() <= current_methods.keys()
         assert prior_attributes <= current_attributes
+        assert prior_states.keys() <= current_states.keys()
+        assert prior_bootstrap.keys() <= current_bootstrap.keys()
+        assert [key for key in current_bootstrap if key in prior_bootstrap] == list(prior_bootstrap)
 
         actual_modified_methods = {
             name
@@ -397,11 +439,19 @@ def test_guided_diagnosis_stage_metadata_matches_ast_changes(project_root):
             name for name in prior_states.keys() & current_states.keys() if prior_states[name] != current_states[name]
         }
         assert actual_modified_states == contract["modified-states"]
+        actual_modified_bootstrap = {
+            name
+            for name in prior_bootstrap.keys() & current_bootstrap.keys()
+            if ast.dump(prior_bootstrap[name], include_attributes=False)
+            != ast.dump(current_bootstrap[name], include_attributes=False)
+        }
+        assert actual_modified_bootstrap == contract["modified-bootstrap"]
 
         prior_imports = current_imports
         prior_methods = current_methods
         prior_attributes = current_attributes
         prior_states = current_states
+        prior_bootstrap = current_bootstrap
 
     final_tree = ast.parse(unescape(sections[-1]))
     stage_five_methods = methods(class_node(ast.parse(unescape(sections[4]))))
@@ -410,6 +460,13 @@ def test_guided_diagnosis_stage_metadata_matches_ast_changes(project_root):
     assert ast.dump(final_methods["choose_file"], include_attributes=False) == ast.dump(stage_five_methods["choose_file"], include_attributes=False)
     assert states(final_tree)["SUCCESS"] == states(ast.parse(unescape(sections[4])))["SUCCESS"]
     assert "start_simulation" not in final_methods
+    assert len(final_methods["finish_simulation"].body) == 1
+    assert ast.unparse(final_methods["finish_simulation"].body[0]) == "self.complete_simulation(None)"
+    assert not any(isinstance(node, ast.Try) for node in ast.walk(final_methods["finish_simulation"]))
+    assert any(isinstance(node, ast.Try) for node in ast.walk(final_methods["complete_simulation"]))
+    final_contract_text = unescape(re.sub(r"<[^>]+>", "", contract_blocks[-1]))
+    assert "finish_simulation() 只负责把成功路径委托给 complete_simulation(None)" in final_contract_text
+    assert "complete_simulation() 负责 try/except/finally" in final_contract_text
 
 
 def test_thread_pool_mapping_preserves_service_result_and_affinity_roles(project_root):

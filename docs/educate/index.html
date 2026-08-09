@@ -910,8 +910,13 @@ self.status_label.setText("已完成")</code></pre></div></details>
           <h2>把前十课组合成一个可运行的小工具</h2><p>窗口、布局、信号、对话框和样式在一个小型任务中各司其职。最终程序不读取本项目、不加载模型：<code>QTimer.singleShot</code> 只是在“诊断中”后返回演示结果。</p>
 
           <h3>步骤 1：窗口骨架</h3>
-          <div class="stage-contract" data-added-imports="sys QApplication QLabel QVBoxLayout QWidget" data-added-methods="__init__" data-modified-methods="" data-added-attributes="status_label" data-added-states="" data-modified-states=""><strong>本阶段代码变更：</strong>导入窗口骨架所需 API；新增 <code>status_label</code> 与构造函数。</div>
-          <p><strong>本阶段新增：</strong><code>DiagnosisWindow</code>、标题、状态文字和垂直布局。相对上一课，屏幕上出现了一个可以承载诊断流程的窗口。</p>
+          <div class="stage-contract"><strong>本阶段代码变更（可见契约）</strong><dl>
+            <dt>新增导入</dt><dd><code>sys</code>、<code>QApplication</code>、<code>QLabel</code>、<code>QVBoxLayout</code>、<code>QWidget</code></dd>
+            <dt>新增方法</dt><dd><code>__init__</code></dd><dt>修改方法</dt><dd>无</dd>
+            <dt>新增属性</dt><dd><code>status_label</code></dd><dt>新增状态</dt><dd>无</dd><dt>修改状态</dt><dd>无</dd>
+            <dt>新增启动语句</dt><dd><code>app</code>、<code>window</code>、<code>window.show</code>、<code>SystemExit</code></dd><dt>修改启动语句</dt><dd>无</dd>
+          </dl></div>
+          <p><strong>可见变化：</strong>相对上一课，屏幕上出现标题为“简化局放诊断”的窗口，内部只有一行状态文字。</p>
           <pre><code>import sys
 
 from PySide6.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget
@@ -931,8 +936,13 @@ raise SystemExit(app.exec())</code></pre>
           <div class="lesson-check"><strong>检查点</strong><p>运行后应看见标题为“简化局放诊断”的窗口；此时还没有业务按钮。</p></div>
 
           <h3>步骤 2：文件选择</h3>
-          <div class="stage-contract" data-added-imports="Path Slot QFileDialog QPushButton" data-added-methods="choose_file" data-modified-methods="__init__" data-added-attributes="file_label choose_button" data-added-states="" data-modified-states=""><strong>本阶段代码变更：</strong>新增路径、对话框和按钮 API；在构造函数加入文件控件，并加入 <code>choose_file()</code>。</div>
-          <p><strong>本阶段新增：</strong><code>QPushButton</code>、<code>QFileDialog.getOpenFileName()</code> 和 <code>choose_file()</code> 槽。相对步骤 1，用户可以选择文件，窗口显示其文件名。</p>
+          <div class="stage-contract"><strong>本阶段代码变更（可见契约）</strong><dl>
+            <dt>新增导入</dt><dd><code>Path</code>、<code>Slot</code>、<code>QFileDialog</code>、<code>QPushButton</code></dd>
+            <dt>新增方法</dt><dd><code>choose_file</code></dd><dt>修改方法</dt><dd><code>__init__</code></dd>
+            <dt>新增属性</dt><dd><code>file_label</code>、<code>choose_button</code></dd><dt>新增状态</dt><dd>无</dd><dt>修改状态</dt><dd>无</dd>
+            <dt>新增启动语句</dt><dd>无</dd><dt>修改启动语句</dt><dd>无</dd>
+          </dl></div>
+          <p><strong>可见变化：</strong>相对步骤 1，窗口出现文件选择按钮和文件名区域；选中文件后只显示它的文件名。</p>
           <pre><code>import sys
 from pathlib import Path
 
@@ -965,8 +975,13 @@ raise SystemExit(app.exec())</code></pre>
           <div class="lesson-check"><strong>检查点</strong><p>取消对话框不会改变文字；选择文件后只显示文件名。</p></div>
 
           <h3>步骤 3：输入状态</h3>
-          <div class="stage-contract" data-added-imports="Enum" data-added-methods="set_state" data-modified-methods="__init__ choose_file" data-added-attributes="start_button" data-added-states="IDLE FILE_SELECTED" data-modified-states=""><strong>本阶段代码变更：</strong>新增状态枚举、开始按钮和 <code>set_state()</code>；修改构造函数和文件选择槽以进入“文件已选择”。</div>
-          <p><strong>本阶段新增：</strong><code>UiState</code>、<code>set_state()</code> 和禁用的“开始诊断”按钮。相对步骤 2，界面开始根据输入是否有效改变可点击的控件。</p>
+          <div class="stage-contract"><strong>本阶段代码变更（可见契约）</strong><dl>
+            <dt>新增导入</dt><dd><code>Enum</code></dd><dt>新增方法</dt><dd><code>set_state</code></dd>
+            <dt>修改方法</dt><dd><code>__init__</code>、<code>choose_file</code></dd><dt>新增属性</dt><dd><code>start_button</code></dd>
+            <dt>新增状态</dt><dd><code>IDLE</code>、<code>FILE_SELECTED</code></dd><dt>修改状态</dt><dd>无</dd>
+            <dt>新增启动语句</dt><dd>无</dd><dt>修改启动语句</dt><dd>无</dd>
+          </dl></div>
+          <p><strong>可见变化：</strong>相对步骤 2，界面出现“开始诊断”按钮；未选文件时禁用，选中后才可点击。</p>
           <pre><code>import sys
 from enum import Enum
 from pathlib import Path
@@ -1012,8 +1027,13 @@ raise SystemExit(app.exec())</code></pre>
           <div class="lesson-check"><strong>检查点</strong><p>未选文件时“开始诊断”不能点击；选中后才变为可用。</p></div>
 
           <h3>步骤 4：模拟诊断</h3>
-          <div class="stage-contract" data-added-imports="QTimer" data-added-methods="start_diagnosis finish_simulation" data-modified-methods="__init__ set_state" data-added-attributes="" data-added-states="RUNNING SUCCESS" data-modified-states=""><strong>本阶段代码变更：</strong>新增定时器与两个诊断回调；修改构造函数连接开始按钮，并在状态更新中禁止运行期间再次选择文件。</div>
-          <p><strong>本阶段新增：</strong>导入 <code>QTimer</code>，并在既有 <code>UiState</code> 中增加 <code>RUNNING</code>/<code>SUCCESS</code> 两个文案值；新增 <code>start_diagnosis()</code> 与 <code>finish_simulation()</code>。相对步骤 3，点击开始后窗口仍能移动和重绘，并会在短暂等待后完成。</p>
+          <div class="stage-contract"><strong>本阶段代码变更（可见契约）</strong><dl>
+            <dt>新增导入</dt><dd><code>QTimer</code></dd><dt>新增方法</dt><dd><code>start_diagnosis</code>、<code>finish_simulation</code></dd>
+            <dt>修改方法</dt><dd><code>__init__</code>、<code>set_state</code></dd><dt>新增属性</dt><dd>无</dd>
+            <dt>新增状态</dt><dd><code>RUNNING</code>、<code>SUCCESS</code></dd><dt>修改状态</dt><dd>无</dd>
+            <dt>新增启动语句</dt><dd>无</dd><dt>修改启动语句</dt><dd>无</dd>
+          </dl></div>
+          <p><strong>可见变化：</strong>相对步骤 3，点击开始后会显示“正在模拟诊断”，两个按钮暂时禁用；窗口仍能移动和重绘，短暂等待后显示完成。</p>
           <pre><code>import sys
 from enum import Enum
 from pathlib import Path
@@ -1071,8 +1091,13 @@ raise SystemExit(app.exec())</code></pre>
           <div class="lesson-check"><strong>检查点</strong><p>诊断期间两个按钮都不可用，说明不会重复启动任务。</p></div>
 
           <h3>步骤 5：结果卡片</h3>
-          <div class="stage-contract" data-added-imports="" data-added-methods="show_result" data-modified-methods="__init__ finish_simulation" data-added-attributes="result_label" data-added-states="" data-modified-states=""><strong>本阶段代码变更：</strong>新增结果标签和 <code>show_result()</code>；修改完成回调以委托这个新方法。</div>
-          <p><strong>本阶段新增：</strong>只读的 <code>result_label</code> 与 <code>show_result()</code>；同时<strong>修改</strong>既有 <code>finish_simulation()</code>，让它调用新方法。相对步骤 4，成功不再只是状态文字，而是显示类别和置信度摘要。</p>
+          <div class="stage-contract"><strong>本阶段代码变更（可见契约）</strong><dl>
+            <dt>新增导入</dt><dd>无</dd><dt>新增方法</dt><dd><code>show_result</code></dd>
+            <dt>修改方法</dt><dd><code>__init__</code>、<code>finish_simulation</code></dd><dt>新增属性</dt><dd><code>result_label</code></dd>
+            <dt>新增状态</dt><dd>无</dd><dt>修改状态</dt><dd>无</dd>
+            <dt>新增启动语句</dt><dd>无</dd><dt>修改启动语句</dt><dd>无</dd>
+          </dl></div>
+          <p><strong>可见变化：</strong>相对步骤 4，成功后除了状态文字，结果区还会显示演示类别和置信度摘要。</p>
           <pre><code>import sys
 from enum import Enum
 from pathlib import Path
@@ -1136,8 +1161,13 @@ raise SystemExit(app.exec())</code></pre>
           <div class="lesson-check"><strong>检查点</strong><p>等待结束后，结果区域显示固定摘要；这证明示例不依赖真实模型。</p></div>
 
           <h3>步骤 6：错误恢复</h3>
-          <div class="stage-contract" data-added-imports="" data-added-methods="start_failure complete_simulation reset" data-modified-methods="__init__ set_state finish_simulation" data-added-attributes="fail_button reset_button" data-added-states="ERROR" data-modified-states=""><strong>本阶段代码变更：</strong>新增失败入口、共享完成处理和重置操作；修改构造函数、状态更新和既有成功完成回调以接入恢复路径。</div>
-          <p><strong>本阶段新增：</strong>在同样以文案为值的 <code>UiState</code> 中增加 <code>ERROR</code>，并增加故障演示按钮、<code>start_failure()</code>、<code>reset()</code>。同时<strong>修改</strong><code>set_state()</code> 以管理新增按钮，并把既有完成回调扩展为 <code>try/except/finally</code>；成功仍调用步骤 5 的 <code>show_result()</code>。相对步骤 5，用户可从失败恢复，不会被永久禁用的按钮困住。</p>
+          <div class="stage-contract"><strong>本阶段代码变更（可见契约）</strong><dl>
+            <dt>新增导入</dt><dd>无</dd><dt>新增方法</dt><dd><code>start_failure</code>、<code>complete_simulation</code>、<code>reset</code></dd>
+            <dt>修改方法</dt><dd><code>__init__</code>、<code>set_state</code>、<code>finish_simulation</code></dd>
+            <dt>新增属性</dt><dd><code>fail_button</code>、<code>reset_button</code></dd><dt>新增状态</dt><dd><code>ERROR</code></dd><dt>修改状态</dt><dd>无</dd>
+            <dt>新增启动语句</dt><dd>无</dd><dt>修改启动语句</dt><dd>无</dd>
+          </dl><p><strong>完成职责：</strong><code>finish_simulation()</code> 只负责把成功路径委托给 <code>complete_simulation(None)</code>；<code>complete_simulation()</code> 负责 <code>try/except/finally</code> 结构，成功时复用步骤 5 的 <code>show_result()</code>，最终统一恢复界面状态。</p></div>
+          <p><strong>可见变化：</strong>相对步骤 5，窗口出现“模拟失败”和“回到空闲”按钮；成功与失败后都能恢复，不会被永久禁用的按钮困住。</p>
           <pre><code data-python-example="diagnosis-ui">import sys
 from enum import Enum
 from pathlib import Path
@@ -1231,7 +1261,6 @@ class DiagnosisWindow(QWidget):
 
 app = QApplication(sys.argv)
 window = DiagnosisWindow()
-window.resize(380, 260)
 window.show()
 raise SystemExit(app.exec())</code></pre>
           <div class="lesson-check"><strong>检查点</strong><p>选择文件后分别点“开始诊断”和“模拟失败”。两条路径结束时都应重新出现可用的“回到空闲”按钮。</p></div>
