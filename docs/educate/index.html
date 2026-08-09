@@ -446,17 +446,218 @@ raise SystemExit(app.exec())</code></pre></div></details>
 
         <section class="chapter lesson" id="widgets" data-title="控件" data-level="foundation">
           <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 4 课</span></div>
-          <h2>用控件表达界面意图</h2><div class="object-map">QLabel 显示文字，QPushButton 触发动作，QLineEdit 接收输入。</div>
+          <h2>用控件收集输入并显示结果</h2>
+          <div class="lesson-goals"><strong>本节只学三件事</strong><ol><li>把 <code>QLabel</code>、<code>QLineEdit</code>、<code>QComboBox</code>、<code>QPushButton</code> 和 <code>QTextEdit</code> 组成一个完整表单。</li><li>用构造参数给控件初始文字，用 <code>text()</code>/<code>currentText()</code> 读取值，再用 <code>setText()</code> 写入值。</li><li>在窗口类中把以后还要使用的控件保存为 <code>self.属性</code>。</li></ol></div>
+          <div class="execution-steps"><strong>运行前准备</strong><p>保存为 <code>widgets_form.py</code>，确认已安装 PySide6 后运行 <code>python widgets_form.py</code>。这是完整程序，不要把类的一部分单独复制到交互式解释器。</p></div>
+          <pre><code data-python-example="widgets-form">import sys
+
+from PySide6.QtCore import Slot
+from PySide6.QtWidgets import QApplication, QComboBox, QFormLayout, QLabel, QLineEdit, QPushButton, QTextEdit, QVBoxLayout, QWidget
+
+class ProfileForm(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("控件表单")
+        self.name_input = QLineEdit("小林")
+        self.role_box = QComboBox()
+        self.role_box.addItems(["检修员", "分析员", "管理员"])
+        self.submit_button = QPushButton("显示资料")
+        self.result_output = QTextEdit()
+        self.result_output.setReadOnly(True)
+        form = QFormLayout()
+        form.addRow(QLabel("姓名："), self.name_input)
+        form.addRow(QLabel("角色："), self.role_box)
+        layout = QVBoxLayout(self)
+        layout.addLayout(form)
+        layout.addWidget(self.submit_button)
+        layout.addWidget(self.result_output)
+        self.submit_button.clicked.connect(self.show_profile)
+
+    @Slot()
+    def show_profile(self):
+        name = self.name_input.text().strip()
+        role = self.role_box.currentText()
+        self.result_output.setText(f"已提交：{name}（{role}）")
+
+app = QApplication(sys.argv)
+window = ProfileForm()
+window.resize(360, 250)
+window.show()
+raise SystemExit(app.exec())</code></pre>
+          <div class="expected-ui"><strong>运行后应该看到什么</strong><p>窗口从上到下有四个可见区域：第一行是“姓名：”标签和预填“小林”的单行输入框；第二行是“角色：”标签和默认“检修员”的下拉框；第三行是“显示资料”按钮；最后是一块空白、不可编辑的多行结果框。改姓名或选择角色后点击按钮，最后一行会变成例如“已提交：王敏（分析员）”；前面三行仍保留当前输入。</p></div>
+          <div class="execution-steps"><strong>程序按什么顺序运行</strong><ol><li><code>ProfileForm()</code> 依次创建所有控件和布局。</li><li><code>QLineEdit("小林")</code> 与 <code>QPushButton("显示资料")</code> 的字符串是构造参数，创建时就给出初始文字。</li><li><code>clicked.connect(...)</code> 只登记将来的处理方法；<code>app.exec()</code> 开始等待用户操作。</li><li>点击按钮后，槽函数读取两个控件，再更新只读的 <code>QTextEdit</code>。</li></ol></div>
+          <div class="line-explanation"><strong>逐行解释</strong><table class="compare"><thead><tr><th>代码</th><th>作用</th></tr></thead><tbody><tr><td><code>self.name_input = QLineEdit("小林")</code></td><td>创建单行编辑框并保存实例引用；槽函数可用同一对象的 <code>text()</code> 读取内容。</td></tr><tr><td><code>self.role_box.addItems(...)</code></td><td>把多个选项放入下拉框；<code>currentText()</code> 返回当前可见文字。</td></tr><tr><td><code>self.result_output.setReadOnly(True)</code></td><td>结果框仍能显示和复制文本，但用户不能直接编辑它。</td></tr><tr><td><code>setText(...)</code></td><td>setter：把新文本写到控件；与返回当前值的 getter <code>text()</code> 相对。</td></tr></tbody></table></div>
+          <div class="syntax-zoom"><strong>关键语法放大镜</strong><p><code>self.name_input</code> 左侧把对象引用存到窗口实例，右侧才是构造 <code>QLineEdit</code>。局部变量在构造方法结束后不再是该窗口可访问的名字；需要在按钮回调中读取的控件应保存在 <code>self</code> 上。<code>text()</code> 和 <code>currentText()</code> 有括号，表示“现在取值”；<code>setText(value)</code> 则把值交给控件显示。</p></div>
+          <div class="object-map"><strong>对象关系</strong><p><code>ProfileForm</code> 持有输入框、下拉框、按钮和结果框；布局持有它们的摆放关系。按钮的 <code>clicked</code> 信号到达 <code>show_profile</code>，槽从输入控件读取值，写入结果控件。</p></div>
+          <div class="experiment"><strong>改一个地方看变化</strong><p>把 <code>QLineEdit("小林")</code> 改成 <code>QLineEdit()</code>，重新运行并点击按钮：结果仍会生成，但姓名部分为空。再把 <code>setReadOnly(True)</code> 暂时改为 <code>False</code>，观察结果框可以被直接编辑。</p></div>
+          <div class="mistake"><strong>常见错误</strong><table class="compare"><thead><tr><th>错误</th><th>原因、修复与验证</th></tr></thead><tbody><tr><td><code>name_input = QLineEdit()</code> 后在槽中写 <code>self.name_input.text()</code></td><td>前者只是构造方法中的局部名字，窗口没有对应属性。修复为 <code>self.name_input = ...</code>；点击按钮后应能读取输入而不是得到 <code>AttributeError</code>。</td></tr><tr><td>把结果框当成输入框</td><td>用户可以改写程序结果，界面语义混乱。对“程序输出”调用 <code>setReadOnly(True)</code>；验证结果框不能键入但点击仍会更新文字。</td></tr></tbody></table></div>
+          <div class="lesson-check"><strong>最小练习</strong><p>在表单中加入一个“清空”按钮：点击后清空姓名输入框、把下拉框选回第一项，并清空结果框。</p></div>
+          <details><summary>参考答案：带清空按钮的完整程序</summary><div class="details-body"><pre><code>import sys
+from PySide6.QtCore import Slot
+from PySide6.QtWidgets import QApplication, QComboBox, QFormLayout, QLineEdit, QPushButton, QTextEdit, QVBoxLayout, QWidget
+class Form(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.name = QLineEdit()
+        self.role = QComboBox()
+        self.role.addItems(["检修员", "分析员"])
+        self.output = QTextEdit()
+        self.output.setReadOnly(True)
+        show = QPushButton("显示")
+        clear = QPushButton("清空")
+        form = QFormLayout()
+        form.addRow("姓名：", self.name)
+        form.addRow("角色：", self.role)
+        layout = QVBoxLayout(self)
+        layout.addLayout(form)
+        layout.addWidget(show)
+        layout.addWidget(clear)
+        layout.addWidget(self.output)
+        show.clicked.connect(self.show_text)
+        clear.clicked.connect(self.clear_form)
+    @Slot()
+    def show_text(self):
+        self.output.setText(f"{self.name.text()} / {self.role.currentText()}")
+    @Slot()
+    def clear_form(self):
+        self.name.setText("")
+        self.role.setCurrentIndex(0)
+        self.output.clear()
+app = QApplication(sys.argv)
+window = Form()
+window.show()
+raise SystemExit(app.exec())</code></pre></div></details>
+          <div class="lesson-check"><strong>过关检查</strong><p>请说明为什么读取姓名要写 <code>self.name_input.text()</code>，而不是构造时的字符串“小林”；并指出哪个控件负责输入、选择、触发动作和只读输出。</p></div>
         </section>
 
         <section class="chapter lesson" id="layouts" data-title="布局" data-level="foundation">
           <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 5 课</span></div>
-          <h2>让窗口尺寸变化时界面仍然可靠</h2><div class="mistake"><strong>常见错误</strong><p>不要用固定坐标堆放控件；把控件交给布局管理器。</p></div>
+          <h2>嵌套布局让窗口缩放后仍然整齐</h2>
+          <div class="lesson-goals"><strong>本节只学三件事</strong><ol><li>用一个 <code>QVBoxLayout</code> 纵向组合 <code>QFormLayout</code> 与 <code>QHBoxLayout</code>。</li><li>理解布局拥有几何管理权：窗口大小变化时由布局重新分配空间。</li><li>用插入顺序、边距、间距和 stretch 因子描述界面，而不是写死坐标。</li></ol></div>
+          <div class="execution-steps"><strong>运行前准备</strong><p>保存为 <code>nested_layouts.py</code> 并执行 <code>python nested_layouts.py</code>。拖动窗口边缘后观察输入框和空白区域如何伸缩。</p></div>
+          <pre><code data-python-example="nested-layouts">import sys
+
+from PySide6.QtWidgets import QApplication, QFormLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
+
+app = QApplication(sys.argv)
+window = QWidget()
+window.setWindowTitle("嵌套布局")
+form = QFormLayout()
+form.addRow(QLabel("设备名："), QLineEdit())
+form.addRow(QLabel("位置："), QLineEdit())
+buttons = QHBoxLayout()
+buttons.addStretch(1)
+buttons.addWidget(QPushButton("取消"))
+buttons.addWidget(QPushButton("保存"))
+root = QVBoxLayout(window)
+root.setContentsMargins(18, 18, 18, 18)
+root.setSpacing(12)
+root.addLayout(form)
+root.addStretch(1)
+root.addLayout(buttons)
+window.resize(420, 220)
+window.show()
+raise SystemExit(app.exec())</code></pre>
+          <div class="expected-ui"><strong>运行后应该看到什么</strong><p>窗口上半部有两行表单：每行左侧是标签、右侧是可拉伸的输入框；中间有一块会随窗口变高而增大的空白；底部右侧从左到右是“取消”“保存”两个按钮。窗口四周留有 18 像素边距，主要区域之间有 12 像素间距。</p></div>
+          <div class="execution-steps"><strong>程序按什么顺序运行</strong><ol><li>先创建表单布局，按 <code>addRow</code> 顺序加入两行。</li><li>再创建水平按钮布局，先加入 stretch 弹簧，随后按顺序加入两个按钮。</li><li>最后把两个子布局插入窗口的垂直根布局；根布局接管窗口内部的几何管理。</li><li>窗口缩放时，根布局重新计算各项空间，中央 stretch 优先吸收多余高度。</li></ol></div>
+          <div class="line-explanation"><strong>逐行解释</strong><table class="compare"><thead><tr><th>代码</th><th>作用</th></tr></thead><tbody><tr><td><code>root = QVBoxLayout(window)</code></td><td>把根布局安装到窗口；它拥有窗口内容区的几何管理权。</td></tr><tr><td><code>root.addLayout(form)</code></td><td>把完整表单作为第一项嵌套进去，而不是把表单控件另行摆放。</td></tr><tr><td><code>root.addStretch(1)</code></td><td>插入伸缩项；因子 1 表示它可取得一份多余空间，此处让按钮靠近底部。</td></tr><tr><td><code>setContentsMargins</code>/<code>setSpacing</code></td><td>分别设定布局边缘到内容的留白，以及相邻布局项之间的距离。</td></tr></tbody></table></div>
+          <div class="syntax-zoom"><strong>关键语法放大镜</strong><p>布局项按 <code>add...</code> 的调用顺序出现。<code>QVBoxLayout</code> 管纵向顺序，<code>QHBoxLayout</code> 管横向顺序，<code>QFormLayout</code> 管“标签—字段”成对的行。stretch 不是固定像素，它是多余空间的相对权重；两个 stretch 的因子为 1 和 2 时，后者通常取得约两份可伸缩空间。</p></div>
+          <div class="object-map"><strong>对象关系</strong><p><code>window</code> 安装 <code>root</code>，<code>root</code> 从上到下管理 <code>form</code>、中央 stretch 和 <code>buttons</code>；<code>form</code> 管理四个标签/输入控件，<code>buttons</code> 管理 stretch 和两个按钮。一个控件在同一时刻只能由一个布局管理，不能同时放进两个布局。</p></div>
+          <div class="experiment"><strong>改一个地方看变化</strong><p>把 <code>root.addStretch(1)</code> 注释掉：按钮会紧跟在表单下方。恢复后把 <code>root.setSpacing(12)</code> 改为 <code>root.setSpacing(2)</code>，比较紧凑程度；再把窗口拉高，观察中央伸缩项而不是输入框得到大部分新增高度。</p></div>
+          <div class="expected-ui"><strong>文字线框图</strong><pre><code>┌──────────────────────────────────┐&#10;│ 设备名： [____________________]  │  ← QFormLayout&#10;│ 位置：   [____________________]  │&#10;│                                  │  ← root 的 stretch(1)&#10;│                  [取消] [保存]  │  ← QHBoxLayout&#10;└──────────────────────────────────┘</code></pre></div>
+          <div class="mistake"><strong>常见错误</strong><table class="compare"><thead><tr><th>错误</th><th>原因、修复与验证</th></tr></thead><tbody><tr><td>同一个 <code>QLineEdit</code> 先 <code>form.addRow(...)</code> 又 <code>other_layout.addWidget(...)</code></td><td>一个控件不能同时属于两个布局；后一次操作会让界面所有权混乱或被 Qt 重新安放。修复：为不同位置创建不同控件，或只把同一个子布局嵌套一次。验证：调整窗口大小时每个控件仍只在一个位置出现。</td></tr><tr><td>用 <code>move()</code>、<code>resize()</code> 手工排每个子控件</td><td>固定坐标不能随字体、翻译和窗口缩放可靠调整。修复：把控件交给布局，保留固定尺寸仅作为窗口初始大小。验证：放大和缩小窗口后不重叠、不被裁切。</td></tr></tbody></table></div>
+          <div class="lesson-check"><strong>最小练习</strong><p>把根布局的间距改为 24，并增加一个第二个 stretch（因子为 2），观察按钮位置和留白怎样变化。</p></div>
+          <details><summary>参考答案：改变布局间距的完整程序</summary><div class="details-body"><pre><code>import sys
+from PySide6.QtWidgets import QApplication, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
+app = QApplication(sys.argv)
+window = QWidget()
+form = QVBoxLayout()
+form.addWidget(QLabel("设备名："))
+form.addWidget(QLineEdit())
+buttons = QHBoxLayout()
+buttons.addStretch(1)
+buttons.addWidget(QPushButton("保存"))
+root = QVBoxLayout(window)
+root.setSpacing(24)
+root.addLayout(form)
+root.addStretch(2)
+root.addLayout(buttons)
+window.show()
+raise SystemExit(app.exec())</code></pre></div></details>
+          <div class="lesson-check"><strong>过关检查</strong><p>请按屏幕顺序说出本例的三个根布局项，并解释为什么中央 stretch 能把按钮推到底部、为什么同一个输入框不能加入两个布局。</p></div>
         </section>
 
         <section class="chapter lesson" id="signals-slots" data-title="信号与槽" data-level="foundation">
           <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 6 课</span></div>
-          <h2>把用户动作连接到 Python 方法</h2><div class="syntax-zoom">button.clicked.connect(handle_click)</div><div class="experiment">改变按钮文字，观察同一个槽函数如何复用。</div>
+          <h2>让按钮的信号在正确的时机调用槽</h2>
+          <div class="lesson-goals"><strong>本节只学三件事</strong><ol><li>用类保存计数状态，并用 <code>clicked.connect</code> 把按钮连接到 <code>@Slot()</code> 方法。</li><li>区分传递函数对象 <code>connect(self.increment)</code> 与立刻调用 <code>connect(self.increment())</code>。</li><li>理解点击时才发射信号、Qt 才回调槽；信号参数可被槽自动接收或忽略。</li></ol></div>
+          <div class="execution-steps"><strong>运行前准备</strong><p>保存为 <code>signals_slots.py</code>，运行 <code>python signals_slots.py</code>。每点一次按钮都应让数字恰好加一。</p></div>
+          <pre><code data-python-example="signals-slots">import sys
+
+from PySide6.QtCore import Slot
+from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QVBoxLayout, QWidget
+
+class CounterWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.count = 0
+        self.count_label = QLabel("计数：0")
+        self.increment_button = QPushButton("加一")
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.count_label)
+        layout.addWidget(self.increment_button)
+        self.increment_button.clicked.connect(self.increment)
+
+    @Slot()
+    def increment(self):
+        self.count += 1
+        self.count_label.setText(f"计数：{self.count}")
+
+app = QApplication(sys.argv)
+window = CounterWindow()
+window.resize(220, 120)
+window.show()
+raise SystemExit(app.exec())</code></pre>
+          <div class="expected-ui"><strong>运行后应该看到什么</strong><p>窗口先显示“计数：0”和“加一”按钮。第一次点击后标签变成“计数：1”，以后每点击一次递增一次；按钮文字和窗口布局不改变。</p></div>
+          <div class="execution-steps"><strong>程序按什么顺序运行</strong><ol><li>构造窗口时先建立 <code>count</code>、标签和按钮，再把方法对象登记到 <code>clicked</code> 信号。</li><li>程序进入事件循环后什么也不会自动递增。</li><li>用户释放鼠标按钮时，<code>clicked</code> 发射；Qt 在那一刻调用已登记的 <code>increment</code>。</li><li>槽增加 Python 状态并用新值更新标签。</li></ol></div>
+          <div class="line-explanation"><strong>逐行解释</strong><table class="compare"><thead><tr><th>代码</th><th>作用</th></tr></thead><tbody><tr><td><code>self.increment_button.clicked.connect(self.increment)</code></td><td>把“可在以后调用的绑定方法对象”存进信号的连接表；这里没有括号。</td></tr><tr><td><code>@Slot()</code></td><td>把下面方法声明为 Qt 槽；这个无参数槽只关心自己的窗口状态。</td></tr><tr><td><code>self.count += 1</code></td><td>改变保存在实例上的状态，所以下次点击仍能看见上一次的计数。</td></tr><tr><td><code>setText(f"...")</code></td><td>把最新状态渲染到可见标签，而不是只在 Python 变量中改变数字。</td></tr></tbody></table></div>
+          <div class="syntax-zoom"><strong>关键语法放大镜</strong><p><code>connect(self.increment)</code> 传递的是函数对象，意思是“请 Qt 稍后调用它”。<code>connect(self.increment())</code> 先在构造期间执行 <code>increment()</code>，其返回值（通常是 <code>None</code>）才被拿去连接，因此会过早更新或连接失败。<code>clicked</code> 可自动携带一个 <code>checked</code> 布尔参数；本例的无参 <code>@Slot()</code> 不需要它，Qt 会匹配这个槽。若确实要捕获循环中的额外值，可写 <code>button.clicked.connect(lambda checked, value=value: self.choose(value))</code>：lambda 显式接住自动传来的 <code>checked</code>，并冻结当前 <code>value</code>。初学的单按钮动作仍优先使用命名槽。</p></div>
+          <div class="object-map"><strong>对象关系</strong><p><code>CounterWindow</code> 持有计数、标签和按钮。按钮持有 <code>clicked</code> 信号到 <code>increment</code> 的连接；事件循环在点击发生时调用槽，槽再更新窗口持有的标签。</p></div>
+          <div class="experiment"><strong>改一个地方看变化</strong><p>把 <code>self.count += 1</code> 改成 <code>self.count += 2</code>，重新运行；每次点击应增加二。随后把按钮文字改为“记录一次”，会发现连接仍然有效，因为信号来自同一个按钮对象而不是它显示的文字。</p></div>
+          <div class="mistake"><strong>常见错误</strong><table class="compare"><thead><tr><th>错误</th><th>原因、修复与验证</th></tr></thead><tbody><tr><td><code>clicked.connect(self.increment())</code></td><td>括号会使槽在连接阶段提前运行，并传入 <code>None</code>。修复为 <code>clicked.connect(self.increment)</code>；验证：启动窗口仍为 0，点击后才变 1。</td></tr><tr><td>每次点击或刷新界面都再次执行 <code>connect</code></td><td>同一个信号会累计多个连接，之后一次点击可能加多次。修复：通常只在构造方法连接一次；验证：连续点击五次时计数严格为 5，而不是跳跃。</td></tr></tbody></table></div>
+          <div class="lesson-check"><strong>最小练习</strong><p>添加“重置”按钮和 <code>reset</code> 槽：点击后把计数恢复为 0，并立刻更新标签。</p></div>
+          <details><summary>参考答案：带重置按钮的完整程序</summary><div class="details-body"><pre><code>import sys
+from PySide6.QtCore import Slot
+from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QVBoxLayout, QWidget
+class Counter(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.count = 0
+        self.label = QLabel()
+        add_button = QPushButton("加一")
+        reset_button = QPushButton("重置")
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.label)
+        layout.addWidget(add_button)
+        layout.addWidget(reset_button)
+        add_button.clicked.connect(self.increment)
+        reset_button.clicked.connect(self.reset)
+        self.refresh_label()
+    def refresh_label(self):
+        self.label.setText(f"计数：{self.count}")
+    @Slot()
+    def increment(self):
+        self.count += 1
+        self.refresh_label()
+    @Slot()
+    def reset(self):
+        self.count = 0
+        self.refresh_label()
+app = QApplication(sys.argv)
+window = Counter()
+window.show()
+raise SystemExit(app.exec())</code></pre></div></details>
+          <div class="lesson-check"><strong>过关检查</strong><p>请不看代码说出：连接时为什么不能写 <code>()</code>；真正调用 <code>increment</code> 的时刻是什么；若一次点击加了两次，最先检查什么。</p></div>
         </section>
 
         <section class="chapter lesson" id="main-window-basics" data-title="主窗口基础" data-level="foundation">

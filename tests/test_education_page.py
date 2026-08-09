@@ -181,15 +181,28 @@ def test_foundation_examples_are_complete_python(project_root):
     text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
     audit = _PythonExampleAudit()
     audit.feed(text)
-    required = {"pyside-import-check", "first-window", "event-loop-timer"}
+    required = {
+        "first-window",
+        "event-loop-timer",
+        "widgets-form",
+        "nested-layouts",
+        "signals-slots",
+    }
     assert required <= audit.examples.keys()
     for name in required:
         compile(audit.examples[name], f"<{name}>", "exec")
 
 
-def test_first_lessons_use_full_teaching_template(project_root):
+def test_foundation_lessons_use_full_teaching_template(project_root):
     text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
-    required_sections = {"pyside-intro", "first-window", "event-loop"}
+    required_sections = {
+        "pyside-intro",
+        "first-window",
+        "event-loop",
+        "widgets",
+        "layouts",
+        "signals-slots",
+    }
     audit = _LessonSectionAudit(required_sections)
     audit.feed(text)
     assert required_sections == audit.sections.keys()
