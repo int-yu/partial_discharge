@@ -187,6 +187,10 @@ def test_foundation_examples_are_complete_python(project_root):
         "widgets-form",
         "nested-layouts",
         "signals-slots",
+        "main-window",
+        "file-dialog",
+        "stacked-pages",
+        "qss-states",
     }
     assert required <= audit.examples.keys()
     for name in required:
@@ -214,6 +218,10 @@ def test_foundation_lessons_use_full_teaching_template(project_root):
         "widgets",
         "layouts",
         "signals-slots",
+        "main-window-basics",
+        "dialogs",
+        "stacked-pages",
+        "qss",
     }
     audit = _LessonSectionAudit(required_sections)
     audit.feed(text)

@@ -686,21 +686,218 @@ raise SystemExit(app.exec())</code></pre></div></details>
         </section>
 
         <section class="chapter lesson" id="main-window-basics" data-title="主窗口基础" data-level="foundation">
+          <div class="lesson-goals"><strong>本节只学三件事</strong><ol><li>区分中央内容区、菜单栏、工具栏和状态栏。</li><li>在中央 <code>QWidget</code> 上安装布局。</li><li>复用一个 <code>QAction</code>。</li></ol></div>
+          <div class="execution-steps"><strong>运行前准备</strong><p>保存为 <code>main_window.py</code>，执行 <code>python main_window.py</code>，分别点击菜单和工具栏中的帮助动作。</p></div>
+          <pre><code data-python-example="main-window">import sys
+from PySide6.QtCore import Slot
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QPushButton, QVBoxLayout, QWidget
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("主窗口示例")
+        central_widget = QWidget()
+        layout = QVBoxLayout(central_widget)
+        layout.addWidget(QLabel("这里是中央内容区。"))
+        refresh_button = QPushButton("刷新")
+        layout.addWidget(refresh_button)
+        self.setCentralWidget(central_widget)
+        self.help_action = QAction("显示帮助", self)
+        self.help_action.triggered.connect(self.show_help)
+        self.menuBar().addMenu("帮助").addAction(self.help_action)
+        self.addToolBar("常用").addAction(self.help_action)
+        refresh_button.clicked.connect(self.refresh)
+        self.statusBar().showMessage("就绪")
+
+    @Slot()
+    def show_help(self):
+        self.statusBar().showMessage("菜单和工具栏复用了同一个 QAction", 3000)
+
+    @Slot()
+    def refresh(self):
+        self.statusBar().showMessage("已刷新中央内容", 3000)
+
+app = QApplication(sys.argv)
+window = MainWindow()
+window.resize(460, 240)
+window.show()
+raise SystemExit(app.exec())</code></pre>
+          <div class="expected-ui"><strong>运行后应该看到什么</strong><p>菜单栏、工具栏、中央标签和按钮、状态栏同时出现；从菜单或工具栏触发帮助都会在状态栏显示同一消息。</p></div>
+          <div class="execution-steps"><strong>程序按什么顺序运行</strong><ol><li>先创建中央控件和其布局。</li><li>主窗口接管中央控件、菜单动作和工具栏动作。</li><li>事件循环中动作触发槽，槽更新状态栏。</li></ol></div>
+          <div class="line-explanation"><strong>逐行解释</strong><p><code>QVBoxLayout(central_widget)</code> 把布局交给普通中央控件；<code>setCentralWidget</code> 指定主内容区；<code>addAction</code> 可把同一动作放入两个位置；<code>statusBar()</code> 会在首次需要时懒创建状态栏。</p></div>
+          <div class="syntax-zoom"><strong>关键语法放大镜</strong><p><code>QAction("显示帮助", self)</code> 的父对象是主窗口，窗口销毁时动作也会清理。<code>self</code>、中央控件和布局形成清楚的应用→窗口→控件所有权链。</p></div>
+          <div class="object-map"><strong>对象关系</strong><p><code>QApplication</code> 管理事件循环；<code>MainWindow</code> 管理其专用区域并拥有动作；中央 <code>QWidget</code> 拥有布局，布局管理标签和按钮。</p></div>
+          <div class="experiment"><strong>改一个地方看变化</strong><p>改动 <code>show_help</code> 的文字；菜单和工具栏仍会同步表现，因为它们引用同一个动作。</p></div>
+          <div class="mistake"><strong>常见错误</strong><p>不要直接写 <code>QVBoxLayout(self)</code>：<code>QMainWindow</code> 要保留菜单、工具栏、停靠区和状态栏的专用结构。修复为中央 <code>QWidget</code> 加布局并调用 <code>setCentralWidget()</code>；缩放窗口验证内容正常伸缩。</p></div>
+          <div class="lesson-check"><strong>最小练习</strong><p>添加“退出”动作，连接 <code>self.close</code>，并把它同时加入“文件”菜单和工具栏。</p></div>
+          <details><summary>参考答案：退出动作</summary><div class="details-body"><pre><code>exit_action = QAction("退出", self)
+exit_action.triggered.connect(self.close)
+self.menuBar().addMenu("文件").addAction(exit_action)
+self.addToolBar("文件").addAction(exit_action)</code></pre></div></details>
+          <div class="lesson-check"><strong>过关检查</strong><p>说明为何布局不能直接安装在 <code>QMainWindow</code>，以及一个 <code>QAction</code> 怎样被菜单和工具栏复用。</p></div>
           <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 7 课</span></div>
           <h2>何时从 QWidget 走向 QMainWindow</h2><div class="lesson-check">能区分中央内容区、菜单栏、工具栏和状态栏。</div>
         </section>
 
         <section class="chapter lesson" id="dialogs" data-title="对话框" data-level="foundation">
+          <div class="lesson-goals"><strong>本节只学三件事</strong><ol><li>打开文件选择对话框。</li><li>识别取消选择。</li><li>使用信息消息框说明结果。</li></ol></div>
+          <div class="execution-steps"><strong>运行前准备</strong><p>保存为 <code>file_dialog.py</code> 并运行 <code>python file_dialog.py</code>；分别选择 CSV 文件和取消一次。</p></div>
+          <pre><code data-python-example="file-dialog">import sys
+from PySide6.QtCore import Slot
+from PySide6.QtWidgets import QApplication, QFileDialog, QLabel, QMessageBox, QPushButton, QVBoxLayout, QWidget
+
+class FileDialogWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("文件对话框示例")
+        self.path_label = QLabel("尚未选择文件")
+        choose_button = QPushButton("选择报告文件")
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.path_label)
+        layout.addWidget(choose_button)
+        choose_button.clicked.connect(self.choose_file)
+
+    @Slot()
+    def choose_file(self):
+        path, selected_filter = QFileDialog.getOpenFileName(
+            self, "选择报告文件", "", "CSV 文件 (*.csv);;所有文件 (*)"
+        )
+        if not path:
+            self.path_label.setText("已取消，未读取任何文件")
+            return
+        self.path_label.setText(path)
+        QMessageBox.information(self, "文件已选择", f"路径：{path}\n使用的筛选器：{selected_filter}")
+
+app = QApplication(sys.argv)
+window = FileDialogWindow()
+window.resize(440, 150)
+window.show()
+raise SystemExit(app.exec())</code></pre>
+          <div class="expected-ui"><strong>运行后应该看到什么</strong><p>选择文件后标签显示路径并出现信息框；取消后标签显示取消，不会报告选择成功。</p></div>
+          <div class="execution-steps"><strong>程序按什么顺序运行</strong><ol><li>按钮打开模态对话框。</li><li>用户选择或取消后返回 <code>(path, selected_filter)</code>。</li><li>只有路径非空才显示成功信息。</li></ol></div>
+          <div class="line-explanation"><strong>逐行解释</strong><p>双分号分隔过滤器，括号内是通配符。多重赋值把返回元组拆开；<code>if not path</code> 处理取消；<code>QMessageBox.information</code> 显示模态信息。</p></div>
+          <div class="syntax-zoom"><strong>关键语法放大镜</strong><p><code>self</code> 是长期存活的主窗口，作为父对象使对话框始终位于正确窗口前并拥有可靠生命周期。模态意味着用户先完成对话框，才可继续操作父窗口。</p></div>
+          <div class="object-map"><strong>对象关系</strong><p>窗口拥有标签和按钮；按钮调用窗口槽。文件和消息对话框是以 <code>self</code> 为父对象的短暂子界面，结果交还给仍被保留的窗口处理。</p></div>
+          <div class="experiment"><strong>改一个地方看变化</strong><p>把过滤器换成 <code>"文本文件 (*.txt);;所有文件 (*)"</code>，并在信息框中比较返回的 <code>selected_filter</code>。</p></div>
+          <div class="mistake"><strong>常见错误</strong><p>不要忽略取消：取消返回空路径，随后读取它会失败。先写 <code>if not path: return</code>；验证取消后不出现成功消息。也不要传临时父对象，应传窗口 <code>self</code>。</p></div>
+          <div class="lesson-check"><strong>最小练习</strong><p>增加一个图片选择按钮，使用 <code>"图片 (*.png *.jpg);;所有文件 (*)"</code>，取消时保持原有路径。</p></div>
+          <details><summary>参考答案：只在选择后更新</summary><div class="details-body"><pre><code>path, _ = QFileDialog.getOpenFileName(self, "选择图片", "", "图片 (*.png *.jpg);;所有文件 (*)")
+if path:
+    self.path_label.setText(path)</code></pre></div></details>
+          <div class="lesson-check"><strong>过关检查</strong><p>写出返回元组的两项，说明取消时第一项是什么；再解释传入 <code>self</code> 与模态行为的作用。</p></div>
           <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 8 课</span></div>
           <h2>把需要确认或选择的操作放进对话框</h2><p>对话框让短暂的输入和明确的结果保持在一个可控边界内。</p>
         </section>
 
         <section class="chapter lesson" id="stacked-pages" data-title="多页面" data-level="foundation">
+          <div class="lesson-goals"><strong>本节只学三件事</strong><ol><li>按加入顺序理解页面索引。</li><li>用 <code>setCurrentIndex</code> 切换页面。</li><li>让堆叠控件拥有页面。</li></ol></div>
+          <div class="execution-steps"><strong>运行前准备</strong><p>保存为 <code>stacked_pages.py</code>，运行 <code>python stacked_pages.py</code>，交替点击“概览”和“设置”。</p></div>
+          <pre><code data-python-example="stacked-pages">import sys
+from PySide6.QtCore import Slot
+from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QHBoxLayout, QStackedWidget, QVBoxLayout, QWidget
+
+class PageWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("堆叠页面示例")
+        self.pages = QStackedWidget()
+        self.pages.addWidget(QLabel("概览页：显示当前任务摘要。"))  # 索引 0
+        self.pages.addWidget(QLabel("设置页：放置界面偏好。"))      # 索引 1
+        overview_button = QPushButton("概览")
+        settings_button = QPushButton("设置")
+        navigation = QHBoxLayout()
+        navigation.addWidget(overview_button)
+        navigation.addWidget(settings_button)
+        layout = QVBoxLayout(self)
+        layout.addLayout(navigation)
+        layout.addWidget(self.pages)
+        overview_button.clicked.connect(self.show_overview)
+        settings_button.clicked.connect(self.show_settings)
+
+    @Slot()
+    def show_overview(self):
+        self.pages.setCurrentIndex(0)
+
+    @Slot()
+    def show_settings(self):
+        self.pages.setCurrentIndex(1)
+
+app = QApplication(sys.argv)
+window = PageWindow()
+window.resize(420, 180)
+window.show()
+raise SystemExit(app.exec())</code></pre>
+          <div class="expected-ui"><strong>运行后应该看到什么</strong><p>启动时显示概览；点击设置后同一区域显示设置页面，始终只有一个顶层窗口。</p></div>
+          <div class="execution-steps"><strong>程序按什么顺序运行</strong><ol><li>两次 <code>addWidget</code> 建立索引 0 和 1。</li><li>堆叠控件默认显示第一个页面。</li><li>按钮槽设置当前索引，隐藏旧页并显示目标页。</li></ol></div>
+          <div class="line-explanation"><strong>逐行解释</strong><p><code>QStackedWidget</code> 是只显示当前页的容器；<code>addWidget</code> 使它接管页面对象；<code>setCurrentIndex(0)</code> 和 <code>setCurrentIndex(1)</code> 分别选择已加入的第一页、第二页。</p></div>
+          <div class="syntax-zoom"><strong>关键语法放大镜</strong><p>索引从 0 开始。<code>self.pages</code> 是实例属性，按钮在事件循环稍后触发槽时仍可访问同一堆叠控件；<code>@Slot()</code> 声明无参槽。</p></div>
+          <div class="object-map"><strong>对象关系</strong><p><code>PageWindow</code> 拥有导航按钮、布局和 <code>QStackedWidget</code>，后者拥有两张页面。项目侧边栏也是这种导航：按钮只切换本地页面，暂不引入 SDK 调用。</p></div>
+          <div class="experiment"><strong>改一个地方看变化</strong><p>交换两次 <code>addWidget</code> 顺序而不改索引，按钮会显示错误页面；再改槽中的索引，使顺序和索引重新一致。</p></div>
+          <div class="mistake"><strong>常见错误</strong><p>不要对这里只有两页的控件调用 <code>setCurrentIndex(2)</code>，应使用设置页的索引 1；验证点击后文字确实变化。也不要每次导航新建顶层 <code>QWidget</code>，应预先加入堆叠控件。</p></div>
+          <div class="lesson-check"><strong>最小练习</strong><p>添加“历史”按钮和第三页，先加入第三页，再让按钮切换到索引 2。</p></div>
+          <details><summary>参考答案：第三页</summary><div class="details-body"><pre><code>self.pages.addWidget(QLabel("历史页：显示过去的运行记录。"))  # 索引 2
+history_button.clicked.connect(lambda: self.pages.setCurrentIndex(2))</code></pre></div></details>
+          <div class="lesson-check"><strong>过关检查</strong><p>说明页面加入顺序如何决定索引，<code>setCurrentIndex</code> 改变什么，以及这如何映射到侧边栏导航。</p></div>
           <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 9 课</span></div>
           <h2>用 QStackedWidget 管理多个工作页面</h2><p>导航只切换当前页面，不必创建多个顶层窗口。</p>
         </section>
 
         <section class="chapter lesson" id="qss" data-title="QSS" data-level="foundation">
+          <div class="lesson-goals"><strong>本节只学三件事</strong><ol><li>使用类型、对象名和伪状态选择器。</li><li>使用动态属性选择器。</li><li>在属性变化后重新 polish。</li></ol></div>
+          <div class="execution-steps"><strong>运行前准备</strong><p>保存为 <code>qss_states.py</code>，运行 <code>python qss_states.py</code>；悬停蓝色按钮并点击它切换状态。</p></div>
+          <pre><code data-python-example="qss-states">import sys
+from PySide6.QtCore import Slot
+from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QVBoxLayout, QWidget
+
+STYLE = """
+QPushButton { padding: 8px; border: 1px solid #7f8c8d; }
+QPushButton#primaryAction { background: #2980b9; color: white; }
+QPushButton#primaryAction:hover { background: #3498db; }
+QLabel[severity="warning"] { color: #c0392b; font-weight: bold; }
+"""
+
+class StyleWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("QSS 状态示例")
+        self.status_label = QLabel("状态正常")
+        self.status_label.setProperty("severity", "normal")
+        self.toggle_button = QPushButton("切换状态")
+        self.toggle_button.setObjectName("primaryAction")
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.status_label)
+        layout.addWidget(self.toggle_button)
+        self.setStyleSheet(STYLE)
+        self.toggle_button.clicked.connect(self.toggle_status)
+
+    @Slot()
+    def toggle_status(self):
+        is_warning = self.status_label.property("severity") != "warning"
+        severity = "warning" if is_warning else "normal"
+        self.status_label.setProperty("severity", severity)
+        self.status_label.setText("需要检查" if is_warning else "状态正常")
+        self.status_label.style().unpolish(self.status_label)
+        self.status_label.style().polish(self.status_label)
+        self.status_label.update()
+
+app = QApplication(sys.argv)
+window = StyleWindow()
+window.resize(300, 150)
+window.show()
+raise SystemExit(app.exec())</code></pre>
+          <div class="expected-ui"><strong>运行后应该看到什么</strong><p>按钮因 <code>#primaryAction</code> 呈蓝色，悬停时变浅；点击后标签文字变为“需要检查”且加粗红色，再点击恢复正常。</p></div>
+          <div class="execution-steps"><strong>程序按什么顺序运行</strong><ol><li>设置对象名与动态属性，然后安装 QSS。</li><li>按钮槽切换 <code>severity</code> 与文字。</li><li>重新应用标签样式并重绘。</li></ol></div>
+          <div class="line-explanation"><strong>逐行解释</strong><p><code>QPushButton</code> 是类型选择器；<code>#primaryAction</code> 匹配 <code>setObjectName</code>；<code>:hover</code> 匹配悬停伪状态；<code>QLabel[severity="warning"]</code> 匹配动态属性。</p></div>
+          <div class="syntax-zoom"><strong>关键语法放大镜</strong><p><code>setObjectName()</code> 提供稳定身份。<code>setProperty()</code> 改动态属性后 Qt 不一定自动重新匹配 QSS，因此调用 <code>unpolish</code>、<code>polish</code> 和 <code>update</code>；三引号字符串让多行规则清晰。</p></div>
+          <div class="object-map"><strong>对象关系</strong><p>窗口拥有标签和按钮，并把样式表安装在其控件树；标签保存展示属性。QSS 只改变呈现，诊断、保存或网络等业务行为应留在 Python 槽和模型中。</p></div>
+          <div class="experiment"><strong>改一个地方看变化</strong><p>把 <code>#2980b9</code> 改成另一种颜色，只会改变外观。把属性和值从 <code>warning</code> 改为 <code>alert</code> 时也必须同步改选择器。</p></div>
+          <div class="mistake"><strong>常见错误</strong><p>动态属性变化却不重新 polish，可能文字变了而颜色不变；修复后每次点击都应同步。也不要只用颜色表达状态：保留“需要检查”这类文字，即使不看颜色也能理解。</p></div>
+          <div class="lesson-check"><strong>最小练习</strong><p>增加 <code>severity="success"</code> 的绿色规则和“成功”按钮，让标签显示“已完成”，仍保留文字。</p></div>
+          <details><summary>参考答案：成功状态</summary><div class="details-body"><pre><code>QLabel[severity="success"] { color: #27823a; font-weight: bold; }
+self.status_label.setProperty("severity", "success")
+self.status_label.setText("已完成")</code></pre></div></details>
+          <div class="lesson-check"><strong>过关检查</strong><p>分别说明类型、对象名、伪状态和动态属性选择器匹配什么；为什么属性变后要重新 polish；为什么 QSS 不承担业务行为。</p></div>
           <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 10 课</span></div>
           <h2>用 QSS 统一界面外观</h2><p>QSS 类似 CSS，但服务于 Qt 控件树；把主题规则集中管理。</p>
         </section>
