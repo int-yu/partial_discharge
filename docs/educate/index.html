@@ -105,12 +105,15 @@
     .meta-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 25px; }
     .pill { display: inline-flex; align-items: center; gap: 7px; padding: 6px 11px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-size: .88rem; }
     .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+    .course-progress-summary { margin: 14px 0 0; color: var(--muted); font-weight: 700; }
 
     .content { width: min(1120px, calc(100% - 48px)); margin: 0 auto; padding: 48px 0 110px; }
     .chapter { padding: 38px 0 30px; border-bottom: 1px solid var(--line); }
     .chapter-kicker { display: inline-block; margin-bottom: 9px; color: var(--brand-strong); font-size: .8rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
     .chapter-intro { max-width: 860px; color: var(--muted); font-size: 1.05rem; }
     .lesson-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; color: var(--muted); font-size: .85rem; }
+    .lesson-complete { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; padding: 3px 9px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--text); cursor: pointer; }
+    .lesson-complete input { accent-color: var(--success); }
     .level-badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px; font-weight: 800; }
     .level-badge.foundation { background: var(--brand-soft); color: var(--brand-strong); }
     .level-badge.project { background: color-mix(in srgb, var(--success) 14%, var(--surface)); color: var(--success); }
@@ -211,6 +214,9 @@
     .source-stats { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 13px; }
     .source-stat { padding: 3px 9px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: .78rem; }
     .source-map { margin: 13px 0 18px; padding: 14px 17px; border-left: 4px solid var(--brand); border-radius: 0 10px 10px 0; background: var(--brand-soft); }
+    .source-guidance { display: grid; grid-template-columns: 108px 1fr; gap: 8px 14px; margin: 13px 0; padding: 16px 18px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); }
+    .source-guidance dt { color: var(--muted); font-weight: 800; }
+    .source-guidance dd { margin: 0; }
     .source-part { margin: 13px 0; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); overflow: hidden; }
     .source-part-head { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start; padding: 15px 17px; border-bottom: 1px solid var(--line); }
     .line-range { display: inline-flex; min-width: 74px; justify-content: center; padding: 3px 7px; border-radius: 7px; background: var(--brand-soft); color: var(--brand-strong); font: 700 .76rem/1.5 "Cascadia Code", Consolas, monospace; }
@@ -244,6 +250,7 @@
       .coverage-board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .source-part-head { grid-template-columns: 1fr; }
       .source-part-body dl { grid-template-columns: 1fr; gap: 2px; }
+      .source-guidance { grid-template-columns: 1fr; gap: 2px; }
     }
     @media print {
       .sidebar, .mobile-bar, .progress, .copy, .hero-actions, .file-tools { display: none !important; }
@@ -317,9 +324,11 @@
         </div>
         <div class="hero-actions">
           <a class="button primary" href="#pyside-intro">开始学习 ↓</a>
+          <a class="button" id="continueLearning" href="#pyside-intro">继续学习</a>
           <a class="button" href="#folders">先看项目地图</a>
           <a class="button" href="#source-course">进入源码课堂</a>
         </div>
+        <p class="course-progress-summary" id="completionTotal" aria-live="polite">已完成 0 / 13 节</p>
       </header>
 
       <div class="content">
@@ -1953,6 +1962,7 @@ mypy src/pd_diagnosis</code></pre></div>
     window.SOURCE_FILES = [
       {
         group: "入口与配置", path: "pyproject.toml", lines: 89,
+        level: "进阶选学", prerequisites: "第 2 课：运行 Python 文件；先完成一次项目安装。", firstRead: "先辨认基础依赖、gui/dev 可选依赖和两个命令入口。", skipOnFirstPass: "构建后端、coverage 与 pytest 细项可第二遍再看。",
         role: "Python 项目的构建、安装、依赖、命令入口和测试配置中心。",
         depends: "setuptools、wheel、pip", usedBy: "安装工具、命令行、pytest、所有开发者",
         parts: [
@@ -1966,6 +1976,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"入口与配置", path:"src/pd_diagnosis/__init__.py", lines:27,
+        level:"项目必学", prerequisites:"第 1 课：模块与属性；第 13 课：SDK。", firstRead:"先看 __all__，理解哪些名字是项目承诺的公共入口。", skipOnFirstPass:"重导出清单的每个名字不必第一次就背下来。",
         role:"稳定 SDK 的顶层橱窗；控制 from pd_diagnosis import ... 能看到什么。", depends:"engine、errors、types", usedBy:"README 示例、外部脚本、测试夹具",
         parts:[
           {range:"1",title:"模块说明",code:`"""Stable public API for partial-discharge diagnosis."""`,explain:"模块 docstring 明确这里是稳定公共 API，而不是内部实现集合。",why:"给维护者一个兼容性边界。",risk:"公共 API 一旦发布，删除或改名会破坏用户代码。"},
@@ -1976,6 +1987,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"入口与配置", path:"src/pd_diagnosis/__main__.py", lines:3,
+        level:"项目必学", prerequisites:"第 2 课：程序从上到下运行；第 13 课：SDK。", firstRead:"只追踪 main() 怎样把模块启动交给 launcher。", skipOnFirstPass:"SystemExit 的退出码传播细节可稍后回看。",
         role:"让 python -m pd_diagnosis 通过友好启动器进入桌面应用。", depends:"launcher.main", usedBy:"Python -m 模块执行机制",
         parts:[
           {range:"1",title:"导入轻量启动器",code:`from .launcher import main`,explain:"launcher 负责延迟导入 UI，并在缺少 PySide6/Matplotlib 时打印可执行的安装提示。",why:"入口文件保持极薄，两个启动方式共享相同错误处理。",risk:"不要在这里直接导入 ui.app，否则会绕过友好依赖提示。"},
@@ -1984,6 +1996,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"核心 SDK", path:"src/pd_diagnosis/errors.py", lines:10,
+        level:"项目必学", prerequisites:"会读 class 继承；第 13 课：SDK 边界。", firstRead:"先记住所有业务错误都继承 DiagnosisError，UI 可统一捕获。", skipOnFirstPass:"每个空异常类的命名差异不必背诵。",
         role:"定义 SDK 可识别的异常层次，让调用者按错误类别处理。", depends:"Python Exception、ValueError", usedBy:"signal_io、features、bundle、engine、service、UI",
         parts:[
           {range:"1–2",title:"DiagnosisError 根异常",code:`class DiagnosisError(Exception):\n    """Base exception..."""`,explain:"所有诊断领域错误的共同父类。调用者可捕获它处理所有预期诊断失败。",why:"比捕获 Exception 更准确，不会误吞编程错误。",risk:"新的领域异常应尽量继承它，保持 service 的失败记录逻辑有效。"},
@@ -1993,6 +2006,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"核心 SDK", path:"src/pd_diagnosis/types.py", lines:61,
+        level:"项目必学", prerequisites:"第 4 课：控件状态；会读 dataclass 与类型标注。", firstRead:"先分清 Signal、DiagnosisResult 和 BatchDiagnosisResult 各自跨哪一层传递。", skipOnFirstPass:"slots、UTC 默认工厂和批量 cancelled 字段可第二遍细看。",
         role:"定义模块之间交换的数据结构，也就是 SDK 的输入输出契约。", depends:"dataclasses、datetime、uuid、typing", usedBy:"engine、service、storage、workers、UI、外部脚本",
         parts:[
           {range:"1–8",title:"类型所需导入",code:`from dataclasses import dataclass, field\nfrom datetime import datetime, timezone\nfrom typing import Mapping, Sequence`,explain:"Sequence 接受 list、tuple、NumPy 数组等序列；Mapping 表示只依赖键值映射行为；field 用于每个实例动态生成 UUID/时间。",why:"使用抽象协议而非具体 list/dict，让 API 更灵活。",risk:"Sequence 只是类型提示，真正的数值和维度校验仍由 features.py 完成。"},
@@ -2005,6 +2019,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"核心 SDK", path:"src/pd_diagnosis/features.py", lines:109,
+        level:"进阶选学", prerequisites:"先读 types.py 与 engine.py；了解 NumPy 数组和基础统计量。", firstRead:"先看 validate_signal 与 extract_features 的输入输出，不必推导每个公式。", skipOnFirstPass:"FFT、偏度峰度公式和 schema 哈希字节细节可跳过。",
         role:"校验一维信号，并提取与 legacy-v1 模型严格对应的 10 维特征。", depends:"NumPy、InvalidSignalError", usedBy:"engine、training、tests、bundle 的特征契约",
         parts:[
           {range:"1–8",title:"导入与有序映射",code:`from collections import OrderedDict\nfrom typing import Mapping, Sequence\nimport numpy as np`,explain:"NumPy 承担数组和 FFT 计算；OrderedDict 明确保留特征名称顺序。现代 dict 也保序，但这里强化模型契约意图。",why:"特征顺序直接决定 scaler 和神经网络输入含义。",risk:"排序或换序会造成静默错误。"},
@@ -2020,6 +2035,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"核心 SDK", path:"src/pd_diagnosis/signal_io.py", lines:32,
+        level:"项目必学", prerequisites:"第 8 课：文件对话框；先读 Signal 数据契约。", firstRead:"沿 Path.read_text → token 解析 → float32 数组追踪一份 TXT。", skipOnFirstPass:"编码异常与坏 token 的全部错误消息可第二遍再看。",
         role:"把正式 TXT 文件解析成 float32 一维数组，并给出精确错误位置。", depends:"pathlib、NumPy、公共错误与 Pathish", usedBy:"engine.diagnose_file、training、UI 图表加载、测试",
         parts:[
           {range:"1–8",title:"导入与边界",code:`from pathlib import Path\nimport numpy as np\nfrom .errors import InvalidSignalError`,explain:"Path 统一文件路径操作；本模块只负责文件解析，不检查最少采样点，后者属于 features 的信号契约。",why:"解析错误与算法校验分层。",risk:"不要让 UI 自己复制解析逻辑。"},
@@ -2031,6 +2047,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"核心 SDK", path:"src/pd_diagnosis/model.py", lines:31,
+        level:"进阶选学", prerequisites:"先读 engine.py 推理流程；了解 Tensor 和神经网络层。", firstRead:"只确认层名、输入维度和输出类别数必须与权重一致。", skipOnFirstPass:"激活函数与每层参数规模可在学习 PyTorch 后再算。",
         role:"定义与现有 weights.pth 完全匹配的多层感知机分类结构。", depends:"torch、torch.nn", usedBy:"engine 加载推理、experimental.training 训练",
         parts:[
           {range:"1–5",title:"PyTorch 导入",code:`import torch\nfrom torch import nn`,explain:"torch 提供 Tensor 和激活函数；nn 提供可训练层和 Module 基类。",why:"继承 nn.Module 后参数能被 state_dict、optimizer 和 device 管理。",risk:"UI 不应直接依赖此内部类。"},
@@ -2040,6 +2057,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"核心 SDK", path:"src/pd_diagnosis/bundle.py", lines:106,
+        level:"进阶选学", prerequisites:"先读 engine.py、model.py 与 manifest.json；理解哈希用途。", firstRead:"先画出 manifest → 校验工件 → 构造模型与 scaler 的顺序。", skipOnFirstPass:"每个兼容性错误分支和 NumPy dtype 校验可第二遍再读。",
         role:"加载模型目录并验证清单、哈希、特征、类别和标准化参数兼容性。", depends:"hashlib、json、NumPy、features 契约", usedBy:"DiagnosisEngine.from_bundle、migration/training 的格式规范",
         parts:[
           {range:"1–14",title:"安全加载所需导入",code:`import hashlib, json\nimport numpy as np\nfrom .features import FEATURE_NAMES, FEATURE_SCHEMA`,explain:"JSON 读取可审计清单；SHA-256 检查文件完整性；np.load 读取不执行代码的 scaler 参数。",why:"模型是代码运行前的外部工件，必须把兼容性检查集中在入口。",risk:"不要用 allow_pickle=True 读取不可信模型参数。"},
@@ -2055,6 +2073,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"核心 SDK", path:"src/pd_diagnosis/engine.py", lines:124,
+        level:"项目必学", prerequisites:"第 13 课：SDK；先读 types.py、signal_io.py。", firstRead:"先追 diagnose：校验 → 特征 → 标准化 → 推理 → DiagnosisResult。", skipOnFirstPass:"设备选择、批量取消与概率字典细节可第二遍再看。",
         role:"线程安全、与 UI 无关的诊断门面；把模型加载、单次和批量推理封装为稳定 API。", depends:"bundle、features、model、signal_io、types、NumPy、Torch", usedBy:"脚本、Service、测试、未来其他前端",
         parts:[
           {range:"1–20",title:"导入与公开依赖",code:`from typing import Iterable, Sequence\nimport numpy as np\nimport torch\nfrom .types import Signal, DiagnosisResult, BatchDiagnosisResult`,explain:"Iterable 让批量输入可来自列表或生成器；Sequence 支持裸数组输入；内部模块共同完成完整管线。",why:"engine 是多个小模块的门面。",risk:"保持本文件不导入 PySide6，才能让 SDK 独立于 GUI。"},
@@ -2071,6 +2090,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"应用与存储", path:"src/pd_diagnosis/service.py", lines:80,
+        level:"项目必学", prerequisites:"先读 engine.py；第 6 课：信号与槽；理解异常捕获。", firstRead:"先追成功和 DiagnosisError 两条路径怎样选择性保存历史。", skipOnFirstPass:"批量生成器与 warning 文案拼接可第二遍再看。",
         role:"应用服务：把纯推理与可选历史持久化组合成一次业务动作；仅隔离 PERSISTENCE_EXCEPTIONS（当前是 sqlite3.Error、OSError），其他异常继续传播。", depends:"DiagnosisEngine、HistoryRepository、errors、types、sqlite3、dataclasses", usedBy:"PySide6 workers、需要审计记录的调用者",
         parts:[
           {range:"1–19",title:"业务层导入与持久化策略",code:`import logging\nimport sqlite3\nfrom dataclasses import replace\n...\nPERSISTENCE_WARNING_TEXT = str(\n    PersistenceWarning("诊断已完成，但历史记录保存失败；诊断结果仍然有效，请检查日志。")\n)\nPERSISTENCE_EXCEPTIONS = (sqlite3.Error, OSError)`,explain:"日志保留持久化异常细节；replace 用来在不改写原结果的前提下附加警告。仅 PERSISTENCE_EXCEPTIONS（当前是 sqlite3.Error、OSError）属于可隔离的持久化失败；其他异常继续传播。",why:"先定义可识别的警告文字和精确异常白名单，不用捕获 Exception 掩盖程序 bug。",risk:"新的 repository 实现若抛出其他可预期 I/O 异常，在明确评估并加入 PERSISTENCE_EXCEPTIONS 前，它仍会向调用者传播。"},
@@ -2083,6 +2103,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"应用与存储", path:"src/pd_diagnosis/storage.py", lines:170,
+        level:"进阶选学", prerequisites:"先读 service.py 与 DiagnosisResult；了解 SQL 基本增删查改。", firstRead:"先看建表、save_success 和 list_records 三个边界。", skipOnFirstPass:"WAL、分页搜索、JSON 反序列化与删除细节可后读。",
         role:"SQLite Repository：初始化 schema，并保存、查询、删除结构化诊断历史。", depends:"sqlite3、json、dataclass、types", usedBy:"DiagnosisService、MainWindow、测试",
         parts:[
           {range:"1–11",title:"导入与边界",code:`import json\nimport sqlite3\nfrom dataclasses import dataclass\nfrom typing import Iterable`,explain:"sqlite3 是 Python 标准库；JSON 用来在表列中保存概率、特征和警告；Iterable 让删除接口接受多种 ID 集合。",why:"无需外部数据库即可满足单机桌面历史。",risk:"SQLite 适合本机应用，不应直接当多人网络数据库。"},
@@ -2100,6 +2121,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"应用与存储", path:"src/pd_diagnosis/paths.py", lines:23,
+        level:"进阶选学", prerequisites:"会使用 pathlib.Path；了解环境变量。", firstRead:"先看默认路径与三个 PD_DIAGNOSIS_* 覆盖入口。", skipOnFirstPass:"各操作系统用户数据目录的展开规则可按需查。",
         role:"集中决定用户数据与默认模型路径，并允许环境变量覆盖。", depends:"os、pathlib、platformdirs", usedBy:"ui.app",
         parts:[
           {range:"1–7",title:"跨平台路径依赖",code:`import os\nfrom pathlib import Path\nfrom platformdirs import user_data_path`,explain:"platformdirs 按 Windows/macOS/Linux 规范返回用户数据目录；os 读取环境变量。",why:"不要把数据库写进源码或安装目录。",risk:"路径规则变化会让旧数据看似丢失，需要迁移。"},
@@ -2110,6 +2132,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"核心 SDK", path:"src/pd_diagnosis/prpd.py", lines:31,
+        level:"进阶选学", prerequisites:"先读 charts.py；了解 NumPy reshape 与相位概念。", firstRead:"先确认输出矩阵只供图表使用，不进入模型推理。", skipOnFirstPass:"归一化和周期分箱算法可第二遍再研究。",
         role:"把信号转换成仅用于可视化的 PRPD 二维直方图。", depends:"NumPy、validate_signal", usedBy:"ui.charts.PrpdCanvas",
         parts:[
           {range:"1–6",title:"复用信号校验",code:`import numpy as np\nfrom .features import validate_signal`,explain:"可视化也拒绝短、非一维或非有限信号，与诊断输入保持一致。",why:"避免图表层出现难懂 NumPy 错误。",risk:"PRPD 是可视化辅助，不参与当前分类模型推理。"},
@@ -2120,6 +2143,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"模型工具", path:"src/pd_diagnosis/migration.py", lines:94,
+        level:"进阶选学", prerequisites:"先读 bundle.py、manifest.json；理解 pickle 信任边界。", firstRead:"先看 --trusted 门槛与旧工件如何转换成安全模型包。", skipOnFirstPass:"命令行参数解析和文件写入顺序可后读。",
         role:"把可信的旧权重和 pickle scaler 一次性迁移为安全、版本化 bundle。", depends:"argparse、joblib 可选依赖、NumPy、hash/json/shutil", usedBy:"pd-migrate-model 命令、旧项目升级",
         parts:[
           {range:"1–12",title:"迁移工具导入",code:`import argparse, hashlib, json, shutil\nimport numpy as np\nfrom .features import FEATURE_NAMES, FEATURE_SCHEMA`,explain:"shutil.copy2 保留文件元数据；argparse 构建命令；joblib 刻意不在顶层导入。",why:"普通 SDK 用户没安装 train 分组时仍可导入包。",risk:"迁移工具处理 pickle，安全边界比日常推理更严格。"},
@@ -2133,6 +2157,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"模型工具", path:"src/pd_diagnosis/experimental/__init__.py", lines:5,
+        level:"进阶选学", prerequisites:"先理解稳定 SDK 与实验模块的区别。", firstRead:"只看模块说明，确认训练 API 不属于稳定承诺。", skipOnFirstPass:"本文件没有业务逻辑，首次可整段跳过。",
         role:"标记实验性子包，并导出训练入口但不纳入稳定顶层 API。", depends:"training", usedBy:"明确选择实验训练 API 的开发者",
         parts:[
           {range:"1–5",title:"实验边界与导出",code:`"""Experimental APIs without compatibility guarantees."""\nfrom .training import TrainingConfig, TrainingResult, train\n__all__ = [...]`,explain:"docstring 明确不保证兼容；仍提供整洁的 experimental 导入路径。",why:"训练能力可用，但不会误导用户把它当稳定 SDK。",risk:"不要从顶层 pd_diagnosis 重新导出这些名字，除非正式承诺兼容。"}
@@ -2140,6 +2165,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"模型工具", path:"src/pd_diagnosis/experimental/training.py", lines:178,
+        level:"进阶选学", prerequisites:"先读 features.py、model.py、bundle.py；了解训练/验证/测试集。", firstRead:"先画数据加载 → 标准化 → 训练/早停 → 写 bundle 的流水线。", skipOnFirstPass:"优化器、每轮指标和取消清理的实现细节可后读。",
         role:"完整训练管线：读样本、提特征、分割、标准化、训练、早停、测试并输出新 bundle。", depends:"NumPy、Torch、scikit-learn 可选依赖、核心特征和模型", usedBy:"实验训练脚本/未来训练 UI",
         parts:[
           {range:"1–20",title:"训练依赖与回调类型",code:`from threading import Event\nfrom typing import Callable\nfrom torch.utils.data import DataLoader, TensorDataset\nProgressCallback = Callable[[int, int, float, float], None]`,explain:"Event 支持协作取消；回调四个参数是当前 epoch、总 epoch、训练损失、验证损失；DataLoader 负责小批次。",why:"训练核心不依赖 Qt，也能由 CLI、Notebook 或 UI 调用。",risk:"回调如果来自 UI，不能在训练线程直接改控件，应再发 Qt 信号。"},
@@ -2157,6 +2183,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"PySide6 UI", path:"src/pd_diagnosis/ui/__init__.py", lines:1,
+        level:"进阶选学", prerequisites:"第 1 课：Python 包与模块。", firstRead:"确认导入 ui 包本身不会创建 QApplication。", skipOnFirstPass:"空包标记没有更多逻辑，首次可跳过。",
         role:"把 ui 目录标记为 Python 子包；不在导入时自动启动界面。", depends:"无", usedBy:"ui.app、ui.main_window 等模块路径",
         parts:[
           {range:"1",title:"空包初始化",code:`"""PySide6 desktop application."""`,explain:"只有说明文字，没有导入 QApplication 或 MainWindow。导入 pd_diagnosis.ui 不产生窗口和磁盘副作用。",why:"包初始化越轻，循环导入和测试问题越少。",risk:"不要在这里自动执行 app.main()。"}
@@ -2164,6 +2191,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"PySide6 UI", path:"src/pd_diagnosis/ui/app.py", lines:76,
+        level:"项目必学", prerequisites:"第 2–3 课：QApplication 与事件循环；先读 launcher.py。", firstRead:"按 QApplication → service → MainWindow → exec 追踪启动链。", skipOnFirstPass:"启动页计时、字体候选和异常弹窗样式可第二遍再看。",
         role:"桌面应用组合根：创建 QApplication、设置本地化、加载模型/数据库、显示主窗口并进入事件循环。", depends:"PySide6、engine、paths、service、storage、theme", usedBy:"pd-diagnosis 命令、python -m pd_diagnosis",
         parts:[
           {range:"1–16",title:"Qt 与应用依赖导入",code:`from PySide6.QtCore import QLocale, Qt\nfrom PySide6.QtGui import QColor, QFont, QPainter, QPixmap\nfrom PySide6.QtWidgets import QApplication, QMessageBox, QSplashScreen`,explain:"QtCore 放非可视核心类型；QtGui 放字体、颜色、绘图；QtWidgets 放窗口控件。业务对象仍从上级包导入。",why:"按 Qt 模块职责导入，启动文件就是整个应用的 composition root。",risk:"MainWindow 刻意稍后导入，模型加载失败时不必加载全部图表/UI。"},
@@ -2177,6 +2205,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"PySide6 UI", path:"src/pd_diagnosis/ui/theme.py", lines:133,
+        level:"进阶选学", prerequisites:"第 10 课：QSS；了解 QApplication 级样式。", firstRead:"先看 select_font 与 build_stylesheet 的输入输出。", skipOnFirstPass:"每个选择器、颜色 token 和控件状态可按需查阅。",
         role:"集中管理中文字体发现、浅深色 QSS 与 Matplotlib 语义色。", depends:"pathlib、QFontDatabase", usedBy:"ui.app、MainWindow、charts、UI smoke test",
         parts:[
           {range:"1–6",title:"字体数据库依赖",code:`from pathlib import Path\nfrom PySide6.QtGui import QFontDatabase`,explain:"QFontDatabase 查询 Qt 当前可用字体并允许加载应用字体。Path 检查 Windows 字体文件。",why:"Qt 和 Matplotlib 的字体系统不同，theme 负责 Qt 一侧。",risk:"QFontDatabase 需要已有 QApplication。"},
@@ -2188,6 +2217,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"PySide6 UI", path:"src/pd_diagnosis/ui/charts.py", lines:122,
+        level:"进阶选学", prerequisites:"第 5 课：布局；先读 prpd.py 与 theme.py。", firstRead:"先看三个 Canvas 各接收什么数据、由谁调用。", skipOnFirstPass:"字体注册、降采样和 Matplotlib 坐标轴细节可后读。",
         role:"把 Matplotlib FigureCanvas 封装为可放进 Qt 布局的波形、PRPD 和概率控件。", depends:"NumPy、Matplotlib QtAgg、prpd、theme", usedBy:"MainWindow 诊断页",
         parts:[
           {range:"1–10",title:"QtAgg 画布导入",code:`from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg\nfrom matplotlib.figure import Figure`,explain:"Figure 是图形对象；FigureCanvasQTAgg 把它变成 QWidget 兼容画布并接入 Qt 重绘事件。",why:"图表能直接 addWidget 到布局。",risk:"MPLBACKEND 应与 QtAgg 一致，无头测试需设置 offscreen。"},
@@ -2202,6 +2232,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"PySide6 UI", path:"src/pd_diagnosis/ui/workers.py", lines:148,
+        level:"项目必学", prerequisites:"第 12 课：后台任务；第 6 课：信号与槽。", firstRead:"先看任务如何发出 result/error/finished，不需要记住所有信号名称。", skipOnFirstPass:"批量进度、协作取消和导出分页细节可第二遍再看。",
         role:"在后台执行单次/批量诊断与历史导出，通过 Qt Signal 安全回传不可变结果、进度和错误。", depends:"threading.Event、QObject、QRunnable、Signal、Slot、Service、Storage", usedBy:"MainWindow",
         parts:[
           {range:"1–15",title:"线程与 Qt 导入",code:`from threading import Event\nfrom PySide6.QtCore import QObject, QRunnable, Signal, Slot\nfrom .history_export import export_history_csv`,explain:"QRunnable 不是 QObject，不能直接声明 Signal，因此另建 QObject 信号容器。Event 是线程安全取消标志；CSV 纯函数可在工作线程调用。",why:"任务只做业务与 I/O，QWidget 更新全部由主线程槽处理。",risk:"工作线程不能直接操作 QWidget。"},
@@ -2215,6 +2246,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"PySide6 UI", path:"src/pd_diagnosis/ui/main_window.py", lines:675,
+        level:"项目必学", prerequisites:"第 4–10 课：控件、布局、信号槽、主窗口、多页面与 QSS。", firstRead:"按构建外壳 → 连接信号 → 启动 worker → 渲染结果分块阅读。", skipOnFirstPass:"历史分页、导出、快捷键和设置持久化可第二遍再看。",
         role:"桌面应用控制器与视图装配：构建四个页面，连接交互，启动后台任务并渲染结果/历史。", depends:"PySide6 Widgets/Core/Gui、Service、Storage、Charts、Workers", usedBy:"ui.app、UI smoke test",
         parts:[
           {range:"1–50",title:"导入区：标准库、Qt、业务层、UI 子模块",code:`from pathlib import Path\nfrom PySide6.QtCore import QLocale, QSettings, Qt, QThreadPool\nfrom ..service import DiagnosisService\nfrom .formatting import display_time\nfrom .workers import HistoryExportTask, SingleDiagnosisTask, ...`,explain:"Path 负责目录扫描；Qt 提供区域、设置、控件和线程池；上级包提供业务数据；格式化、图表、主题和 worker 各自封装。CSV 写入已移出主窗口。",why:"主窗口编排能力，不直接实现文件格式和后台算法。",risk:"导入很多控件是 Widgets 项目常见现象；继续增长时应拆分 pages 子包。"},
@@ -2247,6 +2279,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"测试", path:"tests/conftest.py", lines:20,
+        level:"进阶选学", prerequisites:"会运行 pytest；了解 fixture 的用途。", firstRead:"先看 project_root 与临时 Qt 环境怎样供所有测试复用。", skipOnFirstPass:"session scope 和环境变量的细节可稍后研究。",
         role:"定义整个 pytest 测试会话共享的仓库根路径和 CPU 诊断引擎夹具。", depends:"pytest、DiagnosisEngine", usedBy:"bundle/engine/features/storage/UI 测试",
         parts:[
           {range:"1–10",title:"PROJECT_ROOT",code:`PROJECT_ROOT = Path(__file__).resolve().parents[1]`,explain:"__file__ 是当前 conftest 路径；resolve 后 parents[1] 从 tests/conftest.py 回到仓库根。模块常量只计算一次。",why:"测试不依赖启动时 cwd。",risk:"测试目录层级变化时 parents 索引要更新。"},
@@ -2256,6 +2289,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"测试", path:"tests/test_bundle.py", lines:21,
+        level:"进阶选学", prerequisites:"先读 bundle.py 与 manifest.json；会读 pytest 断言。", firstRead:"先看测试如何证明模型包能加载并拒绝坏哈希。", skipOnFirstPass:"临时目录中的工件搭建细节可第二遍再读。",
         role:"验证 bundle 会拒绝与 SDK 不兼容的特征 schema。", depends:"pytest、json、shutil、ModelBundle", usedBy:"回归保护模型兼容性闸门",
         parts:[
           {range:"1–9",title:"测试依赖",code:`import json, shutil\nimport pytest\nfrom pd_diagnosis.bundle import ModelBundle`,explain:"shutil 在临时目录复制完整模型，避免修改仓库默认工件。",why:"测试必须隔离且可重复。",risk:"绝不能原地改 models/default/manifest.json。"},
@@ -2264,6 +2298,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"测试", path:"tests/test_engine.py", lines:40,
+        level:"进阶选学", prerequisites:"先读 engine.py、types.py；会运行 pytest。", firstRead:"先看黄金输入怎样验证标签、概率和模型版本。", skipOnFirstPass:"设备与批量边界的各个断言可后读。",
         role:"用黄金概率验证迁移模型行为，并测试采样率和批量容错。", depends:"NumPy、pytest、公共 API", usedBy:"模型/特征/推理回归",
         parts:[
           {range:"1–15",title:"GOLDEN 黄金数据",code:`GOLDEN = {\n "0/a1.txt": (0, [0.9635, ...]),\n ...四类\n}`,explain:"每类选一个固定样本，保存旧实现的类别 ID 和四个概率。它是重构不改变模型行为的基准。",why:"只断言 argmax 可能漏掉概率大幅漂移。",risk:"黄金值只有在确认旧行为正确后才能更新，不能为让失败变绿随意改。"},
@@ -2274,6 +2309,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"测试", path:"tests/test_features.py", lines:42,
+        level:"进阶选学", prerequisites:"先读 features.py；了解 NumPy 近似比较。", firstRead:"先看无效输入和固定特征向量两类保护。", skipOnFirstPass:"每个统计量容差的来由可在理解公式后再看。",
         role:"验证 10 维特征与旧实现一致，并覆盖长度、维度、非有限值校验。", depends:"NumPy、pytest、features、signal_io", usedBy:"算法回归",
         parts:[
           {range:"1–9",title:"导入被测边界",code:`from pd_diagnosis.features import extract_feature_vector, validate_signal\nfrom pd_diagnosis.signal_io import read_txt_signal`,explain:"测试既覆盖纯数组校验，也覆盖真实文件读入后的特征。",why:"分层测试能定位失败在 I/O 还是算法。",risk:"测试不应从 UI 进入特征函数。"},
@@ -2283,6 +2319,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"测试", path:"tests/test_public_api.py", lines:20,
+        level:"进阶选学", prerequisites:"先读包 __init__.py；理解公共 API 兼容性。", firstRead:"先看测试保证纯 SDK 导入与公开名字稳定。", skipOnFirstPass:"子进程环境隔离的实现细节可第二遍再看。",
         role:"在独立 Python 进程中保证只导入公共 SDK 不会加载 PySide6。", depends:"subprocess、sys、os", usedBy:"依赖边界回归",
         parts:[
           {range:"1–4",title:"标准库进程工具",code:`import os\nimport subprocess\nimport sys`,explain:"需要独立进程获得干净 sys.modules；当前测试进程可能已被 UI 测试导入 Qt。",why:"隔离状态才能真实模拟纯 SDK 用户。",risk:"不要用当前进程简单检查，测试顺序会影响结果。"},
@@ -2291,6 +2328,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"测试", path:"tests/test_signal_io.py", lines:26,
+        level:"进阶选学", prerequisites:"先读 signal_io.py；会使用 tmp_path。", firstRead:"先看正常空白分隔与坏 token 定位两个案例。", skipOnFirstPass:"编码和后缀边界的组合可后读。",
         role:"验证 TXT 空白符格式、精确坏 token 位置和非 TXT 拒绝策略。", depends:"NumPy、pytest、signal_io", usedBy:"文件输入契约回归",
         parts:[
           {range:"10–14",title:"空格与换行都可用",code:`path.write_text("1 2\\n3\\n4 5", encoding="utf-8")\nnp.testing.assert_array_equal(read_txt_signal(path), [1,2,3,4,5])`,explain:"临时文件混合行内空格和换行，断言解析顺序不变。",why:"正式格式是任意空白符分隔。",risk:"若将 split 改为按行单值，此测试会失败。"},
@@ -2300,6 +2338,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"测试", path:"tests/test_storage.py", lines:35,
+        level:"进阶选学", prerequisites:"先读 storage.py 与 types.py；了解 SQLite。", firstRead:"先看保存成功/失败记录后怎样查询和计数。", skipOnFirstPass:"搜索、分页、删除和 JSON 往返细节可第二遍再看。",
         role:"验证 SQLite 跨实例持久化、搜索、JSON 恢复，以及错误记录删除。", depends:"datetime、HistoryRepository、engine fixture", usedBy:"持久化回归",
         parts:[
           {range:"8–20",title:"成功记录持久化与搜索",code:`repository = HistoryRepository(database)\nresult = engine.diagnose_file(...)\nrepository.save_result(result)\nreopened = HistoryRepository(database)\nrecords = reopened.list(query="金属突出")`,explain:"保存后创建新的 repository 模拟应用重启；验证 count、模糊搜索、run_id 和反序列化概率。",why:"证明不是只存在同一对象内存中。",risk:"tmp_path 保证不污染用户数据库。"},
@@ -2308,6 +2347,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"测试", path:"tests/test_ui_smoke.py", lines:35,
+        level:"进阶选学", prerequisites:"先读 app.py、main_window.py；了解 pytest-qt。", firstRead:"先看离屏窗口如何验证页面与关键控件可创建。", skipOnFirstPass:"Qt 事件等待和 widget 查找细节可按需查阅。",
         role:"在无显示器环境创建真实 MainWindow，直接渲染结果并检查关键控件。", depends:"PySide6、QtAgg、Service、Repository、MainWindow", usedBy:"UI 基础回归",
         parts:[
           {range:"1–7",title:"无头环境变量",code:`os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")\nos.environ.setdefault("MPLBACKEND", "QtAgg")`,explain:"必须在导入 Qt/Matplotlib 前设置。offscreen 不需要真实显示器；setdefault 尊重外部已有配置。",why:"CI 能运行 QWidget smoke test。",risk:"环境变量设置顺序错误会在插件初始化时失败。"},
@@ -2318,6 +2358,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"文档", path:"README.md", lines:58,
+        level:"项目必学", prerequisites:"完成第 13 课：SDK；会运行终端命令。", firstRead:"先读安装、SDK 最小示例和桌面启动三段。", skipOnFirstPass:"迁移、完整目录清单与开发命令可第二遍再看。",
         role:"仓库首页：说明用途、类别、安装、SDK/UI 示例、模型迁移和目录。", depends:"项目实际公共 API 与命令", usedBy:"首次访问仓库的用户",
         parts:[
           {range:"1–11",title:"产品定位与四类缺陷",code:`# 局部放电类型智能诊断\n...Python SDK 和基于 PySide6 的 Windows 桌面应用...`,explain:"先回答项目是什么、给谁用、解决什么问题，再列模型能识别的四类。",why:"README 的首屏应建立边界，不先堆安装细节。",risk:"类别变化时 README、manifest、默认类别和 UI 都要同步。"},
@@ -2328,6 +2369,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"文档", path:"docs/API.md", lines:54,
+        level:"项目必学", prerequisites:"先读 __init__.py、types.py 与 engine.py。", firstRead:"先按公共类和函数查输入、返回值及可预期异常。", skipOnFirstPass:"批量、迁移与每个字段的参考表可按需阅读。",
         role:"稳定 Python SDK 的参数、结果、异常、批量行为和持久化组合文档。", depends:"顶层公共 API", usedBy:"集成 SDK 的开发者",
         parts:[
           {range:"1–12",title:"公共边界和设备",code:`engine = DiagnosisEngine.from_bundle("models/default", device="auto")`,explain:"强调顶层导入不加载 Qt/训练依赖，并列出 auto/cpu/cuda 设备语义。",why:"开发者需要知道失败是否会静默回退。",risk:"实现设备策略变化时文档必须同步。"},
@@ -2338,6 +2380,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"文档", path:"docs/MODEL_BUNDLE.md", lines:10,
+        level:"进阶选学", prerequisites:"先读 bundle.py 与 manifest.json；理解模型工件。", firstRead:"先看一个 bundle 必须同时包含哪些文件及校验关系。", skipOnFirstPass:"迁移命令和兼容错误排查可需要时再看。",
         role:"定义模型目录的三件套、安全性、兼容性和特征升级规则。", depends:"bundle/migration 实现", usedBy:"模型训练、发布、迁移维护者",
         parts:[
           {range:"1–7",title:"三件套与验证项",code:`manifest.json\nweights.pth\nscaler.npz`,explain:"清单提供元数据/哈希，权重只含 state_dict，scaler 是禁止 pickle 的 mean/scale 数组；加载端验证版本、顺序、ID 和维度。",why:"模型不再是无法追溯的单个 pth。",risk:"architecture 字段当前记录但加载端未显式校验，可补。"},
@@ -2346,6 +2389,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"数据与模型", path:"models/default/manifest.json", lines:42,
+        level:"进阶选学", prerequisites:"先读 bundle.py；了解 JSON 和 SHA-256。", firstRead:"先对应模型版本、类别、特征 schema 与三个工件路径。", skipOnFirstPass:"精确哈希值和训练备注不必记忆。",
         role:"默认模型机器可读清单；把权重与其训练/输入/类别契约绑定。", depends:"JSON、bundle.ModelBundle.load", usedBy:"应用启动、SDK 引擎、审计",
         parts:[
           {range:"2–6",title:"格式、模型、结构、特征版本",code:`"schema_version": 1,\n"model_version": "legacy-2025-12-30",\n"architecture": "classification-mlp-v1",\n"feature_schema": "legacy-v1"`,explain:"schema_version 描述清单格式；model_version 标识这一批模型；architecture 描述网络族；feature_schema 标识输入语义。",why:"四种版本概念各管不同兼容维度。",risk:"不能只改字符串伪装新模型。"},
@@ -2357,6 +2401,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"数据与模型", path:"models/default/weights.pth", lines:null,
+        level:"进阶选学", prerequisites:"先读 model.py 与 manifest.json；了解 state_dict。", firstRead:"把它视为经哈希验证的二进制权重，不尝试当文本阅读。", skipOnFirstPass:"张量键、形状和序列化内部格式可在调试模型时再查。",
         role:"PyTorch 二进制 state_dict：保存各 Linear/BatchNorm 层训练参数，不保存 UI 或完整 Python 对象。", depends:"ClassificationModel 相同层名与形状、torch.load(weights_only=True)", usedBy:"DiagnosisEngine.from_bundle",
         parts:[
           {range:"二进制",title:"state_dict 键值结构",code:`fc1.weight, fc1.bias\nbn1.weight, bn1.bias, bn1.running_mean, bn1.running_var\n...\nfc5.weight, fc5.bias`,explain:"每个键对应 model.py 中具名层的参数或 BatchNorm 运行统计。engine 先创建空结构，再 strict=True 填入。",why:"state_dict 比序列化完整模型对象更清晰、可迁移和更安全。",risk:"二进制不能用文本编辑器修改；只接受可信来源，且必须验证清单哈希。"}
@@ -2364,6 +2409,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"数据与模型", path:"models/default/scaler.npz", lines:null,
+        level:"进阶选学", prerequisites:"先读 features.py 与 manifest.json；了解标准化。", firstRead:"只确认 mean/scale 与 10 个特征一一对应。", skipOnFirstPass:"NPZ 容器结构和每个浮点值不必第一次查看。",
         role:"NumPy 压缩数组：保存训练集 StandardScaler 的 10 维 mean 与 scale。", depends:"np.load(allow_pickle=False)", usedBy:"ModelBundle.load、engine 标准化",
         parts:[
           {range:"二进制",title:"mean 与 scale",code:`mean.shape == (10,)\nscale.shape == (10,)\nnormalized = (features - mean) / scale`,explain:"第 i 个均值/尺度对应第 i 个 FEATURE_NAMES。npz 只含数值数组，不需要加载 sklearn 对象。",why:"推理环境更轻且避免 pickle 代码执行风险。",risk:"不能从单个待预测样本重新计算 mean/scale。"}
@@ -2371,6 +2417,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"数据与模型", path:"data/train/*/*.txt", lines:null,
+        level:"进阶选学", prerequisites:"先读 signal_io.py 与 training.py；理解训练集用途。", firstRead:"抽一个样本确认是空白分隔数值，并观察类别目录。", skipOnFirstPass:"其余 229 个同契约样本无需逐文件重复阅读。",
         role:"训练样本集合：目录名 0/1/2/3 是类别 ID，每个 TXT 是一维信号。", depends:"experimental.training 的目录扫描规则", usedBy:"训练、黄金测试",
         parts:[
           {range:"目录",title:"类别目录映射",code:`data/train/0/a1.txt  → 金属突出物缺陷（55 个）\ndata/train/1/b1.txt  → 自由微粒缺陷（60 个）\ndata/train/2/c1.txt  → 绝缘子表面金属污染物缺陷（60 个）\ndata/train/3/d1.txt  → 气隙缺陷（55 个）`,explain:"training.py 把数字目录直接转成 int 标签；文件名前缀 a/b/c/d 是人类命名约定，不参与代码解析。共 230 个训练样本。",why:"目录即标签，结构简单。",risk:"数字目录与 DEFAULT_CLASSES 的顺序必须一致；混放错误样本会直接污染训练。"},
@@ -2379,6 +2426,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"数据与模型", path:"data/test/*/*.txt", lines:null,
+        level:"进阶选学", prerequisites:"先读 signal_io.py；理解独立测试集用途。", firstRead:"抽一个样本走 TXT → Signal → 引擎，并确认目录名不参与预测。", skipOnFirstPass:"其余同格式样本与数量统计可按评估需要再看。",
         role:"按中文类别名组织的 230 个评估/人工验收样本。", depends:"SDK 文件输入格式", usedBy:"手工验证、桌面应用演示",
         parts:[
           {range:"目录",title:"中文目录与样本数量",code:`金属突出物缺陷：55\n自由微粒缺陷：60\n绝缘子表面金属污染物缺陷：60\n气隙缺陷：55`,explain:"测试目录名称便于人类理解真实类别；SDK 不从目录名推断答案，只读取文件信号并预测。",why:"避免产品推理被文件路径标签泄漏。",risk:"不能把同一份样本同时用于训练并声称独立测试准确率。"},
@@ -2387,6 +2435,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"Legacy", path:"legacy/main.py", lines:1600,
+        level:"进阶选学", prerequisites:"先理解新架构的 engine、service、workers 与 MainWindow。", firstRead:"只用职责对照表观察旧单体怎样被拆层。", skipOnFirstPass:"1600 行旧 UI、训练和设置实现不必顺序通读。",
         role:"重构前单体桌面程序：特征、预测、图表、UI、设置、历史、评估和训练混在一个文件，仅供追溯。", depends:"旧 PySide6/PyTorch/sklearn/Matplotlib 环境", usedBy:"迁移对照，不是新应用入口",
         parts:[
           {range:"27–191",title:"旧特征函数",code:`extract_features(signal)\nextract_features_dict(signal)`,explain:"两份相似实现分别返回向量/字典，包含时域、FFT、峰度偏度。这部分已集中迁移到 features.py + feature_mapping。",why:"保留旧文件用于核对 legacy-v1 数值。",risk:"不要在旧函数继续修 bug，否则正式 SDK 不会得到修改。"},
@@ -2401,6 +2450,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"Legacy", path:"legacy/fc_save_train.py", lines:280,
+        level:"进阶选学", prerequisites:"先读 experimental/training.py 与 model.py。", firstRead:"只对照旧特征、旧模型与新训练流水线的迁移关系。", skipOnFirstPass:"旧训练循环、早停和测试函数实现可整段跳过。",
         role:"旧独立训练脚本，提供 Dataset、特征、数据加载、网络、训练/早停和测试。", depends:"Torch、sklearn、NumPy", usedBy:"experimental.training 的迁移参考",
         parts:[
           {range:"10–21",title:"FeatureDataset",code:`class FeatureDataset(Dataset):\n    __init__ / __len__ / __getitem__`,explain:"手写 Dataset 保存 features/labels。新训练使用 TensorDataset，减少样板代码。",why:"数据已全部在内存 Tensor 中时 TensorDataset 足够。",risk:"若未来流式加载超大数据，可重新实现 Dataset。"},
@@ -2412,6 +2462,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"Legacy", path:"legacy/environment.yml + requirement.txt", lines:null,
+        level:"进阶选学", prerequisites:"先读 pyproject.toml；了解虚拟环境与直接依赖。", firstRead:"先确认它们只是旧环境快照，不是当前安装权威。", skipOnFirstPass:"大量固定版本和 CUDA 传递依赖无需逐项阅读。",
         role:"旧环境的 Conda/Pip 依赖快照；用于复现，不是当前安装入口。", depends:"Python 3.9、CUDA 12.6 等旧固定环境", usedBy:"历史环境追溯",
         parts:[
           {range:"environment.yml",title:"Conda 环境",code:`name: DP_learn\npython=3.9.23\npytorch=2.6.0\npytorch-cuda=12.6\n...`,explain:"锁定旧开发机的 Python/CUDA/科学包，并混合 conda 与 pip。",why:"可以帮助理解原模型生成环境。",risk:"当前 pyproject 要求 Python >=3.10；不要同时把它当新项目权威依赖。"},
@@ -2420,6 +2471,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"Legacy", path:"legacy/system_settings.json", lines:6,
+        level:"进阶选学", prerequisites:"先读 paths.py 与 MainWindow 设置持久化。", firstRead:"只识别旧机器绝对路径为何不能成为新默认值。", skipOnFirstPass:"具体目录字符串没有学习价值，可直接跳过。",
         role:"旧 UI 保存的本机绝对路径设置快照。", depends:"旧 MainWindow.load_settings/save_settings", usedBy:"仅历史追溯",
         parts:[
           {range:"1–6",title:"四个绝对路径键",code:`{"data_path":"D:/mycode/...", "model_path":"...best_model.pth", "file_path":"...", "traindata_path":"..."}`,explain:"记录旧机器的数据、模型、单文件和训练目录。新应用默认路径由 paths.py 决定，历史数据库放用户数据目录。",why:"避免把某台开发机路径继续当项目默认。",risk:"这些路径在其他电脑无效，也可能泄露本机目录结构。"}
@@ -2427,6 +2479,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"Legacy", path:"legacy/*.pth + scaler.pkl + test.zip", lines:null,
+        level:"进阶选学", prerequisites:"先读 migration.py；理解 pickle 与压缩包信任风险。", firstRead:"先区分权重、可执行 pickle scaler 与数据归档三类工件。", skipOnFirstPass:"二进制内部内容和重复权重副本无需手工打开。",
         role:"旧二进制工件：两个/多个模型权重、可执行 pickle scaler 与测试数据压缩包。", depends:"旧模型结构、可信 joblib、解压工具", usedBy:"一次性迁移和归档",
         parts:[
           {range:"best_model.pth / classification_model_state.pth / save/best_model.pth",title:"旧权重副本",code:`通过 pd-migrate-model 选择经过验证的权重 → models/<version>/weights.pth`,explain:"多个近似权重文件说明旧项目缺少单一版本清单。新 bundle 用哈希和版本绑定确切文件。",why:"消除“到底加载了哪个 pth”的歧义。",risk:"迁移后必须用 tests/test_engine.py 的黄金概率确认选对文件。"},
@@ -2436,6 +2489,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"Legacy", path:"docs/legacy/*.txt", lines:null,
+        level:"进阶选学", prerequisites:"先读当前 README 与 pyproject.toml。", firstRead:"把这些说明当旧环境排障线索，不当作当前安装步骤。", skipOnFirstPass:"过时命令、绝对路径和平台细节可全部跳过。",
         role:"重构前留下的 Conda、普通 pip 和其他环境配置说明，仅供历史环境排查。", depends:"旧 environment.yml / requirement.txt", usedBy:"需要复现旧开发机环境的维护者",
         parts:[
           {range:"conda环境配置方法.txt",title:"旧 Conda 安装路线",code:`创建环境 → 安装 PyTorch/CUDA → 安装科学计算和 GUI 依赖`,explain:"记录旧项目以 Conda 复现 GPU 环境的步骤。当前正式项目的依赖权威来源是 pyproject.toml。",why:"保留原作者环境经验，便于迁移问题追溯。",risk:"版本与命令可能过时，不能不经核对直接用于新机器。"},
@@ -2445,6 +2499,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"入口与配置", path:"src/pd_diagnosis/launcher.py", lines:30,
+        level:"项目必学", prerequisites:"第 2 课：应用启动；先读 __main__.py 与 ui/app.py。", firstRead:"先看延迟 GUI 导入和缺依赖时的友好退出码。", skipOnFirstPass:"ModuleNotFoundError 名称筛选细节可第二遍再看。",
         role:"桌面命令的轻量启动边界；只有真正启动 GUI 时才导入 PySide6 与 Matplotlib。", depends:"标准库 sys、ui.app（延迟）", usedBy:"pd-diagnosis、python -m pd_diagnosis",
         parts:[
           {range:"1–13",title:"延迟加载应用",code:`def _load_application():\n    from .ui.app import main as application_main\n    return application_main`,explain:"把 GUI 导入放进函数。普通 import pd_diagnosis 不执行这里，所以没有 GUI 依赖的服务器和脚本仍能使用 SDK。",why:"可选依赖必须在能力真正被调用时才加载。",risk:"若把 ui.app 移回模块顶层，纯 SDK 导入会重新依赖 PySide6。"},
@@ -2453,6 +2508,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"核心 SDK", path:"src/pd_diagnosis/artifacts.py", lines:28,
+        level:"进阶选学", prerequisites:"先读 bundle.py 与 migration.py；了解哈希和路径解析。", firstRead:"先看流式 SHA-256 与禁止工件逃出 bundle 根目录。", skipOnFirstPass:"读取块大小和 resolve 的平台细节可后读。",
         role:"集中处理文件 SHA-256 与 bundle 内安全路径解析。", depends:"hashlib、pathlib、ArtifactCompatibilityError", usedBy:"bundle、migration、experimental.training",
         parts:[
           {range:"9–14",title:"流式 SHA-256",code:`for chunk in iter(lambda: stream.read(1024 * 1024), b""):\n    digest.update(chunk)`,explain:"每次读取 1 MiB，避免大权重文件一次全部进入内存。迁移、训练和加载共用同一实现。",why:"校验写入与读取必须一致。",risk:"改变块大小不改变哈希；改变算法或读法会破坏兼容。"},
@@ -2461,6 +2517,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"应用与存储", path:"src/pd_diagnosis/logging_config.py", lines:39,
+        level:"进阶选学", prerequisites:"先读 paths.py；了解 logging Handler。", firstRead:"先看日志路径、滚动上限和重复配置为什么要幂等。", skipOnFirstPass:"Formatter 字段和 handler 标记细节可后读。",
         role:"配置 UTF-8 滚动应用日志，并允许测试注入临时路径。", depends:"logging、RotatingFileHandler、paths.default_log_path", usedBy:"ui.app、service、workers",
         parts:[
           {range:"12–20",title:"确定并创建日志位置",code:`path = (log_path or default_log_path()).expanduser().resolve()\npath.parent.mkdir(parents=True, exist_ok=True)`,explain:"生产使用平台用户数据目录，测试可传 tmp_path。先创建父目录再构造 handler。",why:"不依赖当前工作目录，也不把运行文件写进安装目录。",risk:"日志可能包含本机路径，分享前要检查敏感信息。"},
@@ -2469,6 +2526,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"PySide6 UI", path:"src/pd_diagnosis/ui/formatting.py", lines:13,
+        level:"进阶选学", prerequisites:"先读历史页；了解 UTC 与本地时区。", firstRead:"先看 ISO 字符串怎样解析、转本地并交给 QLocale。", skipOnFirstPass:"两种 ISO 格式回退可第二遍再看。",
         role:"把数据库 UTC ISO 时间转换为本地时区、按当前区域短格式显示。", depends:"QDateTime、QLocale、Qt", usedBy:"MainWindow 历史表和详情",
         parts:[
           {range:"6–13",title:"解析、转本地、区域格式化",code:`parsed = QDateTime.fromString(value, Qt.ISODateWithMs)\n...\nreturn active_locale.toString(parsed.toLocalTime(), QLocale.ShortFormat)`,explain:"先尝试带毫秒 ISO，再尝试普通 ISO。解析失败原样返回，成功则 toLocalTime 后交给 QLocale。",why:"数据库保存 UTC，界面应按用户时区和日期习惯显示。",risk:"字符串切片看似简单，却不会转换时区，也不符合不同区域格式。"}
@@ -2476,6 +2534,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"PySide6 UI", path:"src/pd_diagnosis/ui/history_export.py", lines:40,
+        level:"项目必学", prerequisites:"第 12 课：后台任务；先读 workers.py 与 HistoryRecord。", firstRead:"先看纯函数怎样固定列顺序、转义 CSV 并返回行数。", skipOnFirstPass:"BOM、空值格式化和生成器细节可第二遍再看。",
         role:"与 QWidget 无关的纯 CSV 导出函数，供后台 QRunnable 调用。", depends:"csv、pathlib、HistoryRecord", usedBy:"HistoryExportTask、导出测试",
         parts:[
           {range:"9–17",title:"固定字段契约",code:`HISTORY_CSV_FIELDS = ("时间", "来源", "模型建议", "置信度", "模型版本", "状态", "错误")`,explain:"列顺序集中定义，测试可以直接验证，不由 UI 临时拼接。",why:"稳定字段便于 Excel 和下游脚本消费。",risk:"改列名或顺序属于导出格式变更，应同步文档和测试。"},
@@ -2484,6 +2543,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"文档", path:"docs/educate/index.html", lines:null,
+        level:"进阶选学", prerequisites:"先完成基础课程；了解 HTML、CSS 与原生 DOM。", firstRead:"先看语义章节、SOURCE_FILES 数据和两个内联脚本的边界。", skipOnFirstPass:"全部样式 token、长课程数据与打印细节无需逐行阅读。",
         role:"你正在阅读的单文件离线教学站：内容、样式、源码课程数据和交互全部内嵌。", depends:"现代浏览器原生 HTML/CSS/JavaScript", usedBy:"Python/PySide6 学习者",
         parts:[
           {range:"<head>",title:"语义元数据与设计 token",code:`<meta charset="utf-8">\n<meta name="viewport" ...>\n<style> :root { --bg: ...; --brand: ... } </style>`,explain:"UTF-8 保证中文；viewport 适配窄屏；CSS 自定义属性按语义角色管理浅深主题。页面不使用 CDN。",why:"双击 file:// 即可离线学习。",risk:"增加外部字体/脚本会破坏离线承诺。"},
@@ -2503,21 +2563,94 @@ mypy src/pd_diagnosis</code></pre></div>
       const menuButton = document.getElementById('menuButton');
       const tocLinks = [...document.querySelectorAll('#toc a')];
       const sections = [...document.querySelectorAll('.chapter')];
-      const storage = {
-        get(key) { try { return localStorage.getItem(key); } catch { return null; } },
-        set(key, value) { try { localStorage.setItem(key, value); } catch {} },
-      };
-      const savedTheme = storage.get('pd-educate-theme');
+      const lessons = [...document.querySelectorAll('.lesson')];
+      const lessonIds = new Set(lessons.map(lesson => lesson.id));
+      const continueLearning = document.getElementById('continueLearning');
+      const completionTotal = document.getElementById('completionTotal');
+
+      function readStoredJson(key, fallback) {
+        try {
+          const value = localStorage.getItem(key);
+          return value ? JSON.parse(value) : fallback;
+        } catch (_) {
+          return fallback;
+        }
+      }
+
+      function writeStoredJson(key, value) {
+        try {
+          localStorage.setItem(key, JSON.stringify(value));
+        } catch (_) {
+          // The static course remains usable when storage is blocked.
+        }
+      }
+
+      const savedTheme = readStoredJson('pd-educate-theme', null);
+      const activeTheme = savedTheme === 'dark' || savedTheme === 'light' ? savedTheme : null;
       const preferredDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-      root.dataset.theme = savedTheme || (preferredDark ? 'dark' : 'light');
+      root.dataset.theme = activeTheme || (preferredDark ? 'dark' : 'light');
 
       document.querySelectorAll('.theme-toggle').forEach(button => {
         button.addEventListener('click', () => {
           root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
-          storage.set('pd-educate-theme', root.dataset.theme);
+          writeStoredJson('pd-educate-theme', root.dataset.theme);
         });
       });
+
+      const storedProgressValue = readStoredJson('pd-educate-progress', {});
+      const storedProgress = storedProgressValue
+        && typeof storedProgressValue === 'object'
+        && !Array.isArray(storedProgressValue)
+        ? storedProgressValue
+        : {};
+      const restoredCompleted = Array.isArray(storedProgress.completed)
+        ? storedProgress.completed.filter(id => lessonIds.has(id))
+        : [];
+      const completedLessons = new Set(restoredCompleted);
+      let lastActiveLesson = lessonIds.has(storedProgress.lastActive)
+        ? storedProgress.lastActive
+        : (lessons[0]?.id || '');
+
+      function saveCourseProgress() {
+        writeStoredJson('pd-educate-progress', {
+          completed: [...completedLessons],
+          lastActive: lastActiveLesson,
+        });
+      }
+
+      function updateCompletionTotal() {
+        completionTotal.textContent = `已完成 ${completedLessons.size} / ${lessons.length} 节`;
+      }
+
+      function setLastActiveLesson(sectionId) {
+        if (!lessonIds.has(sectionId) || sectionId === lastActiveLesson) return;
+        lastActiveLesson = sectionId;
+        continueLearning.href = `#${lastActiveLesson}`;
+        continueLearning.textContent = `继续学习：${document.getElementById(lastActiveLesson).dataset.title}`;
+        saveCourseProgress();
+      }
+
+      lessons.forEach((lesson, index) => {
+        const label = document.createElement('label');
+        label.className = 'lesson-complete';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = completedLessons.has(lesson.id);
+        checkbox.setAttribute('aria-label', `标记第 ${index + 1} 节为已完成`);
+        checkbox.addEventListener('change', () => {
+          if (checkbox.checked) completedLessons.add(lesson.id);
+          else completedLessons.delete(lesson.id);
+          updateCompletionTotal();
+          saveCourseProgress();
+        });
+        label.append(checkbox, document.createTextNode('已完成'));
+        (lesson.querySelector('.lesson-meta') || lesson).appendChild(label);
+      });
+      continueLearning.href = `#${lastActiveLesson || lessons[0]?.id || 'pyside-intro'}`;
+      const continuedLesson = document.getElementById(lastActiveLesson);
+      if (continuedLesson) continueLearning.textContent = `继续学习：${continuedLesson.dataset.title}`;
+      updateCompletionTotal();
 
       if (menuButton) {
         menuButton.addEventListener('click', () => {
@@ -2532,7 +2665,7 @@ mypy src/pd_diagnosis</code></pre></div>
         if (menuButton) menuButton.setAttribute('aria-expanded', 'false');
       }));
 
-      function updateScrollState() {
+      function updateScrollState(rememberLesson = true) {
         const max = document.documentElement.scrollHeight - window.innerHeight;
         progress.style.width = `${max > 0 ? (window.scrollY / max) * 100 : 0}%`;
         let activeId = sections[0]?.id;
@@ -2540,9 +2673,10 @@ mypy src/pd_diagnosis</code></pre></div>
           if (section.getBoundingClientRect().top <= 130) activeId = section.id;
         }
         tocLinks.forEach(link => link.classList.toggle('active', link.hash === `#${activeId}`));
+        if (rememberLesson) setLastActiveLesson(activeId);
       }
-      document.addEventListener('scroll', updateScrollState, { passive: true });
-      updateScrollState();
+      document.addEventListener('scroll', () => updateScrollState(), { passive: true });
+      updateScrollState(false);
 
       document.querySelectorAll('.copy').forEach(button => {
         button.addEventListener('click', async () => {
@@ -2612,6 +2746,18 @@ mypy src/pd_diagnosis</code></pre></div>
         header.appendChild(stats);
         sourceDetail.appendChild(header);
 
+        const guidance = document.createElement('dl');
+        guidance.className = 'source-guidance';
+        addTextElement(guidance, 'dt', '阅读级别');
+        addTextElement(guidance, 'dd', file.level);
+        addTextElement(guidance, 'dt', '前置知识');
+        addTextElement(guidance, 'dd', file.prerequisites);
+        addTextElement(guidance, 'dt', '首次重点');
+        addTextElement(guidance, 'dd', file.firstRead);
+        addTextElement(guidance, 'dt', '首遍可跳过');
+        addTextElement(guidance, 'dd', file.skipOnFirstPass);
+        sourceDetail.appendChild(guidance);
+
         const map = document.createElement('div');
         map.className = 'source-map';
         const mapTitle = document.createElement('strong');
@@ -2659,7 +2805,7 @@ mypy src/pd_diagnosis</code></pre></div>
         const query = sourceSearch.value.trim().toLowerCase();
         const filtered = sourceFiles.filter(file => {
           const partText = file.parts.map(part => `${part.title} ${part.explain} ${part.code}`).join(' ');
-          return `${file.group} ${file.path} ${file.role} ${file.depends} ${file.usedBy} ${partText}`
+          return `${file.group} ${file.path} ${file.role} ${file.depends} ${file.usedBy} ${file.level} ${file.prerequisites} ${file.firstRead} ${file.skipOnFirstPass} ${partText}`
             .toLowerCase().includes(query);
         });
         sourceNav.replaceChildren();

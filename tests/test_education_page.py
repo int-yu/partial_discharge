@@ -37,6 +37,7 @@ class _EducationPageAudit(HTMLParser):
         self.fragment_links: set[str] = set()
         self.landmarks: set[str] = set()
         self.scripts: list[str] = []
+        self.external_resources: list[tuple[str, str, str]] = []
         self.text_parts: list[str] = []
         self._script_parts: list[str] | None = None
 
@@ -52,8 +53,10 @@ class _EducationPageAudit(HTMLParser):
             self.fragment_links.add(href[1:])
         if tag in {"main", "nav", "aside"}:
             self.landmarks.add(tag)
+        resource_attribute = {"script": "src", "link": "href", "img": "src"}.get(tag)
+        if resource_attribute and attributes.get(resource_attribute):
+            self.external_resources.append((tag, resource_attribute, attributes[resource_attribute]))
         if tag == "script":
-            assert "src" not in attributes, "教程必须保持单文件离线可用"
             self._script_parts = []
 
     def handle_data(self, data):
@@ -164,6 +167,8 @@ def test_beginner_curriculum_and_offline_contract(project_root):
     assert 'data-level="foundation"' in text
     assert 'data-level="project"' in text
     assert 'data-level="advanced"' in text
+    assert audit.external_resources == []
+    assert re.search(r"url\(\s*['\"]?https?://", text, flags=re.IGNORECASE) is None
     assert "http://" not in text
     assert "https://" not in text
 
@@ -173,11 +178,35 @@ def test_beginner_entrypoint_and_storage_fallback(project_root):
     text = page.read_text(encoding="utf-8")
 
     assert '<a class="button primary" href="#pyside-intro"' in text
-    assert "const storage = {" in text
-    assert "get(key) { try { return localStorage.getItem(key); } catch { return null; } }" in text
-    assert "set(key, value) { try { localStorage.setItem(key, value); } catch {} }" in text
-    assert "const savedTheme = storage.get('pd-educate-theme');" in text
-    assert "storage.set('pd-educate-theme', root.dataset.theme);" in text
+    for marker in (
+        "function readStoredJson(key, fallback)",
+        "function writeStoredJson(key, value)",
+        "pd-educate-progress",
+        "continueLearning",
+        "lesson-complete",
+    ):
+        assert marker in text
+    assert "const savedTheme = readStoredJson('pd-educate-theme', null);" in text
+    assert "writeStoredJson('pd-educate-theme', root.dataset.theme);" in text
+
+
+def test_every_source_file_has_beginner_reading_metadata(project_root):
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+    source_data = text.partition('<script id="source-course-data">')[2].partition("</script>")[0]
+
+    entry_count = len(re.findall(r"\bpath\s*:\s*['\"]", source_data))
+    assert entry_count > 0
+    for field in ("level", "prerequisites", "firstRead", "skipOnFirstPass"):
+        values = re.findall(rf"\b{field}\s*:\s*['\"]([^'\"]+)['\"]", source_data)
+        assert len(values) == entry_count, f"{field} covers {len(values)} / {entry_count} entries"
+        assert all(value.strip() for value in values)
+    levels = re.findall(r"\blevel\s*:\s*['\"]([^'\"]+)['\"]", source_data)
+    assert set(levels) == {"项目必学", "进阶选学"}
+
+    final_script = text.rsplit("<script>", 1)[1].partition("</script>")[0]
+    for field in ("file.level", "file.prerequisites", "file.firstRead", "file.skipOnFirstPass"):
+        assert field in final_script
+    assert "innerHTML" not in final_script
 
 
 def test_project_bridge_gives_beginners_two_traceable_call_chains(project_root):
