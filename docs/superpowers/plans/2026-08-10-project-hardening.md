@@ -231,10 +231,10 @@ def test_default_model_path_falls_back_to_installed_data(monkeypatch, tmp_path):
 **Interfaces:**
 - Verifies wheel/install behavior without changing SDK import names.
 
-- [ ] **Step 1: Add a subprocess test proving public SDK import still avoids PySide6**
-- [ ] **Step 2: Build wheel and sdist in an isolated output directory**
-- [ ] **Step 3: Inspect the wheel and verify all three default model files and `py.typed` are present**
-- [ ] **Step 4: Install the wheel into a temporary virtual environment and launch from outside the repository**
-- [ ] **Step 5: Run full pytest, Ruff, mypy, and JavaScript/HTML checks for the education page**
-- [ ] **Step 6: Update API, bundle, and educational documentation to match final behavior**
-- [ ] **Step 7: Review `git diff`, confirm no dataset changes, and create the final implementation commit**
+- [x] **Step 1: Add a subprocess test proving public SDK import still avoids PySide6**
+- [x] **Step 2: Build wheel and sdist in an isolated output directory**
+- [x] **Step 3: Inspect the wheel and verify all three default model files and `py.typed` are present**
+- [x] **Step 4: Install the wheel into a temporary virtual environment and launch from outside the repository**
+- [x] **Step 5: Run full pytest, Ruff, mypy, and JavaScript/HTML checks for the education page**
+- [x] **Step 6: Update API, bundle, and educational documentation to match final behavior**
+- [x] **Step 7: Review `git diff`, confirm no dataset changes, and create the final implementation commit**
