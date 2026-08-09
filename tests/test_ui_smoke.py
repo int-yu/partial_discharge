@@ -10,6 +10,7 @@ os.environ.setdefault("MPLBACKEND", "QtAgg")
 
 
 def test_main_window_renders_result(engine, project_root, tmp_path):
+    from PySide6.QtCore import QLocale, QSettings
     from PySide6.QtGui import QFont
     from PySide6.QtWidgets import QApplication
 
@@ -22,11 +23,14 @@ def test_main_window_renders_result(engine, project_root, tmp_path):
 
     application = QApplication.instance() or QApplication([])
     application.setFont(QFont(ensure_chinese_font(), 11))
+    settings = QSettings(str(tmp_path / "ui.ini"), QSettings.IniFormat)
+    settings.setValue("ui/dark_theme", True)
     history = HistoryRepository(tmp_path / "ui.sqlite3")
     window = MainWindow(
         DiagnosisService(engine, history),
         history,
         model_path=project_root / "models" / "default",
+        settings=settings,
     )
     path = project_root / "data" / "train" / "0" / "a1.txt"
     samples = read_txt_signal(path)
@@ -45,6 +49,23 @@ def test_main_window_renders_result(engine, project_root, tmp_path):
     assert window.minimumWidth() == 1024
     assert window.navigation.count() == 4
     assert window.thread_pool.maxThreadCount() == 1
+    assert window.dark_theme
+    assert window.theme_combo.currentIndex() == 1
+    assert engine.bundle.feature_schema in window.model_contract_label.text()
+    assert QLocale().toString(engine.bundle.sampling_rate_hz) in window.model_contract_label.text()
+    for widget in (
+        window.navigation,
+        window.single_path,
+        window.batch_path,
+        window.feature_table,
+        window.batch_table,
+        window.history_table,
+        window.waveform_canvas,
+        window.prpd_canvas,
+        window.probability_canvas,
+        window.result_label,
+    ):
+        assert widget.accessibleName()
     assert len(received) == 1
     np.testing.assert_array_equal(received[0], samples)
     window._set_single_running(True)
@@ -58,3 +79,6 @@ def test_main_window_renders_result(engine, project_root, tmp_path):
     assert window.result_label.text() == "金属突出物缺陷"
     assert window.feature_table.item(2, 4).text() == "偏度"
     window.close()
+    settings.sync()
+    assert settings.value("window/geometry") is not None
+    assert settings.value("window/diagnosis_splitter") is not None

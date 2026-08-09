@@ -47,6 +47,11 @@ class BaseCanvas(FigureCanvasQTAgg):
 
 
 class WaveformCanvas(BaseCanvas):
+    def __init__(self, *, dark: bool = False) -> None:
+        super().__init__(dark=dark)
+        self.setAccessibleName("局部放电信号波形图")
+        self.setAccessibleDescription("显示信号采样点与幅值的变化")
+
     def plot_signal(self, samples: np.ndarray) -> None:
         colors = chart_colors(dark=self.dark)
         self.axes.clear()
@@ -57,6 +62,10 @@ class WaveformCanvas(BaseCanvas):
         self.axes.set_xlabel("采样点")
         self.axes.set_ylabel("幅值")
         self.axes.grid(True, color=colors["grid"], alpha=0.55, linestyle="--")
+        self.setAccessibleDescription(
+            f"波形共 {len(samples)} 个采样点，最小值 {float(np.min(samples)):.4g}，"
+            f"最大值 {float(np.max(samples)):.4g}"
+        )
         self.apply_theme(self.dark)
 
 
@@ -64,6 +73,8 @@ class PrpdCanvas(BaseCanvas):
     def __init__(self, *, dark: bool = False) -> None:
         self._colorbar = None
         super().__init__(dark=dark)
+        self.setAccessibleName("相位分辨局部放电图")
+        self.setAccessibleDescription("显示信号在 0 到 360 度相位上的放电分布")
 
     def plot_signal(self, samples: np.ndarray, sampling_rate_hz: int = 1_000_000) -> None:
         phase, amplitude, matrix = generate_prpd_matrix(
@@ -78,6 +89,9 @@ class PrpdCanvas(BaseCanvas):
         self.axes.set_xlabel("相位（°）")
         self.axes.set_ylabel("幅值")
         self.axes.set_xlim(0, 360)
+        self.setAccessibleDescription(
+            f"PRPD 图由 {len(samples)} 个采样点生成，采样率 {sampling_rate_hz} Hz"
+        )
         self.apply_theme(self.dark)
 
 
@@ -85,6 +99,8 @@ class ProbabilityCanvas(BaseCanvas):
     def __init__(self, *, dark: bool = False) -> None:
         super().__init__(dark=dark, height=2.7)
         self.setMinimumHeight(220)
+        self.setAccessibleName("诊断类别概率图")
+        self.setAccessibleDescription("显示各诊断类别的模型概率")
 
     def plot_probabilities(self, probabilities: dict[str, float]) -> None:
         colors = chart_colors(dark=self.dark)
@@ -106,6 +122,9 @@ class ProbabilityCanvas(BaseCanvas):
                 color=colors["text"],
                 fontsize=9,
             )
+        self.setAccessibleDescription(
+            "；".join(f"{label} {value:.1%}" for label, value in probabilities.items())
+        )
         self.axes.grid(True, axis="x", color=colors["grid"], alpha=0.5, linestyle="--")
         self.apply_theme(self.dark)
 

@@ -167,14 +167,14 @@ def test_default_model_path_falls_back_to_installed_data(monkeypatch, tmp_path):
 - Produces: `display_time(value: str, locale: QLocale | None = None) -> str` with UTC-to-local conversion.
 - MainWindow optionally consumes injected `QSettings` for deterministic tests.
 
-- [ ] **Step 1: Write failing formatting tests for UTC ISO timestamps and invalid fallback text**
-- [ ] **Step 2: Implement timezone conversion and locale-aware short date/time output**
-- [ ] **Step 3: Write failing UI tests for persisted theme, key accessible names, and dynamic feature schema/sampling rate text**
-- [ ] **Step 4: Inject/load/save QSettings for theme, geometry, and splitter state**
-- [ ] **Step 5: Add accessible names/descriptions for navigation, paths, tables, probability/PRPD/waveform canvases, and result labels**
-- [ ] **Step 6: Remove hard-coded `legacy-v1` and `1 MHz` settings text in favor of bundle values**
-- [ ] **Step 7: Remove the global QSS pixel font override so the application point-size font can respect DPI and large-font settings**
-- [ ] **Step 8: Run UI tests in offscreen mode and commit**
+- [x] **Step 1: Write failing formatting tests for UTC ISO timestamps and invalid fallback text**
+- [x] **Step 2: Implement timezone conversion and locale-aware short date/time output**
+- [x] **Step 3: Write failing UI tests for persisted theme, key accessible names, and dynamic feature schema/sampling rate text**
+- [x] **Step 4: Inject/load/save QSettings for theme, geometry, and splitter state**
+- [x] **Step 5: Add accessible names/descriptions for navigation, paths, tables, probability/PRPD/waveform canvases, and result labels**
+- [x] **Step 6: Remove hard-coded `legacy-v1` and `1 MHz` settings text in favor of bundle values**
+- [x] **Step 7: Remove the global QSS pixel font override so the application point-size font can respect DPI and large-font settings**
+- [x] **Step 8: Run UI tests in offscreen mode and commit**
 
 ### Task 7: History Pagination and Background Export
 

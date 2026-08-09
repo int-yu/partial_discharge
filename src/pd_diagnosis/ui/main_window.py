@@ -3,8 +3,8 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QThreadPool
-from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtCore import QLocale, QSettings, Qt, QThreadPool
+from PySide6.QtGui import QCloseEvent, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QApplication,
@@ -34,6 +34,7 @@ from ..service import DiagnosisService
 from ..storage import HistoryRecord, HistoryRepository
 from ..types import BatchDiagnosisItem
 from .charts import ProbabilityCanvas, PrpdCanvas, WaveformCanvas
+from .formatting import display_time
 from .theme import build_stylesheet
 from .workers import BatchDiagnosisTask, SingleDiagnosisOutcome, SingleDiagnosisTask
 
@@ -45,22 +46,25 @@ class MainWindow(QMainWindow):
         history: HistoryRepository,
         *,
         model_path: Path,
+        settings: QSettings | None = None,
     ) -> None:
         super().__init__()
         self.service = service
         self.history = history
         self.model_path = model_path
+        self.settings = settings or QSettings()
         self.thread_pool = QThreadPool(self)
         self.thread_pool.setMaxThreadCount(1)
         self.current_batch_task: BatchDiagnosisTask | None = None
-        self.dark_theme = False
+        self.dark_theme = self.settings.value("ui/dark_theme", False, type=bool)
 
         self.setWindowTitle("局部放电类型智能诊断")
         self.resize(1280, 800)
         self.setMinimumSize(1024, 720)
-        self.setStyleSheet(build_stylesheet())
+        self.setStyleSheet(build_stylesheet(dark=self.dark_theme))
         self._build_shell()
         self._install_shortcuts()
+        self._restore_settings()
         self.refresh_history()
 
     def _build_shell(self) -> None:
@@ -79,6 +83,8 @@ class MainWindow(QMainWindow):
         sidebar_layout.addWidget(subtitle)
         sidebar_layout.addSpacing(22)
         self.navigation = QListWidget(objectName="Navigation")
+        self.navigation.setAccessibleName("主导航")
+        self.navigation.setAccessibleDescription("切换诊断、批量、历史和设置页面")
         self.navigation.setSpacing(2)
         self.navigation.addItems(["诊断工作台", "批量诊断", "历史与报告", "模型与设置"])
         sidebar_layout.addWidget(self.navigation)
@@ -135,6 +141,7 @@ class MainWindow(QMainWindow):
         self.single_path = QLineEdit()
         self.single_path.setPlaceholderText("选择一维信号 TXT 文件")
         self.single_path.setAccessibleName("单次诊断文件路径")
+        self.single_path.setAccessibleDescription("输入或选择要诊断的一维 TXT 信号文件")
         self.single_browse = QPushButton("选择文件")
         self.single_browse.clicked.connect(self._browse_single)
         self.diagnose_button = QPushButton("开始诊断", objectName="PrimaryButton")
@@ -146,6 +153,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(input_card)
 
         splitter = QSplitter(Qt.Horizontal)
+        self.diagnosis_splitter = splitter
         charts_card, charts_layout = card()
         tabs = QTabWidget()
         self.waveform_canvas = WaveformCanvas()
@@ -165,8 +173,12 @@ class MainWindow(QMainWindow):
         result_layout.addLayout(result_header)
         self.result_label = QLabel("尚无结果", objectName="ResultLabel")
         self.result_label.setWordWrap(True)
+        self.result_label.setAccessibleName("模型建议结果")
+        self.result_label.setAccessibleDescription("显示模型建议的局部放电缺陷类别")
         self.confidence_label = QLabel("置信度 —", objectName="ConfidenceLabel")
+        self.confidence_label.setAccessibleName("模型置信度")
         self.warning_label = QLabel("结果仅供辅助判断，请结合现场信息复核。", objectName="WarningLabel")
+        self.warning_label.setAccessibleName("诊断提示")
         self.warning_label.setWordWrap(True)
         self.probability_canvas = ProbabilityCanvas()
         result_layout.addWidget(self.result_label)
@@ -180,6 +192,8 @@ class MainWindow(QMainWindow):
         features_card, features_layout = card()
         features_layout.addWidget(QLabel("特征摘要", objectName="SectionTitle"))
         self.feature_table = QTableWidget(4, 5)
+        self.feature_table.setAccessibleName("信号特征摘要表")
+        self.feature_table.setAccessibleDescription("显示模型使用的十项信号特征及数值")
         self.feature_table.setVerticalHeaderLabels(["特征", "数值", "特征", "数值"])
         self.feature_table.horizontalHeader().setVisible(False)
         self.feature_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -199,6 +213,8 @@ class MainWindow(QMainWindow):
         control_layout.addWidget(QLabel("批量任务", objectName="SectionTitle"))
         row = QHBoxLayout()
         self.batch_path = QLineEdit()
+        self.batch_path.setAccessibleName("批量诊断目录路径")
+        self.batch_path.setAccessibleDescription("选择包含 TXT 信号文件的目录")
         self.batch_path.setPlaceholderText("选择包含 TXT 文件的目录")
         browse = QPushButton("选择目录")
         browse.clicked.connect(self._browse_batch)
@@ -225,6 +241,8 @@ class MainWindow(QMainWindow):
         table_header.addWidget(self.batch_summary)
         table_layout.addLayout(table_header)
         self.batch_table = QTableWidget(0, 5)
+        self.batch_table.setAccessibleName("批量诊断结果表")
+        self.batch_table.setAccessibleDescription("逐项显示批量文件的诊断状态和结果")
         self.batch_table.setHorizontalHeaderLabels(["文件", "状态", "诊断类型", "置信度", "说明"])
         self.batch_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self.batch_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
@@ -244,6 +262,7 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(QLabel("诊断历史", objectName="SectionTitle"))
         row = QHBoxLayout()
         self.history_query = QLineEdit()
+        self.history_query.setAccessibleName("历史记录搜索")
         self.history_query.setPlaceholderText("搜索文件、诊断类型或模型版本")
         self.history_query.returnPressed.connect(self.refresh_history)
         search = QPushButton("搜索")
@@ -266,6 +285,8 @@ class MainWindow(QMainWindow):
         self.history_summary = QLabel(objectName="MutedLabel")
         table_layout.addWidget(self.history_summary)
         self.history_table = QTableWidget(0, 6)
+        self.history_table.setAccessibleName("诊断历史记录表")
+        self.history_table.setAccessibleDescription("显示已保存的诊断和错误记录")
         self.history_table.setHorizontalHeaderLabels(
             ["时间", "来源", "模型建议", "置信度", "模型版本", "状态"]
         )
@@ -291,9 +312,14 @@ class MainWindow(QMainWindow):
         path_label = QLabel(f"Bundle：{self.model_path}", objectName="MutedLabel")
         path_label.setWordWrap(True)
         model_layout.addWidget(path_label)
-        model_layout.addWidget(
-            QLabel("特征模式：legacy-v1 · 采样率：1 MHz · 输入：数组或 TXT", objectName="MutedLabel")
+        bundle = self.service.engine.bundle
+        self.model_contract_label = QLabel(
+            f"特征模式：{bundle.feature_schema} · "
+            f"采样率：{QLocale().toString(bundle.sampling_rate_hz)} Hz · 输入：数组或 TXT",
+            objectName="MutedLabel",
         )
+        self.model_contract_label.setAccessibleName("模型输入契约")
+        model_layout.addWidget(self.model_contract_label)
         layout.addWidget(model_card)
 
         storage_card, storage_layout = card()
@@ -305,6 +331,8 @@ class MainWindow(QMainWindow):
         theme_row.addWidget(QLabel("界面主题"))
         self.theme_combo = QComboBox()
         self.theme_combo.addItems(["浅色", "深色"])
+        self.theme_combo.setCurrentIndex(1 if self.dark_theme else 0)
+        self.theme_combo.setAccessibleName("界面主题")
         self.theme_combo.currentIndexChanged.connect(self._change_theme)
         theme_row.addWidget(self.theme_combo)
         theme_row.addStretch()
@@ -551,8 +579,26 @@ class MainWindow(QMainWindow):
     def _change_theme(self, index: int) -> None:
         self.dark_theme = index == 1
         self.setStyleSheet(build_stylesheet(dark=self.dark_theme))
+        self.settings.setValue("ui/dark_theme", self.dark_theme)
         for canvas in (self.waveform_canvas, self.prpd_canvas, self.probability_canvas):
             canvas.apply_theme(self.dark_theme)
+
+    def _restore_settings(self) -> None:
+        geometry = self.settings.value("window/geometry")
+        if geometry is not None:
+            self.restoreGeometry(geometry)
+        splitter_state = self.settings.value("window/diagnosis_splitter")
+        if splitter_state is not None:
+            self.diagnosis_splitter.restoreState(splitter_state)
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        self.settings.setValue("ui/dark_theme", self.dark_theme)
+        self.settings.setValue("window/geometry", self.saveGeometry())
+        self.settings.setValue(
+            "window/diagnosis_splitter", self.diagnosis_splitter.saveState()
+        )
+        self.settings.sync()
+        super().closeEvent(event)
 
 
 def card() -> tuple[QFrame, QVBoxLayout]:
@@ -569,6 +615,3 @@ def format_feature(value: float) -> str:
         return f"{value:.4e}"
     return f"{value:.4f}"
 
-
-def display_time(value: str) -> str:
-    return value.replace("T", " ")[:19]
