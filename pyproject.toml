@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "partial-discharge-diagnosis"
+version = "0.1.0"
+description = "局部放电类型诊断 Python SDK 与桌面应用"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "numpy>=1.26,<3",
+    "platformdirs>=4.2,<5",
+    "torch>=2.6",
+]
+
+[project.optional-dependencies]
+gui = [
+    "PySide6>=6.7,<7",
+    "matplotlib>=3.9,<4",
+]
+train = [
+    "joblib>=1.4,<2",
+    "pandas>=2.2,<3",
+    "scikit-learn>=1.6,<2",
+]
+dev = [
+    "pytest>=8.3,<9",
+    "pytest-cov>=6,<7",
+    "pytest-qt>=4.4,<5",
+]
+
+[project.scripts]
+pd-diagnosis = "pd_diagnosis.ui.app:main"
+pd-migrate-model = "pd_diagnosis.migration:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra"
