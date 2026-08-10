@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import ast
+import importlib.util
+import json
+import os
+import re
 import shutil
 import subprocess
+import sys
 from html import unescape
 from html.parser import HTMLParser
-import re
 
 import pytest
-
 
 BEGINNER_SECTION_IDS = {
     "pyside-intro",
@@ -27,6 +30,24 @@ BEGINNER_SECTION_IDS = {
     "project-map",
     "source-course",
 }
+
+LINEAR_LESSON_IDS = (
+    "pyside-intro",
+    "first-window",
+    "event-loop",
+    "widgets",
+    "layouts",
+    "signals-slots",
+    "main-window-basics",
+    "dialogs",
+    "stacked-pages",
+    "qss",
+    "mini-project",
+    "threading",
+    "sdk",
+    "project-map",
+    "flows",
+)
 
 
 class _EducationPageAudit(HTMLParser):
@@ -128,6 +149,52 @@ class _LessonSectionAudit(HTMLParser):
             self._parts = []
 
 
+class _SectionStructureAudit(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.order: list[str] = []
+        self.attributes: dict[str, dict[str, str | None]] = {}
+        self.direct_children: dict[str, list[tuple[str, str]]] = {}
+        self._active_id: str | None = None
+        self._depth = 0
+
+    def handle_starttag(self, tag, attrs):
+        attributes = dict(attrs)
+        if tag == "section":
+            section_id = attributes.get("id")
+            if section_id:
+                self.order.append(section_id)
+                self.attributes[section_id] = attributes
+                self.direct_children[section_id] = []
+                self._active_id = section_id
+                self._depth = 1
+            return
+        if self._active_id is not None:
+            if self._depth == 1:
+                self.direct_children[self._active_id].append(
+                    (tag, attributes.get("class", "") or "")
+                )
+            if tag not in {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta"}:
+                self._depth += 1
+
+    def handle_endtag(self, tag):
+        if self._active_id is None:
+            return
+        self._depth -= 1
+        if self._depth == 0:
+            self._active_id = None
+
+
+def _expanded_line_spec(spec: str) -> set[int]:
+    lines: set[int] = set()
+    for part in spec.split(","):
+        start_text, separator, end_text = part.strip().partition("-")
+        start = int(start_text)
+        end = int(end_text) if separator else start
+        lines.update(range(start, end + 1))
+    return lines
+
+
 def test_education_page_structure_links_and_javascript(project_root, tmp_path):
     page = project_root / "docs" / "educate" / "index.html"
     text = page.read_text(encoding="utf-8")
@@ -163,7 +230,7 @@ def test_beginner_curriculum_and_offline_contract(project_root):
     audit.feed(text)
 
     assert BEGINNER_SECTION_IDS <= audit.ids
-    assert {"鍩虹蹇呭", "椤圭洰蹇呭", "杩涢樁閫夊"} <= set(audit.text_parts)
+    assert {"基础必学", "项目必学", "进阶选学"} <= set(audit.text_parts)
     assert 'data-level="foundation"' in text
     assert 'data-level="project"' in text
     assert 'data-level="advanced"' in text
@@ -171,6 +238,35 @@ def test_beginner_curriculum_and_offline_contract(project_root):
     assert re.search(r"url\(\s*['\"]?https?://", text, flags=re.IGNORECASE) is None
     assert "http://" not in text
     assert "https://" not in text
+
+
+def test_linear_curriculum_order_and_progress_metadata(project_root):
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+    audit = _SectionStructureAudit()
+    audit.feed(text)
+
+    positions = [audit.order.index(section_id) for section_id in LINEAR_LESSON_IDS]
+    assert positions == sorted(positions)
+    for section_id in LINEAR_LESSON_IDS:
+        attributes = audit.attributes[section_id]
+        assert "lesson" in (attributes.get("class") or "").split(), section_id
+        assert attributes.get("data-title"), section_id
+        assert attributes.get("data-level") in {"foundation", "project"}, section_id
+        children = audit.direct_children[section_id]
+        assert any("lesson-meta" in classes.split() for _, classes in children), section_id
+    assert "lesson" not in (audit.attributes["source-course"].get("class") or "").split()
+    assert "const lessons = [...document.querySelectorAll('.lesson')];" in text
+
+
+def test_late_foundation_lessons_open_with_metadata_and_heading(project_root):
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+    audit = _SectionStructureAudit()
+    audit.feed(text)
+
+    for section_id in ("main-window-basics", "dialogs", "stacked-pages", "qss"):
+        first_two = audit.direct_children[section_id][:2]
+        assert first_two[0] == ("div", "lesson-meta"), section_id
+        assert first_two[1][0] == "h2", section_id
 
 
 def test_beginner_entrypoint_and_storage_fallback(project_root):
@@ -209,6 +305,72 @@ def test_every_source_file_has_beginner_reading_metadata(project_root):
     assert "innerHTML" not in final_script
 
 
+def test_source_course_paths_lines_and_key_symbols_match_checkout(project_root):
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+    source_data = text.partition('<script id="source-course-data">')[2].partition("</script>")[0]
+    records = re.findall(
+        r'path:\s*"([^"]+)"\s*,\s*lines:\s*(\d+|null)', source_data
+    )
+    assert records
+    aggregate_markers = ("*", " + ", "{", "}")
+    for relative_path, declared_lines in records:
+        if any(marker in relative_path for marker in aggregate_markers):
+            continue
+        path = project_root / relative_path
+        assert path.is_file(), relative_path
+        if declared_lines != "null":
+            actual_lines = len(path.read_text(encoding="utf-8").splitlines())
+            assert int(declared_lines) == actual_lines, relative_path
+
+    def source_entry(path: str) -> str:
+        entry = source_data.partition(f'path:"{path}"')[2]
+        assert entry, path
+        return entry.partition("\n      {\n        group:")[0]
+
+    expected_symbols = {
+        "src/pd_diagnosis/bundle.py": (
+            "SUPPORTED_ARCHITECTURE",
+            "ModelBundle.load",
+            "_verify_artifact",
+            "_load_scaler",
+            "resolve_bundle_artifact",
+            "sha256_file",
+        ),
+        "src/pd_diagnosis/ui/workers.py": (
+            "SingleDiagnosisOutcome",
+            "HistoryExportOutcome",
+            "TaskSignals",
+            "SingleDiagnosisTask",
+            "BatchDiagnosisTask",
+            "HistoryExportTask",
+        ),
+        "src/pd_diagnosis/ui/main_window.py": (
+            "MainWindow",
+            "setMaxThreadCount(1)",
+            "start_single_diagnosis",
+            "_show_single_result",
+            "_finish_single",
+            "BatchDiagnosisTask",
+            "HistoryExportTask",
+        ),
+        "src/pd_diagnosis/__main__.py": (
+            "from .launcher import main",
+            "raise SystemExit(main())",
+        ),
+    }
+    for path, symbols in expected_symbols.items():
+        entry = source_entry(path)
+        for symbol in symbols:
+            assert symbol in entry, (path, symbol)
+
+    assert "批量 cancelled 字段" not in source_data
+    history_export_entry = source_entry("src/pd_diagnosis/ui/history_export.py")
+    assert "生成器细节" not in history_export_entry
+    assert "核心生产 Python 文件" in text
+    assert "重点测试文件" in text
+    assert "100%</strong><span>正式 Python 文件" not in text
+
+
 def test_project_bridge_gives_beginners_two_traceable_call_chains(project_root):
     text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
 
@@ -220,6 +382,39 @@ def test_project_bridge_gives_beginners_two_traceable_call_chains(project_root):
         "第一次阅读只追这一条线",
     ):
         assert marker in text
+
+    chain_headers = (
+        "触发",
+        "精确文件与可调用对象",
+        "输入 → 输出",
+        "线程",
+        "可能错误",
+        "下一步",
+    )
+    for title in ("应用启动链", "单文件诊断链"):
+        table = text.partition(f"<h3>{title}</h3>")[2].partition("</table>")[0]
+        assert table
+        for header in chain_headers:
+            assert f"<th>{header}</th>" in table
+
+    hardening = text.partition('id="hardening"')[2].partition("</section>")[0]
+    advanced_topics = (
+        "SQLite",
+        "bundle 验证",
+        "不可变快照",
+        "工件哈希",
+        "历史分页",
+        "CSV 导出",
+        "模型内部",
+    )
+    for topic in advanced_topics:
+        card = hardening.partition(f"<h3>进阶选学：{topic}</h3>")[2].partition("</article>")[0]
+        assert "初读只需要知道" in card
+        assert "暂时可以跳过" in card
+
+    sdk = text.partition('id="sdk"')[2].partition("</section>")[0]
+    assert "当前样例模型和数据集用于演示工程接口、调用链和输入输出" in sdk
+    assert "不应把样例输出当作现场诊断结论" in sdk
 
 
 def test_service_source_lesson_matches_persistence_isolation_contract(project_root):
@@ -306,6 +501,166 @@ def test_foundation_examples_are_complete_python(project_root):
     assert required <= audit.examples.keys()
     for name in required:
         compile(audit.examples[name], f"<{name}>", "exec")
+
+
+def test_deferred_reference_answers_are_compiled_automatically(project_root):
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+    audit = _PythonExampleAudit()
+    audit.feed(text)
+    reference_answers = {
+        "widgets-clear-form-answer",
+        "layouts-spacing-answer",
+        "signals-reset-answer",
+    }
+
+    assert reference_answers <= audit.examples.keys()
+    for name in reference_answers:
+        compile(audit.examples[name], f"<{name}>", "exec")
+
+
+def test_late_foundation_reference_answers_are_complete_and_explained(project_root):
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+    audit = _PythonExampleAudit()
+    audit.feed(text)
+    example_pairs = {
+        "main-window": "main-window-answer",
+        "file-dialog": "file-dialog-answer",
+        "stacked-pages": "stacked-pages-answer",
+        "qss-states": "qss-states-answer",
+    }
+
+    for canonical_name, answer_name in example_pairs.items():
+        answer = audit.examples[answer_name]
+        compile(answer, f"<{answer_name}>", "exec")
+        canonical_tree = ast.parse(audit.examples[canonical_name])
+        statement_lines = {
+            node.lineno for node in ast.walk(canonical_tree) if isinstance(node, ast.stmt)
+        }
+        table_match = re.search(
+            rf'<table class="compare line-by-line" '
+            rf'data-line-explanation-for="{canonical_name}">(.*?)</table>',
+            text,
+            flags=re.DOTALL,
+        )
+        assert table_match, canonical_name
+        covered_lines: set[int] = set()
+        for spec in re.findall(r'data-lines="([0-9,\-]+)"', table_match.group(1)):
+            covered_lines.update(_expanded_line_spec(spec))
+        assert statement_lines <= covered_lines, (
+            canonical_name,
+            sorted(statement_lines - covered_lines),
+        )
+
+
+def test_foundation_examples_run_offscreen(project_root, tmp_path):
+    if importlib.util.find_spec("PySide6") is None:
+        pytest.skip("PySide6 is unavailable; compile coverage still protects the examples")
+
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+    audit = _PythonExampleAudit()
+    audit.feed(text)
+    names = (
+        "first-window",
+        "event-loop-timer",
+        "widgets-form",
+        "nested-layouts",
+        "signals-slots",
+        "main-window",
+        "file-dialog",
+        "stacked-pages",
+        "qss-states",
+        "main-window-answer",
+        "file-dialog-answer",
+        "stacked-pages-answer",
+        "qss-states-answer",
+    )
+    environment = os.environ.copy()
+    environment["QT_QPA_PLATFORM"] = "offscreen"
+
+    for name in names:
+        source = audit.examples[name]
+        source = source.replace(
+            "raise SystemExit(app.exec())",
+            'from PySide6.QtCore import QTimer\nQTimer.singleShot(0, app.quit)\n'
+            'raise SystemExit(app.exec())\n',
+        )
+        source = re.sub(
+            r"(?m)^exit_code = app\.exec\(\)\nraise SystemExit\(exit_code\)",
+            'from PySide6.QtCore import QTimer\nQTimer.singleShot(0, app.quit)\n'
+            'raise SystemExit(app.exec())',
+            source,
+        )
+        program = tmp_path / f"{name}.py"
+        program.write_text(source, encoding="utf-8")
+        completed = subprocess.run(
+            [sys.executable, str(program)],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            env=environment,
+            check=False,
+            timeout=20,
+        )
+        assert completed.returncode == 0, f"{name}: {completed.stderr}"
+
+
+def test_thread_pool_and_sdk_examples_execute(project_root, tmp_path):
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+    audit = _PythonExampleAudit()
+    audit.feed(text)
+    assert "sdk-diagnosis" in audit.examples
+    compile(audit.examples["sdk-diagnosis"], "<sdk-diagnosis>", "exec")
+
+    if importlib.util.find_spec("PySide6") is not None:
+        thread_source = audit.examples["thread-pool"].replace(
+            "raise SystemExit(app.exec())",
+            '''from PySide6.QtCore import QTimer
+window.start_button.click()
+def verify_result():
+    assert "模拟诊断完成" in window.status_label.text(), window.status_label.text()
+    assert window.start_button.isEnabled()
+    print("thread pool example OK")
+    app.quit()
+QTimer.singleShot(3000, verify_result)
+raise SystemExit(app.exec())
+''',
+        )
+        thread_program = tmp_path / "thread-pool.py"
+        thread_program.write_text(thread_source, encoding="utf-8")
+        environment = os.environ.copy()
+        environment["QT_QPA_PLATFORM"] = "offscreen"
+        completed = subprocess.run(
+            [sys.executable, str(thread_program)],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            env=environment,
+            check=False,
+            timeout=15,
+        )
+        assert completed.returncode == 0, completed.stderr
+        assert "thread pool example OK" in completed.stdout
+
+    sdk_program = tmp_path / "sdk-diagnosis.py"
+    sdk_program.write_text(audit.examples["sdk-diagnosis"], encoding="utf-8")
+    environment = os.environ.copy()
+    environment["PYTHONPATH"] = str(project_root / "src")
+    completed = subprocess.run(
+        [sys.executable, str(sdk_program)],
+        cwd=project_root,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=environment,
+        check=False,
+        timeout=120,
+    )
+    assert completed.returncode == 0, completed.stderr
+    for field in ("label:", "confidence:", "probabilities:", "model_version:", "source_id:"):
+        assert field in completed.stdout
 
 
 def test_guided_diagnosis_ui_uses_six_explicit_stages(project_root):
@@ -654,3 +1009,538 @@ def test_main_window_ownership_and_qss_success_answer_are_safe(project_root):
     )
     positions = [success_answer.index(step) for step in steps]
     assert positions == sorted(positions)
+
+
+def test_staged_practices_close_each_prerequisite_learning_loop(project_root):
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+    exercise_html = text.partition('id="exercises"')[2].partition("</section>")[0]
+    practices = re.findall(
+        r'<article class="practice-card"([^>]*)>(.*?)</article>',
+        exercise_html,
+        flags=re.DOTALL,
+    )
+    required_prerequisites = {
+        "widgets",
+        "layouts",
+        "signals-slots",
+        "dialogs",
+        "stacked-pages",
+        "qss",
+        "threading",
+        "sdk",
+        "flows",
+    }
+
+    assert len(practices) >= len(required_prerequisites)
+    covered_prerequisites = set()
+    levels = set()
+    for attributes, body in practices:
+        prerequisite = re.search(r'data-prerequisite="([^"]+)"', attributes)
+        level = re.search(r'data-level="([^"]+)"', attributes)
+        assert prerequisite and level
+        covered_prerequisites.add(prerequisite.group(1))
+        levels.add(level.group(1))
+        assert f'href="#{prerequisite.group(1)}"' in body
+        assert '<details class="practice-answer"' in body
+        plain_text = unescape(re.sub(r"<[^>]+>", " ", body))
+        for marker in ("前置课程", "可见结果", "限制条件", "提示", "完整答案", "自我验证"):
+            assert marker in plain_text, f"{prerequisite.group(1)} is missing {marker}"
+
+    assert covered_prerequisites == required_prerequisites
+    assert levels == {"foundation", "project"}
+
+
+def test_practice_python_answers_are_complete_and_executable(project_root, tmp_path):
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+    audit = _PythonExampleAudit()
+    audit.feed(text)
+    practice_names = (
+        "practice-widgets-clear",
+        "practice-layouts-bottom",
+        "practice-signals-reset",
+        "practice-dialog-cancel",
+        "practice-stacked-history",
+        "practice-qss-success",
+        "practice-thread-finish",
+        "practice-sdk-summary",
+    )
+
+    assert set(practice_names) <= audit.examples.keys()
+    for name in practice_names:
+        compile(audit.examples[name], f"<{name}>", "exec")
+
+    if importlib.util.find_spec("PySide6") is None:
+        pytest.skip("PySide6 is unavailable; all practice answers were still compiled")
+
+    executable_examples = {
+        name: audit.examples[name]
+        for name in practice_names[:6]
+    }
+    runner = f'''\
+from __future__ import annotations
+
+import json
+import os
+
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
+from PySide6.QtWidgets import QApplication
+
+examples = json.loads({json.dumps(json.dumps(executable_examples))})
+app = QApplication.instance() or QApplication([])
+
+def load(name):
+    namespace = {{"__name__": f"answer_{{name}}"}}
+    exec(compile(examples[name], f"<{{name}}>", "exec"), namespace)
+    return namespace
+
+widgets = load("practice-widgets-clear")
+form = widgets["ProfileForm"]()
+assert form.layout().indexOf(form.clear_button) >= 0
+form.name_input.setText("Alice")
+form.role_box.setCurrentIndex(1)
+form.result_output.setPlainText("submitted")
+form.clear_button.click()
+assert form.name_input.text() == ""
+assert form.role_box.currentIndex() == 0
+assert form.result_output.toPlainText() == ""
+
+layouts = load("practice-layouts-bottom")
+bottom = layouts["BottomButtonWindow"]()
+assert bottom.root_layout.itemAt(1).spacerItem() is not None
+button_row = bottom.root_layout.itemAt(2).layout()
+assert button_row.indexOf(bottom.cancel_button) >= 0
+assert button_row.indexOf(bottom.save_button) >= 0
+
+signals = load("practice-signals-reset")
+counter = signals["ResetCounter"]()
+assert counter.layout().indexOf(counter.reset_button) >= 0
+for _ in range(3):
+    counter.add_button.click()
+assert counter.value_label.text() == "3"
+counter.reset_button.click()
+assert counter.value_label.text() == "0"
+counter.add_button.click()
+assert counter.value_label.text() == "1"
+
+dialogs = load("practice-dialog-cancel")
+responses = iter((("image.png", "Images"), ("", "")))
+messages = []
+class FakeFileDialog:
+    @staticmethod
+    def getOpenFileName(*_args):
+        return next(responses)
+class FakeMessageBox:
+    @staticmethod
+    def information(_parent, title, message):
+        messages.append((title, message))
+dialogs["QFileDialog"] = FakeFileDialog
+dialogs["QMessageBox"] = FakeMessageBox
+chooser = dialogs["ImageChooser"]()
+assert chooser.layout().indexOf(chooser.choose_button) >= 0
+chooser.choose_button.click()
+assert chooser.path_label.text() == "image.png"
+chooser.choose_button.click()
+assert chooser.path_label.text() == "image.png"
+assert messages == [("已选择", "image.png")]
+
+pages = load("practice-stacked-history")
+page_window = pages["HistoryPageWindow"]()
+assert page_window.navigation.indexOf(page_window.history_button) >= 0
+page_window.history_button.click()
+assert page_window.pages.currentIndex() == 2
+page_window.overview_button.click()
+assert page_window.pages.currentIndex() == 0
+
+qss = load("practice-qss-success")
+status_window = qss["SuccessStatusWindow"]()
+assert status_window.layout().indexOf(status_window.success_button) >= 0
+status_window.success_button.click()
+assert status_window.status_label.text() == "已完成"
+assert status_window.status_label.property("severity") == "success"
+print("practice answers execute OK")
+'''
+    runner_path = tmp_path / "run-practice-answers.py"
+    runner_path.write_text(runner, encoding="utf-8")
+    environment = os.environ.copy()
+    environment["QT_QPA_PLATFORM"] = "offscreen"
+    completed = subprocess.run(
+        [sys.executable, str(runner_path)],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=environment,
+        check=False,
+        timeout=30,
+    )
+    assert completed.returncode == 0, completed.stderr
+    assert "practice answers execute OK" in completed.stdout
+
+
+def test_final_quiz_feedback_mapping_is_complete_and_consistent(project_root):
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+    audit = _EducationPageAudit()
+    audit.feed(text)
+    quiz_html = text.partition('id="quiz"')[2].partition("</section>")[0]
+    questions = re.findall(
+        r'<fieldset class="quiz-question"([^>]*)>(.*?)</fieldset>',
+        quiz_html,
+        flags=re.DOTALL,
+    )
+
+    assert len(questions) >= 12
+    assert "const quizAnswers = new Map" in text
+    assert "答案解释" in quiz_html
+    assert 'aria-live="polite"' in quiz_html
+    for index, (attributes, body) in enumerate(questions, start=1):
+        answer = re.search(r'data-answer="([^"]+)"', attributes)
+        review = re.search(r'data-review-section="([^"]+)"', attributes)
+        assert answer and review
+        radio_names = set(re.findall(r'type="radio" name="([^"]+)"', body))
+        option_values = set(re.findall(r'type="radio" name="[^"]+" value="([^"]+)"', body))
+        review_link = re.search(r'class="review-link" href="#([^"]+)"', body)
+        explanation = re.search(
+            r'class="answer-explanation"[^>]*>(.*?)</p>', body, flags=re.DOTALL
+        )
+        assert radio_names == {f"q{index}"}
+        assert answer.group(1) in option_values
+        assert review_link and review_link.group(1) == review.group(1)
+        assert review.group(1) in audit.ids
+        assert explanation and unescape(re.sub(r"<[^>]+>", "", explanation.group(1))).strip()
+
+
+def test_glossary_terms_are_cross_linked_in_both_directions(project_root):
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+    before_glossary, _, glossary_and_after = text.partition('<section class="chapter" id="glossary"')
+    glossary = glossary_and_after.partition("</section>")[0]
+    terms = {
+        "binding": "pyside-intro",
+        "widget": "widgets",
+        "parent-child": "main-window-basics",
+        "layout": "layouts",
+        "event": "event-loop",
+        "event-loop": "event-loop",
+        "signal": "signals-slots",
+        "slot": "signals-slots",
+        "callback": "signals-slots",
+        "main-thread": "threading",
+        "worker": "threading",
+        "thread-pool": "threading",
+        "modal-dialog": "dialogs",
+        "qss": "qss",
+        "sdk": "sdk",
+        "service": "architecture",
+        "dependency-injection": "architecture",
+        "persistence": "hardening",
+        "bundle": "sdk",
+        "immutable-snapshot": "flows",
+    }
+
+    for slug, lesson_id in terms.items():
+        assert f'class="term-link" href="#term-{slug}"' in before_glossary
+        assert f'id="term-{slug}"' in glossary
+        assert f'class="glossary-backlink" href="#{lesson_id}"' in glossary
+
+
+def test_accessible_responsive_no_js_and_print_contract(project_root):
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+    static_note = "禁用 JavaScript 时仍可阅读全部核心课程；进度、搜索和自测反馈不可用。"
+
+    assert static_note in text
+    assert '<noscript>' in text
+    assert ':focus-visible' in text
+    assert '@media (max-width: 480px)' in text
+    assert '@media print' in text
+    assert 'details:not([open]) > *:not(summary)' in text
+    assert 'overflow-x: auto' in text
+    assert '<fieldset class="quiz-question"' in text
+    assert '<legend>' in text
+    assert '.visually-hidden {' in text
+    assert '<label class="visually-hidden" for="fileSearch">' in text
+    assert '<label class="visually-hidden" for="sourceSearch">' in text
+    assert '.chapter, [id^="term-"] { scroll-margin-top:' in text
+    assert "同六个问题阅读" in text
+    assert "同七个问题阅读" not in text
+    print_css = text.partition("@media print")[2].partition("@media (prefers-reduced-motion")[0]
+    hidden_selector = print_css.partition("{ display: none !important; }")[0]
+    assert ".source-browser" in hidden_selector
+    assert "#sourceFileNav" in hidden_selector
+    assert ".source-detail" not in hidden_selector
+    for broken_text in ("鍩虹", "椤圭洰", "杩涢樁", "杩炴帴"):
+        assert broken_text not in text
+
+
+def test_course_runtime_tolerates_blocked_storage_and_legacy_theme(project_root, tmp_path):
+    text = (project_root / "docs" / "educate" / "index.html").read_text(encoding="utf-8")
+    audit = _EducationPageAudit()
+    audit.feed(text)
+    assert len(audit.scripts) == 2
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("Node.js is unavailable; static storage contracts were still checked")
+
+    harness = f"""
+const vm = require("node:vm");
+const sourceData = {json.dumps(audit.scripts[0])};
+const interaction = {json.dumps(audit.scripts[1])};
+
+class ClassList {{
+  constructor() {{ this.values = new Set(); }}
+  contains(value) {{ return this.values.has(value); }}
+  remove(value) {{ this.values.delete(value); }}
+  toggle(value, force) {{
+    if (force === undefined) force = !this.values.has(value);
+    if (force) this.values.add(value); else this.values.delete(value);
+    return force;
+  }}
+}}
+
+class FakeElement {{
+  constructor(id = "") {{
+    this.id = id;
+    this.dataset = {{}};
+    this.style = {{}};
+    this.classList = new ClassList();
+    this.children = [];
+    this.listeners = {{}};
+    this.attributes = {{}};
+    this._textContent = "";
+    this.innerText = "";
+    this.value = "";
+    this.href = "";
+    this.hash = "";
+    this.checked = false;
+    this.inert = false;
+    this.focused = false;
+  }}
+  addEventListener(type, callback) {{ this.listeners[type] = callback; }}
+  dispatch(type, event = {{}}) {{
+    const callback = this.listeners[type];
+    if (callback) callback({{ preventDefault() {{}}, key: "", ...event }});
+  }}
+  click() {{ this.dispatch("click"); }}
+  focus(options) {{ this.focused = true; this.focusOptions = options; }}
+  get textContent() {{
+    return this._textContent + this.children.map(item =>
+      typeof item === "string" ? item : item.textContent
+    ).join("");
+  }}
+  set textContent(value) {{ this._textContent = String(value); this.children = []; }}
+  append(...items) {{ this.children.push(...items); }}
+  appendChild(item) {{ this.children.push(item); return item; }}
+  replaceChildren(...items) {{ this.children = [...items]; }}
+  setAttribute(name, value) {{ this.attributes[name] = String(value); }}
+  getAttribute(name) {{ return name === "href" ? this.href : this.attributes[name]; }}
+  getBoundingClientRect() {{ return {{ top: 200 }}; }}
+  scrollIntoView() {{}}
+  querySelector(selector) {{
+    if (selector === ".lesson-meta") return this.lessonMeta || null;
+    if (selector === ".answer-explanation") return this.explanation || null;
+    if (selector === ".review-link") return this.reviewLink || null;
+    if (selector.startsWith('input[value="')) return this.correctInput || null;
+    return null;
+  }}
+  querySelectorAll(selector) {{
+    if (selector === ".quiz-question") return this.quizQuestions || [];
+    return [];
+  }}
+}}
+
+function runScenario(storageValues, blocked, preferredDark, mobile = true) {{
+  const elements = new Map();
+  const byId = id => {{
+    if (!elements.has(id)) elements.set(id, new FakeElement(id));
+    return elements.get(id);
+  }};
+  const lessons = ["pyside-intro", "first-window", "threading"].map((id, index) => {{
+    const lesson = byId(id);
+    lesson.dataset.title = `Lesson ${{index + 1}}`;
+    lesson.lessonMeta = new FakeElement();
+    return lesson;
+  }});
+  const themeButtons = [new FakeElement(), new FakeElement()];
+  const tocLink = new FakeElement();
+  tocLink.href = "#first-window";
+  tocLink.hash = "#first-window";
+  const quizQuestions = Array.from({{ length: 12 }}, (_, index) => {{
+    const question = new FakeElement();
+    question.dataset.answer = "b";
+    question.dataset.reviewSection = "event-loop";
+    question.explanation = new FakeElement();
+    question.explanation.textContent = `explanation ${{index + 1}}`;
+    question.reviewLink = new FakeElement();
+    question.reviewLink.href = "#event-loop";
+    question.correctInput = {{ parentElement: {{ textContent: "correct answer" }} }};
+    return question;
+  }});
+  const quiz = byId("quizForm");
+  quiz.quizQuestions = quizQuestions;
+  quiz.elements = Object.fromEntries(
+    quizQuestions.map((_, index) => [`q${{index + 1}}`, {{ value: "" }}])
+  );
+  const writes = [];
+  const documentListeners = {{}};
+  const document = {{
+    documentElement: byId("root"),
+    getElementById: byId,
+    createElement: () => new FakeElement(),
+    createTextNode: text => ({{ textContent: text }}),
+    addEventListener(type, callback) {{ documentListeners[type] = callback; }},
+    dispatch(type, event = {{}}) {{
+      const callback = documentListeners[type];
+      if (callback) callback({{ key: "", ...event }});
+    }},
+    querySelectorAll(selector) {{
+      if (selector === ".theme-toggle") return themeButtons;
+      if (selector === "#toc a") return [tocLink];
+      if (selector === ".chapter") return lessons;
+      if (selector === ".lesson") return lessons;
+      if (selector === ".copy" || selector === ".file-item" || selector === ".source-file-button") return [];
+      return [];
+    }},
+  }};
+  document.documentElement.scrollHeight = 1000;
+  const localStorage = {{
+    getItem(key) {{ if (blocked) throw new Error("blocked read"); return storageValues[key] ?? null; }},
+    setItem(key, value) {{ if (blocked) throw new Error("blocked write"); writes.push([key, value]); }},
+  }};
+  const context = {{
+    console,
+    document,
+    localStorage,
+    navigator: {{ clipboard: {{ writeText: async () => {{}} }} }},
+    setTimeout: callback => callback(),
+    matchMedia: query => ({{
+      matches: query.includes("max-width") ? mobile : preferredDark,
+      addEventListener: () => {{}},
+    }}),
+    innerHeight: 800,
+    scrollY: 0,
+    addEventListener: () => {{}},
+  }};
+  context.window = context;
+  vm.createContext(context);
+  vm.runInContext(sourceData, context);
+  vm.runInContext(interaction, context);
+  return {{
+    context,
+    document,
+    lessons,
+    themeButtons,
+    tocLink,
+    quiz,
+    writes,
+    menuButton: byId("menuButton"),
+    sidebar: byId("sidebar"),
+  }};
+}}
+
+const blocked = runScenario({{}}, true, false);
+if (blocked.document.documentElement.dataset.theme !== "light") {{
+  throw new Error("blocked storage stopped theme fallback");
+}}
+if (!blocked.lessons.every(lesson => lesson.lessonMeta.children.length === 1)) {{
+  throw new Error("lesson controls were not initialized");
+}}
+blocked.themeButtons[0].click();
+if (blocked.document.documentElement.dataset.theme !== "dark") {{
+  throw new Error("blocked theme write stopped later UI updates");
+}}
+const blockedCheckbox = blocked.lessons[0].lessonMeta.children[0].children[0];
+blockedCheckbox.checked = true;
+blockedCheckbox.dispatch("change");
+if (blocked.document.getElementById("completionTotal").textContent !== "已完成 1 / 3 节") {{
+  throw new Error("blocked progress write stopped completion updates");
+}}
+
+Object.entries(blocked.quiz.elements).forEach(([name, input], index) => {{
+  input.value = index < 6 ? "b" : "a";
+}});
+blocked.quiz.dispatch("submit");
+const quizResult = blocked.document.getElementById("quizResult");
+if (!quizResult.children[0].textContent.startsWith("6 / 12")) {{
+  throw new Error("mixed quiz answers did not produce the expected score");
+}}
+const missedList = quizResult.children[1];
+if (!missedList || missedList.children.length !== 6) {{
+  throw new Error("quiz did not render one feedback row per missed answer");
+}}
+missedList.children.forEach(row => {{
+  const explanation = row.children.find(item => typeof item === "string");
+  const reviewLink = row.children.find(item => typeof item !== "string" && item.href);
+  if (!row.children[0].textContent.includes("正确答案") || !explanation?.includes("explanation")) {{
+    throw new Error("missed-answer feedback omitted answer text or explanation");
+  }}
+  if (reviewLink?.href !== "#event-loop" || reviewLink.dataset.reviewSection !== "event-loop") {{
+    throw new Error("missed-answer feedback omitted its direct review link");
+  }}
+}});
+if (!quizResult.focused) throw new Error("quiz feedback did not receive focus");
+blocked.quiz.dispatch("reset");
+if (quizResult.textContent !== "完成后点击“提交答案”。" || quizResult.children.length !== 0) {{
+  throw new Error("quiz reset did not restore the initial result state");
+}}
+
+if (!blocked.sidebar.inert || blocked.sidebar.attributes["aria-hidden"] !== "true") {{
+  throw new Error("closed mobile sidebar remained in the accessibility tree");
+}}
+blocked.menuButton.click();
+if (blocked.sidebar.inert || !blocked.sidebar.classList.contains("open")) {{
+  throw new Error("opening the mobile sidebar did not restore interaction");
+}}
+if (blocked.menuButton.attributes["aria-expanded"] !== "true"
+    || blocked.menuButton.attributes["aria-label"] !== "关闭课程目录") {{
+  throw new Error("opening the mobile sidebar did not synchronize its button state");
+}}
+blocked.tocLink.click();
+if (blocked.sidebar.classList.contains("open") || !blocked.sidebar.inert) {{
+  throw new Error("TOC navigation did not make the closed sidebar inert");
+}}
+if (blocked.menuButton.attributes["aria-expanded"] !== "false"
+    || blocked.menuButton.attributes["aria-label"] !== "打开课程目录") {{
+  throw new Error("TOC navigation did not restore the menu button state");
+}}
+if (!blocked.document.getElementById("first-window").focused) {{
+  throw new Error("TOC navigation left focus inside the hidden sidebar");
+}}
+
+blocked.menuButton.click();
+blocked.document.dispatch("keydown", {{ key: "Escape" }});
+if (!blocked.sidebar.inert || !blocked.menuButton.focused
+    || blocked.menuButton.attributes["aria-label"] !== "打开课程目录") {{
+  throw new Error("Escape did not close the sidebar and restore focus/state");
+}}
+
+const restored = runScenario({{
+  "pd-educate-theme": "dark",
+  "pd-educate-progress": JSON.stringify({{
+    completed: ["pyside-intro", "removed-lesson"],
+    lastActive: "removed-lesson",
+  }}),
+}}, false, false);
+if (restored.document.documentElement.dataset.theme !== "dark") {{
+  throw new Error("legacy bare theme was not restored");
+}}
+if (restored.document.getElementById("continueLearning").href !== "#pyside-intro") {{
+  throw new Error("unknown last-active id was not rejected");
+}}
+const firstCheckbox = restored.lessons[0].lessonMeta.children[0].children[0];
+const secondCheckbox = restored.lessons[1].lessonMeta.children[0].children[0];
+if (!firstCheckbox.checked || secondCheckbox.checked) {{
+  throw new Error("unknown completion id affected controls");
+}}
+console.log("runtime storage regression OK");
+"""
+    harness_path = tmp_path / "education-runtime.js"
+    harness_path.write_text(harness, encoding="utf-8")
+    completed = subprocess.run(
+        [node, str(harness_path)],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    assert "runtime storage regression OK" in completed.stdout

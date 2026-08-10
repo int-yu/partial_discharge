@@ -154,7 +154,7 @@
     .compare { width: 100%; border-collapse: collapse; margin: 18px 0; background: var(--surface); }
     .compare th, .compare td { padding: 13px 14px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
     .compare th { background: var(--surface-2); }
-    .table-wrap { overflow-x: auto; border-radius: 12px; }
+    .table-wrap, .line-explanation, .mistake { overflow-x: auto; border-radius: 12px; }
 
     .flow { display: flex; align-items: stretch; gap: 8px; margin: 22px 0; overflow-x: auto; padding-bottom: 8px; }
     .flow-item { flex: 1 0 145px; min-width: 145px; padding: 15px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); text-align: center; }
@@ -188,18 +188,34 @@
     .timeline-item::before { content: ""; position: absolute; left: -39px; top: 7px; width: 14px; height: 14px; border: 3px solid var(--surface); border-radius: 50%; background: var(--brand); box-shadow: 0 0 0 1px var(--brand); }
     .timeline-item h3 { margin: 0 0 4px; }
 
-    .quiz-question { margin: 18px 0; padding: 19px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); }
-    .quiz-question p { margin-top: 0; font-weight: 800; }
+    .practice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .practice-card { min-width: 0; padding: 22px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
+    .practice-card h3 { margin-top: 0; }
+    .practice-meta { margin: 8px 0; }
+    .practice-answer pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .quiz-question { min-width: 0; margin: 18px 0; padding: 19px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); }
+    .quiz-question legend { max-width: 100%; padding: 0 4px; font-weight: 800; }
     .options { display: grid; gap: 8px; }
     .option { display: flex; gap: 10px; align-items: flex-start; padding: 9px 11px; border: 1px solid var(--line); border-radius: 9px; cursor: pointer; }
     .option:hover { background: var(--surface-2); }
+    .option input { flex: 0 0 auto; margin-top: .45em; }
+    .quiz-answer { margin-top: 13px; }
+    .quiz-answer .answer-explanation { font-weight: 400; }
+    .quiz-actions { display: flex; flex-wrap: wrap; gap: 10px; }
     .quiz-result { min-height: 48px; margin-top: 14px; padding: 12px; border-radius: 10px; background: var(--surface-2); }
+    .quiz-result > :first-child { margin-top: 0; }
+    .quiz-result > :last-child { margin-bottom: 0; }
+    .quiz-result li { margin: 8px 0; }
+    .term-link { white-space: nowrap; }
+    .glossary-backlink { display: inline-block; margin-top: 4px; font-size: .88rem; }
     .checklist { padding-left: 0; list-style: none; }
     .checklist li { position: relative; padding-left: 28px; margin: 9px 0; }
     .checklist li::before { content: "✓"; position: absolute; left: 0; color: var(--success); font-weight: 900; }
     .footer { padding: 36px 24px; color: var(--muted); text-align: center; border-top: 1px solid var(--line); }
     .mobile-bar { display: none; }
     .hidden { display: none !important; }
+    .visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    .chapter, [id^="term-"] { scroll-margin-top: 74px; }
 
     .source-lab { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 18px; align-items: start; }
     .source-browser { position: sticky; top: 18px; max-height: calc(100vh - 36px); overflow: auto; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
@@ -234,8 +250,8 @@
 
     @media (max-width: 980px) {
       .app { display: block; }
-      .sidebar { position: fixed; z-index: 90; left: 0; top: 58px; width: min(88vw, 320px); height: calc(100vh - 58px); transform: translateX(-105%); transition: transform .2s; box-shadow: var(--shadow); }
-      .sidebar.open { transform: translateX(0); }
+      .sidebar { position: fixed; z-index: 90; left: 0; top: 58px; width: min(88vw, 320px); height: calc(100vh - 58px); visibility: hidden; transform: translateX(-105%); transition: transform .2s, visibility 0s linear .2s; box-shadow: var(--shadow); }
+      .sidebar.open { visibility: visible; transform: translateX(0); transition-delay: 0s; }
       .mobile-bar { position: sticky; z-index: 80; top: 0; display: flex; height: 58px; align-items: center; justify-content: space-between; padding: 8px 14px; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(12px); }
       .mobile-bar strong { font-size: .95rem; }
       .hero { padding-top: 64px; }
@@ -243,7 +259,7 @@
       .source-browser { position: static; max-height: 340px; }
     }
     @media (max-width: 720px) {
-      .grid.two, .grid.three { grid-template-columns: 1fr; }
+      .grid.two, .grid.three, .practice-grid { grid-template-columns: 1fr; }
       .content { width: min(100% - 30px, 1120px); }
       .hero { padding-inline: 20px; }
       .compare th, .compare td { min-width: 140px; }
@@ -252,13 +268,27 @@
       .source-part-body dl { grid-template-columns: 1fr; gap: 2px; }
       .source-guidance { grid-template-columns: 1fr; gap: 2px; }
     }
+    @media (max-width: 480px) {
+      .content { width: min(100% - 20px, 1120px); }
+      .hero { padding-inline: 14px; }
+      .hero-actions, .quiz-actions { display: grid; grid-template-columns: 1fr; }
+      .hero-actions .button, .quiz-actions .button { width: 100%; }
+      .lesson-meta { align-items: flex-start; }
+      .lesson-complete { margin-left: 0; }
+      .practice-card, .quiz-question { padding: 15px; }
+      pre { padding: 13px; }
+    }
     @media print {
-      .sidebar, .mobile-bar, .progress, .copy, .hero-actions, .file-tools { display: none !important; }
+      .sidebar, .mobile-bar, .progress, .copy, .hero-actions, .file-tools, .quiz-actions, .source-browser, #sourceFileNav { display: none !important; }
       .app { display: block; }
       .hero, .content { width: 100%; padding: 20px; }
       .chapter { break-before: page; }
       .card, details { box-shadow: none; break-inside: avoid; }
-      details > .details-body { display: block; }
+      details:not([open]) > *:not(summary), details > .details-body { display: block !important; }
+      details > summary { list-style: none; }
+      details > summary::after { content: "（打印时展开）"; color: var(--muted); font-weight: 400; }
+      .source-browser { position: static; max-height: none; }
+      a { color: inherit; text-decoration: underline; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
@@ -282,7 +312,7 @@
         <span><strong>工程精讲</strong><small>从语法到可维护应用</small></span>
       </a>
       <nav class="toc" id="toc">
-        <p class="nav-title">PySide6 鍩虹</p>
+        <p class="nav-title">PySide6 基础</p>
         <a href="#pyside-intro">PySide6 入门</a>
         <a href="#first-window">第一个窗口</a>
         <a href="#event-loop">事件循环</a>
@@ -293,12 +323,13 @@
         <a href="#dialogs">对话框</a>
         <a href="#stacked-pages">多页面</a>
         <a href="#qss">QSS</a>
-        <p class="nav-title">杩炴帴鐪熷疄椤圭洰</p>
+        <p class="nav-title">连接真实项目</p>
         <a href="#mini-project">小型项目</a>
-        <a href="#project-map">项目地图</a>
-        <p class="nav-title">杩涢樁涓庡弬鑰僠</p>
         <a href="#threading">线程</a>
         <a href="#sdk">SDK</a>
+        <a href="#project-map">项目地图</a>
+        <a href="#flows">调用链</a>
+        <p class="nav-title">进阶与参考</p>
         <a href="#source-course">源码课堂</a>
         <a href="#hardening">工程加固</a>
         <a href="#exercises">练习</a>
@@ -328,13 +359,15 @@
           <a class="button" href="#folders">先看项目地图</a>
           <a class="button" href="#source-course">进入源码课堂</a>
         </div>
-        <p class="course-progress-summary" id="completionTotal" aria-live="polite">已完成 0 / 13 节</p>
+        <p class="course-progress-summary" id="completionTotal" aria-live="polite">已完成 0 / 15 节</p>
       </header>
 
       <div class="content">
+        <noscript><div class="callout warning"><strong>静态阅读模式</strong>禁用 JavaScript 时仍可阅读全部核心课程；进度、搜索和自测反馈不可用。</div></noscript>
         <section class="chapter lesson" id="pyside-intro" data-title="认识 PySide6" data-level="foundation">
-          <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 1 课</span></div>
+          <div class="lesson-meta"><span class="level-badge foundation">基础必学</span><span>第 1 课</span></div>
           <h2>PySide6、Qt 和你的 Python 程序是什么关系？</h2>
+          <p class="chapter-intro">先认识两个词：PySide6 是把 Python 对象连接到 Qt 的<a class="term-link" href="#term-binding">绑定（binding）</a>；<a class="term-link" href="#term-widget">控件（widget）</a>是可显示或接收交互的界面对象，<code>QWidget</code> 是多数可视控件的基础类，<code>QLabel</code> 等具体控件继承它。</p>
           <div class="lesson-goals" aria-label="本节学习目标"><strong>本节只学三件事</strong><ol><li>说清 Qt 与 PySide6 的关系。</li><li>知道 QWidget 是界面对象的基础类型。</li><li>知道下一课为什么先创建 QApplication。</li></ol></div>
           <p>Qt 是负责窗口、绘制、输入和事件分发的跨平台界面框架；PySide6 是让 Python 能调用 Qt 的绑定包。你在代码里持有的是 <code>QLabel</code>、<code>QApplication</code> 等 Python 对象；调用它们的方法时，PySide6 会把请求交给底层 Qt。Python 负责表达你的意图，Qt 负责实际的桌面界面行为。</p>
           <div class="execution-steps"><strong>运行前准备</strong><ol><li>在项目目录激活准备运行示例的虚拟环境。</li><li>安装：<code>python -m pip install PySide6</code>。</li><li>依次执行下面三条命令；始终使用同一个 <code>python</code>，避免安装到另一个环境。</li></ol><pre><code>python --version
@@ -359,8 +392,8 @@ print(f"我的环境已准备好：PySide6 {PySide6.__version__}")</code></pre><
         </section>
 
         <section class="chapter lesson" id="first-window" data-title="第一个窗口" data-level="foundation">
-          <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 2 课</span></div>
-          <h2>创建、显示和保持一个窗口</h2><div class="expected-ui"><strong>预期界面</strong><p>一个带文字的窗口出现在桌面上。</p></div><div class="execution-steps"><strong>动手步骤</strong><ol><li>创建 QApplication。</li><li>创建 QLabel。</li><li>调用 show()，然后进入 exec()。</li></ol></div>
+          <div class="lesson-meta"><span class="level-badge foundation">基础必学</span><span>第 2 课</span></div>
+          <h2>创建、显示和保持一个窗口</h2><p class="chapter-intro"><a class="term-link" href="#term-parent-child">父对象 / 子对象</a>描述 Qt 对象的所有权：父对象销毁时会清理其子对象；顶层窗口还需要 Python 引用保持存活。</p><div class="expected-ui"><strong>预期界面</strong><p>一个带文字的窗口出现在桌面上。</p></div><div class="execution-steps"><strong>动手步骤</strong><ol><li>创建 QApplication。</li><li>创建 QLabel。</li><li>调用 show()，然后进入 exec()。</li></ol></div>
           <div class="lesson-goals"><strong>本节只学三件事</strong><ol><li>先创建且只创建一个 <code>QApplication</code>。</li><li>创建 <code>QLabel</code>、设置大小并让它显示。</li><li>让 <code>app.exec()</code> 接管等待事件的工作。</li></ol></div>
           <div class="execution-steps"><strong>运行前准备</strong><p>确认上一课的导入命令成功。把下面完整程序保存为 <code>first_window.py</code>，在包含该文件的终端执行 <code>python first_window.py</code>；不要把代码逐行贴进交互式解释器。</p></div>
           <pre><code data-python-example="first-window">import sys
@@ -396,8 +429,8 @@ raise SystemExit(app.exec())</code></pre></div></details>
         </section>
 
         <section class="chapter lesson" id="event-loop" data-title="事件循环" data-level="foundation">
-          <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 3 课</span></div>
-          <h2>为什么 app.exec() 不会让程序卡住？</h2><div class="line-explanation">事件循环持续接收点击、键盘和重绘请求，再分发给相应对象。</div>
+          <div class="lesson-meta"><span class="level-badge foundation">基础必学</span><span>第 3 课</span></div>
+          <h2>为什么 app.exec() 不会让程序卡住？</h2><div class="line-explanation"><a class="term-link" href="#term-event">事件</a>是一次点击、按键、定时器到期或重绘请求；<a class="term-link" href="#term-event-loop">事件循环</a>持续接收这些事件，再分发给相应对象。</div>
           <div class="lesson-goals"><strong>本节只学三件事</strong><ol><li>区分从上到下执行的 Python 语句和事件驱动的回调。</li><li>用 <code>QTimer.singleShot</code> 安排一次未来的工作。</li><li>识别三个最常见的窗口启动错误。</li></ol></div>
           <div class="execution-steps"><strong>运行前准备</strong><p>保存为 <code>event_loop_timer.py</code> 并运行 <code>python event_loop_timer.py</code>。这是完整程序：定时器不会阻塞 Python；它只登记一个三秒后的回调，真正调用发生在事件循环运行期间。</p></div>
           <pre><code data-python-example="event-loop-timer">import sys
@@ -454,7 +487,7 @@ raise SystemExit(app.exec())</code></pre></div></details>
         </section>
 
         <section class="chapter lesson" id="widgets" data-title="控件" data-level="foundation">
-          <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 4 课</span></div>
+          <div class="lesson-meta"><span class="level-badge foundation">基础必学</span><span>第 4 课</span></div>
           <h2>用控件收集输入并显示结果</h2>
           <div class="lesson-goals"><strong>本节只学三件事</strong><ol><li>把 <code>QLabel</code>、<code>QLineEdit</code>、<code>QComboBox</code>、<code>QPushButton</code> 和 <code>QTextEdit</code> 组成一个完整表单。</li><li>用构造参数给控件初始文字，用 <code>text()</code>/<code>currentText()</code> 读取值，再用 <code>setText()</code> 写入值。</li><li>在窗口类中把以后还要使用的控件保存为 <code>self.属性</code>。</li></ol></div>
           <div class="execution-steps"><strong>运行前准备</strong><p>保存为 <code>widgets_form.py</code>，确认已安装 PySide6 后运行 <code>python widgets_form.py</code>。这是完整程序，不要把类的一部分单独复制到交互式解释器。</p></div>
@@ -526,7 +559,7 @@ window = ShowEnteredText()
 window.show()
 raise SystemExit(app.exec())</code></pre></div></details>
           <div class="lesson-check"><strong>扩展练习：清空表单</strong><p>在表单中加入一个“清空”按钮：点击后清空姓名输入框、把下拉框选回第一项，并清空结果框。</p></div>
-          <details><summary>参考答案：带清空按钮的完整程序</summary><div class="details-body"><pre><code>import sys
+          <details><summary>参考答案：带清空按钮的完整程序</summary><div class="details-body"><pre><code data-python-example="widgets-clear-form-answer">import sys
 from PySide6.QtCore import Slot
 from PySide6.QtWidgets import QApplication, QComboBox, QFormLayout, QLineEdit, QPushButton, QTextEdit, QVBoxLayout, QWidget
 class Form(QWidget):
@@ -565,8 +598,9 @@ raise SystemExit(app.exec())</code></pre></div></details>
         </section>
 
         <section class="chapter lesson" id="layouts" data-title="布局" data-level="foundation">
-          <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 5 课</span></div>
+          <div class="lesson-meta"><span class="level-badge foundation">基础必学</span><span>第 5 课</span></div>
           <h2>嵌套布局让窗口缩放后仍然整齐</h2>
+          <p class="chapter-intro"><a class="term-link" href="#term-layout">布局（layout）</a>按照规则为子控件分配位置和大小，窗口缩放或文字变长时会重新计算，而不是依赖固定坐标。</p>
           <div class="lesson-goals"><strong>本节只学三件事</strong><ol><li>用一个 <code>QVBoxLayout</code> 纵向组合 <code>QFormLayout</code> 与 <code>QHBoxLayout</code>。</li><li>理解布局拥有几何管理权：窗口大小变化时由布局重新分配空间。</li><li>用插入顺序、边距、间距和 stretch 因子描述界面，而不是写死坐标。</li></ol></div>
           <div class="execution-steps"><strong>运行前准备</strong><p>保存为 <code>nested_layouts.py</code> 并执行 <code>python nested_layouts.py</code>。拖动窗口边缘后观察输入框和空白区域如何伸缩。</p></div>
           <pre><code data-python-example="nested-layouts">import sys
@@ -601,7 +635,7 @@ raise SystemExit(app.exec())</code></pre>
           <div class="expected-ui"><strong>文字线框图</strong><pre><code>┌──────────────────────────────────┐&#10;│ 设备名： [____________________]  │  ← QFormLayout&#10;│ 位置：   [____________________]  │&#10;│                                  │  ← root 的 stretch(1)&#10;│                  [取消] [保存]  │  ← QHBoxLayout&#10;└──────────────────────────────────┘</code></pre></div>
           <div class="mistake"><strong>常见错误</strong><table class="compare"><thead><tr><th>错误</th><th>原因、修复与验证</th></tr></thead><tbody><tr><td>同一个 <code>QLineEdit</code> 先 <code>form.addRow(...)</code> 又 <code>other_layout.addWidget(...)</code></td><td>一个控件不能同时属于两个布局；后一次操作会让界面所有权混乱或被 Qt 重新安放。修复：为不同位置创建不同控件，或只把同一个子布局嵌套一次。验证：调整窗口大小时每个控件仍只在一个位置出现。</td></tr><tr><td>用 <code>move()</code>、<code>resize()</code> 手工排每个子控件</td><td>固定坐标不能随字体、翻译和窗口缩放可靠调整。修复：把控件交给布局，保留固定尺寸仅作为窗口初始大小。验证：放大和缩小窗口后不重叠、不被裁切。</td></tr></tbody></table></div>
           <div class="lesson-check"><strong>最小练习</strong><p>把根布局的间距改为 24，并增加一个第二个 stretch（因子为 2），观察按钮位置和留白怎样变化。</p></div>
-          <details><summary>参考答案：改变布局间距的完整程序</summary><div class="details-body"><pre><code>import sys
+          <details><summary>参考答案：改变布局间距的完整程序</summary><div class="details-body"><pre><code data-python-example="layouts-spacing-answer">import sys
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
 app = QApplication(sys.argv)
 window = QWidget()
@@ -622,8 +656,9 @@ raise SystemExit(app.exec())</code></pre></div></details>
         </section>
 
         <section class="chapter lesson" id="signals-slots" data-title="信号与槽" data-level="foundation">
-          <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 6 课</span></div>
+          <div class="lesson-meta"><span class="level-badge foundation">基础必学</span><span>第 6 课</span></div>
           <h2>让按钮的信号在正确的时机调用槽</h2>
+          <p class="chapter-intro"><a class="term-link" href="#term-signal">信号</a>声明“发生了什么”，<a class="term-link" href="#term-slot">槽</a>是收到信号后执行的方法；交给 Qt 稍后调用的函数也称<a class="term-link" href="#term-callback">回调</a>。</p>
           <div class="lesson-goals"><strong>本节只学三件事</strong><ol><li>用类保存计数状态，并用 <code>clicked.connect</code> 把按钮连接到 <code>@Slot()</code> 方法。</li><li>区分传递函数对象 <code>connect(self.increment)</code> 与立刻调用 <code>connect(self.increment())</code>。</li><li>理解点击时才发射信号、Qt 才回调槽；信号参数可被槽自动接收或忽略。</li></ol></div>
           <div class="execution-steps"><strong>运行前准备</strong><p>保存为 <code>signals_slots.py</code>，运行 <code>python signals_slots.py</code>。每点一次按钮都应让数字恰好加一。</p></div>
           <pre><code data-python-example="signals-slots">import sys
@@ -660,7 +695,7 @@ raise SystemExit(app.exec())</code></pre>
           <div class="experiment"><strong>改一个地方看变化</strong><p>把 <code>self.count += 1</code> 改成 <code>self.count += 2</code>，重新运行；每次点击应增加二。随后把按钮文字改为“记录一次”，会发现连接仍然有效，因为信号来自同一个按钮对象而不是它显示的文字。</p></div>
           <div class="mistake"><strong>常见错误</strong><table class="compare"><thead><tr><th>错误</th><th>原因、修复与验证</th></tr></thead><tbody><tr><td><code>clicked.connect(self.increment())</code></td><td>括号会使槽在连接阶段提前运行，并传入 <code>None</code>。修复为 <code>clicked.connect(self.increment)</code>；验证：启动窗口仍为 0，点击后才变 1。</td></tr><tr><td>每次点击或刷新界面都再次执行 <code>connect</code></td><td>同一个信号会累计多个连接，之后一次点击可能加多次。修复：通常只在构造方法连接一次；验证：连续点击五次时计数严格为 5，而不是跳跃。</td></tr></tbody></table></div>
           <div class="lesson-check"><strong>最小练习</strong><p>添加“重置”按钮和 <code>reset</code> 槽：点击后把计数恢复为 0，并立刻更新标签。</p></div>
-          <details><summary>参考答案：带重置按钮的完整程序</summary><div class="details-body"><pre><code>import sys
+          <details><summary>参考答案：带重置按钮的完整程序</summary><div class="details-body"><pre><code data-python-example="signals-reset-answer">import sys
 from PySide6.QtCore import Slot
 from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QVBoxLayout, QWidget
 class Counter(QWidget):
@@ -695,6 +730,8 @@ raise SystemExit(app.exec())</code></pre></div></details>
         </section>
 
         <section class="chapter lesson" id="main-window-basics" data-title="主窗口基础" data-level="foundation">
+          <div class="lesson-meta"><span class="level-badge foundation">基础必学</span><span>第 7 课</span></div>
+          <h2>何时从 QWidget 走向 QMainWindow</h2>
           <div class="lesson-goals"><strong>本节只学三件事</strong><ol><li>区分中央内容区、菜单栏、工具栏和状态栏。</li><li>在中央 <code>QWidget</code> 上安装布局。</li><li>复用一个 <code>QAction</code>。</li></ol></div>
           <div class="execution-steps"><strong>运行前准备</strong><p>保存为 <code>main_window.py</code>，执行 <code>python main_window.py</code>，分别点击菜单和工具栏中的帮助动作。</p></div>
           <pre><code data-python-example="main-window">import sys
@@ -734,22 +771,48 @@ window.show()
 raise SystemExit(app.exec())</code></pre>
           <div class="expected-ui"><strong>运行后应该看到什么</strong><p>菜单栏、工具栏、中央标签和按钮、状态栏同时出现；从菜单或工具栏触发帮助都会在状态栏显示同一消息。</p></div>
           <div class="execution-steps"><strong>程序按什么顺序运行</strong><ol><li>先创建中央控件和其布局。</li><li>主窗口接管中央控件、菜单动作和工具栏动作。</li><li>事件循环中动作触发槽，槽更新状态栏。</li></ol></div>
-          <div class="line-explanation"><strong>逐行解释</strong><p><code>QVBoxLayout(central_widget)</code> 把布局交给普通中央控件；<code>setCentralWidget</code> 指定主内容区；<code>addAction</code> 可把同一动作放入两个位置；<code>statusBar()</code> 会在首次需要时懒创建状态栏。</p></div>
+          <div class="line-explanation"><strong>逐行解释</strong><table class="compare line-by-line" data-line-explanation-for="main-window"><thead><tr><th>源码行</th><th>这些行的职责</th></tr></thead><tbody>
+            <tr data-lines="1-3"><td>1–3</td><td>分别导入进程参数、槽装饰器、<code>QAction</code> 和构建窗口所需的控件类。</td></tr>
+            <tr data-lines="4-21"><td>4–21</td><td>定义 <code>MainWindow</code>；构造函数先设标题，再把布局安装到中央 <code>QWidget</code>，把同一个帮助动作放入菜单和工具栏，最后连接刷新按钮并初始化状态栏。</td></tr>
+            <tr data-lines="22-25"><td>22–25</td><td><code>@Slot()</code> 声明无参槽；<code>show_help()</code> 用带超时的状态消息回应两个入口共用的动作。</td></tr>
+            <tr data-lines="26-29"><td>26–29</td><td>第二个无参槽处理中央按钮，只更新状态栏，不重新构建窗口。</td></tr>
+            <tr data-lines="30-35"><td>30–35</td><td>创建唯一的应用对象和顶层窗口，设定初始尺寸、显示，然后进入事件循环并交还退出码。</td></tr>
+          </tbody></table></div>
           <div class="syntax-zoom"><strong>关键语法放大镜</strong><p><code>QAction("显示帮助", self)</code> 的父对象是主窗口，窗口销毁时动作也会清理。<code>QApplication</code> 负责应用级资源与事件循环，不是顶层窗口的 Qt 父对象；模块级 <code>window</code> Python 引用保活顶层 <code>MainWindow</code>，从 <code>MainWindow</code> 到中央控件和动作才是 Qt 父子所有权。</p></div>
           <div class="object-map"><strong>对象关系</strong><p><code>QApplication</code> 管理事件循环；<code>MainWindow</code> 管理其专用区域并拥有动作；中央 <code>QWidget</code> 拥有布局，布局管理标签和按钮。</p></div>
           <div class="experiment"><strong>改一个地方看变化</strong><p>改动 <code>show_help</code> 的文字；菜单和工具栏仍会同步表现，因为它们引用同一个动作。</p></div>
           <div class="mistake"><strong>常见错误</strong><p>不要直接写 <code>QVBoxLayout(self)</code>：<code>QMainWindow</code> 要保留菜单、工具栏、停靠区和状态栏的专用结构。修复为中央 <code>QWidget</code> 加布局并调用 <code>setCentralWidget()</code>；缩放窗口验证内容正常伸缩。</p></div>
           <div class="lesson-check"><strong>最小练习</strong><p>添加“退出”动作，连接 <code>self.close</code>，并把它同时加入“文件”菜单和工具栏。</p></div>
-          <details><summary>参考答案：退出动作</summary><div class="details-body"><pre><code>exit_action = QAction("退出", self)
-exit_action.triggered.connect(self.close)
-self.menuBar().addMenu("文件").addAction(exit_action)
-self.addToolBar("文件").addAction(exit_action)</code></pre></div></details>
+          <details><summary>参考答案：带退出动作的完整程序</summary><div class="details-body"><pre><code data-python-example="main-window-answer">import sys
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QVBoxLayout, QWidget
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("带退出动作的主窗口")
+        central_widget = QWidget()
+        layout = QVBoxLayout(central_widget)
+        layout.addWidget(QLabel("可从菜单或工具栏退出。"))
+        self.setCentralWidget(central_widget)
+        exit_action = QAction("退出", self)
+        exit_action.triggered.connect(self.close)
+        self.menuBar().addMenu("文件").addAction(exit_action)
+        self.addToolBar("文件").addAction(exit_action)
+        self.statusBar().showMessage("就绪")
+
+app = QApplication(sys.argv)
+window = MainWindow()
+window.resize(460, 240)
+window.show()
+raise SystemExit(app.exec())</code></pre></div></details>
           <div class="lesson-check"><strong>过关检查</strong><p>说明为何布局不能直接安装在 <code>QMainWindow</code>，以及一个 <code>QAction</code> 怎样被菜单和工具栏复用。</p></div>
-          <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 7 课</span></div>
-          <h2>何时从 QWidget 走向 QMainWindow</h2><div class="lesson-check">能区分中央内容区、菜单栏、工具栏和状态栏。</div>
         </section>
 
         <section class="chapter lesson" id="dialogs" data-title="对话框" data-level="foundation">
+          <div class="lesson-meta"><span class="level-badge foundation">基础必学</span><span>第 8 课</span></div>
+          <h2>把需要确认或选择的操作放进对话框</h2>
+          <p class="chapter-intro"><a class="term-link" href="#term-modal-dialog">模态对话框</a>要求用户先完成或取消当前对话，再回到父窗口继续操作。</p>
           <div class="lesson-goals"><strong>本节只学三件事</strong><ol><li>打开文件选择对话框。</li><li>识别取消选择。</li><li>使用信息消息框说明结果。</li></ol></div>
           <div class="execution-steps"><strong>运行前准备</strong><p>保存为 <code>file_dialog.py</code> 并运行 <code>python file_dialog.py</code>；分别选择 CSV 文件和取消一次。</p></div>
           <pre><code data-python-example="file-dialog">import sys
@@ -785,21 +848,52 @@ window.show()
 raise SystemExit(app.exec())</code></pre>
           <div class="expected-ui"><strong>运行后应该看到什么</strong><p>选择文件后标签显示路径并出现信息框；取消后标签显示取消，不会报告选择成功。</p></div>
           <div class="execution-steps"><strong>程序按什么顺序运行</strong><ol><li>按钮打开模态对话框。</li><li>用户选择或取消后返回 <code>(path, selected_filter)</code>。</li><li>只有路径非空才显示成功信息。</li></ol></div>
-          <div class="line-explanation"><strong>逐行解释</strong><p>双分号分隔过滤器，括号内是通配符。多重赋值把返回元组拆开；<code>if not path</code> 处理取消；<code>QMessageBox.information</code> 显示模态信息。</p></div>
-          <div class="syntax-zoom"><strong>关键语法放大镜</strong><p><code>self</code> 是长期存活的主窗口，作为父对象使对话框始终位于正确窗口前并拥有可靠生命周期。模态意味着用户先完成对话框，才可继续操作父窗口。</p></div>
+          <div class="line-explanation"><strong>逐行解释</strong><table class="compare line-by-line" data-line-explanation-for="file-dialog"><thead><tr><th>源码行</th><th>这些行的职责</th></tr></thead><tbody>
+            <tr data-lines="1-3"><td>1–3</td><td>导入命令行参数、槽装饰器，以及应用、文件对话框、消息框和布局等类。</td></tr>
+            <tr data-lines="4-14"><td>4–14</td><td>定义窗口并在构造函数中创建标签、按钮和布局；按钮保存的是 <code>self.choose_file</code> 槽对象，等点击后再调用。</td></tr>
+            <tr data-lines="15-20"><td>15–20</td><td>槽打开以 <code>self</code> 为父对象的模态文件对话框；双分号分隔筛选器，返回值被拆为路径和已选筛选器。</td></tr>
+            <tr data-lines="21-25"><td>21–25</td><td>空路径是用户取消：先更新文字再 <code>return</code>；非空路径才更新标签并显示包含路径和筛选器的信息框。</td></tr>
+            <tr data-lines="26-31"><td>26–31</td><td>创建应用与窗口，设置初始大小、显示并进入事件循环，关闭后把 Qt 退出码交给进程。</td></tr>
+          </tbody></table></div>
+          <div class="syntax-zoom"><strong>关键语法放大镜</strong><p><code>self</code> 是长期存活的示例窗口，作为父对象使对话框始终位于正确窗口前并拥有可靠生命周期。模态意味着用户先完成对话框，才可继续操作父窗口。</p></div>
           <div class="object-map"><strong>对象关系</strong><p>窗口拥有标签和按钮；按钮调用窗口槽。文件和消息对话框是以 <code>self</code> 为父对象的短暂子界面，结果交还给仍被保留的窗口处理。</p></div>
           <div class="experiment"><strong>改一个地方看变化</strong><p>把过滤器换成 <code>"文本文件 (*.txt);;所有文件 (*)"</code>，并在信息框中比较返回的 <code>selected_filter</code>。</p></div>
           <div class="mistake"><strong>常见错误</strong><p>不要忽略取消：取消返回空路径，随后读取它会失败。先写 <code>if not path: return</code>；验证取消后不出现成功消息。也不要传临时父对象，应传窗口 <code>self</code>。</p></div>
           <div class="lesson-check"><strong>最小练习</strong><p>增加一个图片选择按钮，使用 <code>"图片 (*.png *.jpg);;所有文件 (*)"</code>，取消时保持原有路径。</p></div>
-          <details><summary>参考答案：只在选择后更新</summary><div class="details-body"><pre><code>path, _ = QFileDialog.getOpenFileName(self, "选择图片", "", "图片 (*.png *.jpg);;所有文件 (*)")
-if path:
-    self.path_label.setText(path)</code></pre></div></details>
+          <details><summary>参考答案：取消时保留原路径的完整程序</summary><div class="details-body"><pre><code data-python-example="file-dialog-answer">import sys
+from PySide6.QtCore import Slot
+from PySide6.QtWidgets import QApplication, QFileDialog, QLabel, QPushButton, QVBoxLayout, QWidget
+
+class ImageChooser(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("图片选择")
+        self.path_label = QLabel("尚未选择图片")
+        self.choose_button = QPushButton("选择图片")
+        self.choose_button.clicked.connect(self.choose_image)
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.path_label)
+        layout.addWidget(self.choose_button)
+
+    @Slot()
+    def choose_image(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "选择图片", "", "图片 (*.png *.jpg);;所有文件 (*)"
+        )
+        if path:
+            self.path_label.setText(path)
+
+app = QApplication(sys.argv)
+window = ImageChooser()
+window.resize(440, 150)
+window.show()
+raise SystemExit(app.exec())</code></pre></div></details>
           <div class="lesson-check"><strong>过关检查</strong><p>写出返回元组的两项，说明取消时第一项是什么；再解释传入 <code>self</code> 与模态行为的作用。</p></div>
-          <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 8 课</span></div>
-          <h2>把需要确认或选择的操作放进对话框</h2><p>对话框让短暂的输入和明确的结果保持在一个可控边界内。</p>
         </section>
 
         <section class="chapter lesson" id="stacked-pages" data-title="多页面" data-level="foundation">
+          <div class="lesson-meta"><span class="level-badge foundation">基础必学</span><span>第 9 课</span></div>
+          <h2>用 QStackedWidget 管理多个工作页面</h2>
           <div class="lesson-goals"><strong>本节只学三件事</strong><ol><li>按加入顺序理解页面索引。</li><li>用 <code>setCurrentIndex</code> 切换页面。</li><li>让堆叠控件拥有页面。</li></ol></div>
           <div class="execution-steps"><strong>运行前准备</strong><p>保存为 <code>stacked_pages.py</code>，运行 <code>python stacked_pages.py</code>，交替点击“概览”和“设置”。</p></div>
           <pre><code data-python-example="stacked-pages">import sys
@@ -839,20 +933,60 @@ window.show()
 raise SystemExit(app.exec())</code></pre>
           <div class="expected-ui"><strong>运行后应该看到什么</strong><p>启动时显示概览；点击设置后同一区域显示设置页面，始终只有一个顶层窗口。</p></div>
           <div class="execution-steps"><strong>程序按什么顺序运行</strong><ol><li>两次 <code>addWidget</code> 建立索引 0 和 1。</li><li>堆叠控件默认显示第一个页面。</li><li>按钮槽设置当前索引，隐藏旧页并显示目标页。</li></ol></div>
-          <div class="line-explanation"><strong>逐行解释</strong><p><code>QStackedWidget</code> 是只显示当前页的容器；<code>addWidget</code> 使它接管页面对象；<code>setCurrentIndex(0)</code> 和 <code>setCurrentIndex(1)</code> 分别选择已加入的第一页、第二页。</p></div>
+          <div class="line-explanation"><strong>逐行解释</strong><table class="compare line-by-line" data-line-explanation-for="stacked-pages"><thead><tr><th>源码行</th><th>这些行的职责</th></tr></thead><tbody>
+            <tr data-lines="1-3"><td>1–3</td><td>导入进程参数、无参槽装饰器，以及按钮、水平/垂直布局和 <code>QStackedWidget</code> 等类。</td></tr>
+            <tr data-lines="4-21"><td>4–21</td><td>构造函数按顺序加入索引 0 和 1 的页面，再创建两个导航按钮、嵌套布局并把按钮分别连到对应槽。</td></tr>
+            <tr data-lines="22-25"><td>22–25</td><td><code>show_overview()</code> 把当前页设为第一个已加入页，即索引 0。</td></tr>
+            <tr data-lines="26-29"><td>26–29</td><td><code>show_settings()</code> 访问同一个 <code>self.pages</code>，选择索引 1，不创建新顶层窗口。</td></tr>
+            <tr data-lines="30-35"><td>30–35</td><td>创建应用与窗口，设定尺寸、显示并进入事件循环，使按钮事件能在之后切页。</td></tr>
+          </tbody></table></div>
           <div class="syntax-zoom"><strong>关键语法放大镜</strong><p>索引从 0 开始。<code>self.pages</code> 是实例属性，按钮在事件循环稍后触发槽时仍可访问同一堆叠控件；<code>@Slot()</code> 声明无参槽。</p></div>
           <div class="object-map"><strong>对象关系</strong><p><code>PageWindow</code> 拥有导航按钮、布局和 <code>QStackedWidget</code>，后者拥有两张页面。项目侧边栏也是这种导航：按钮只切换本地页面，暂不引入 SDK 调用。</p></div>
           <div class="experiment"><strong>改一个地方看变化</strong><p>交换两次 <code>addWidget</code> 顺序而不改索引，按钮会显示错误页面；再改槽中的索引，使顺序和索引重新一致。</p></div>
           <div class="mistake"><strong>常见错误</strong><p>不要对这里只有两页的控件调用 <code>setCurrentIndex(2)</code>，应使用设置页的索引 1；验证点击后文字确实变化。也不要每次导航新建顶层 <code>QWidget</code>，应预先加入堆叠控件。</p></div>
           <div class="lesson-check"><strong>最小练习</strong><p>添加“历史”按钮和第三页，先加入第三页，再让按钮切换到索引 2。</p></div>
-          <details><summary>参考答案：第三页</summary><div class="details-body"><pre><code>self.pages.addWidget(QLabel("历史页：显示过去的运行记录。"))  # 索引 2
-history_button.clicked.connect(lambda: self.pages.setCurrentIndex(2))</code></pre></div></details>
+          <details><summary>参考答案：带历史页的完整程序</summary><div class="details-body"><pre><code data-python-example="stacked-pages-answer">import sys
+from PySide6.QtCore import Slot
+from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QHBoxLayout, QStackedWidget, QVBoxLayout, QWidget
+
+class HistoryPageWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("三页导航")
+        self.pages = QStackedWidget()
+        for title in ("概览页", "设置页", "历史页"):
+            self.pages.addWidget(QLabel(title))
+        self.overview_button = QPushButton("概览")
+        self.history_button = QPushButton("历史")
+        navigation = QHBoxLayout()
+        navigation.addWidget(self.overview_button)
+        navigation.addWidget(self.history_button)
+        layout = QVBoxLayout(self)
+        layout.addLayout(navigation)
+        layout.addWidget(self.pages)
+        self.overview_button.clicked.connect(self.show_overview)
+        self.history_button.clicked.connect(self.show_history)
+
+    @Slot()
+    def show_overview(self):
+        self.pages.setCurrentIndex(0)
+
+    @Slot()
+    def show_history(self):
+        self.pages.setCurrentIndex(2)
+
+app = QApplication(sys.argv)
+window = HistoryPageWindow()
+window.resize(420, 180)
+window.show()
+raise SystemExit(app.exec())</code></pre></div></details>
           <div class="lesson-check"><strong>过关检查</strong><p>说明页面加入顺序如何决定索引，<code>setCurrentIndex</code> 改变什么，以及这如何映射到侧边栏导航。</p></div>
-          <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 9 课</span></div>
-          <h2>用 QStackedWidget 管理多个工作页面</h2><p>导航只切换当前页面，不必创建多个顶层窗口。</p>
         </section>
 
         <section class="chapter lesson" id="qss" data-title="QSS" data-level="foundation">
+          <div class="lesson-meta"><span class="level-badge foundation">基础必学</span><span>第 10 课</span></div>
+          <h2>用 QSS 统一界面外观</h2>
+          <p class="chapter-intro"><a class="term-link" href="#term-qss">QSS</a>是 Qt Widgets 的样式表语言，只负责控件呈现，不承担诊断或持久化等业务逻辑。</p>
           <div class="lesson-goals"><strong>本节只学三件事</strong><ol><li>使用类型、对象名和伪状态选择器。</li><li>使用动态属性选择器。</li><li>在属性变化后重新 polish。</li></ol></div>
           <div class="execution-steps"><strong>运行前准备</strong><p>保存为 <code>qss_states.py</code>，运行 <code>python qss_states.py</code>；悬停蓝色按钮并点击它切换状态。</p></div>
           <pre><code data-python-example="qss-states">import sys
@@ -897,25 +1031,57 @@ window.show()
 raise SystemExit(app.exec())</code></pre>
           <div class="expected-ui"><strong>运行后应该看到什么</strong><p>按钮因 <code>#primaryAction</code> 呈蓝色，悬停时变浅；点击后标签文字变为“需要检查”且加粗红色，再点击恢复正常。</p></div>
           <div class="execution-steps"><strong>程序按什么顺序运行</strong><ol><li>设置对象名与动态属性，然后安装 QSS。</li><li>按钮槽切换 <code>severity</code> 与文字。</li><li>重新应用标签样式并重绘。</li></ol></div>
-          <div class="line-explanation"><strong>逐行解释</strong><p><code>QPushButton</code> 是类型选择器；<code>#primaryAction</code> 匹配 <code>setObjectName</code>；<code>:hover</code> 匹配悬停伪状态；<code>QLabel[severity="warning"]</code> 匹配动态属性。</p></div>
+          <div class="line-explanation"><strong>逐行解释</strong><table class="compare line-by-line" data-line-explanation-for="qss-states"><thead><tr><th>源码行</th><th>这些行的职责</th></tr></thead><tbody>
+            <tr data-lines="1-3"><td>1–3</td><td>导入进程参数、槽装饰器和创建标签、按钮、布局与窗口所需的类。</td></tr>
+            <tr data-lines="4-10"><td>4–10</td><td>多行 <code>STYLE</code> 字符串依次定义类型、对象名、悬停伪状态和动态属性选择器，只描述呈现。</td></tr>
+            <tr data-lines="11-24"><td>11–24</td><td>窗口构造函数为标签设初始属性、为按钮设稳定对象名，安装布局和样式表，再连接点击信号。</td></tr>
+            <tr data-lines="25-34"><td>25–34</td><td>槽根据当前属性计算下一状态，同步文字；属性改变后依次 <code>unpolish</code>、<code>polish</code> 和 <code>update</code>，让选择器重新匹配并绘制。</td></tr>
+            <tr data-lines="35-40"><td>35–40</td><td>创建应用与窗口，设定尺寸、显示并进入事件循环，使点击和悬停状态能被 Qt 处理。</td></tr>
+          </tbody></table></div>
           <div class="syntax-zoom"><strong>关键语法放大镜</strong><p><code>setObjectName()</code> 提供稳定身份。<code>setProperty()</code> 改动态属性后 Qt 不一定自动重新匹配 QSS，因此调用 <code>unpolish</code>、<code>polish</code> 和 <code>update</code>；三引号字符串让多行规则清晰。</p></div>
           <div class="object-map"><strong>对象关系</strong><p>窗口拥有标签和按钮，并把样式表安装在其控件树；标签保存展示属性。QSS 只改变呈现，诊断、保存或网络等业务行为应留在 Python 槽和模型中。</p></div>
           <div class="experiment"><strong>改一个地方看变化</strong><p>把 <code>#2980b9</code> 改成另一种颜色，只会改变外观。把属性和值从 <code>warning</code> 改为 <code>alert</code> 时也必须同步改选择器。</p></div>
           <div class="mistake"><strong>常见错误</strong><p>动态属性变化却不重新 polish，可能文字变了而颜色不变；修复后每次点击都应同步。也不要只用颜色表达状态：保留“需要检查”这类文字，即使不看颜色也能理解。</p></div>
           <div class="lesson-check"><strong>最小练习</strong><p>增加 <code>severity="success"</code> 的绿色规则和“成功”按钮，让标签显示“已完成”，仍保留文字。</p></div>
-          <details><summary>参考答案：成功状态</summary><div class="details-body"><pre><code>QLabel[severity="success"] { color: #27823a; font-weight: bold; }
-self.status_label.setProperty("severity", "success")
-self.status_label.style().unpolish(self.status_label)
-self.status_label.style().polish(self.status_label)
-self.status_label.update()
-self.status_label.setText("已完成")</code></pre></div></details>
+          <details><summary>参考答案：成功状态</summary><div class="details-body"><pre><code data-python-example="qss-states-answer">import sys
+from PySide6.QtCore import Slot
+from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QVBoxLayout, QWidget
+
+STYLE = """
+QPushButton#successAction { background: #27823a; color: white; padding: 8px; }
+QLabel[severity="success"] { color: #27823a; font-weight: bold; }
+"""
+
+class SuccessWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.status_label = QLabel("尚未完成")
+        self.success_button = QPushButton("标记完成")
+        self.success_button.setObjectName("successAction")
+        self.success_button.clicked.connect(self.show_success)
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.status_label)
+        layout.addWidget(self.success_button)
+        self.setStyleSheet(STYLE)
+
+    @Slot()
+    def show_success(self):
+        self.status_label.setProperty("severity", "success")
+        self.status_label.setText("已完成")
+        self.status_label.style().unpolish(self.status_label)
+        self.status_label.style().polish(self.status_label)
+        self.status_label.update()
+
+app = QApplication(sys.argv)
+window = SuccessWindow()
+window.resize(300, 150)
+window.show()
+raise SystemExit(app.exec())</code></pre></div></details>
           <div class="lesson-check"><strong>过关检查</strong><p>分别说明类型、对象名、伪状态和动态属性选择器匹配什么；为什么属性变后要重新 polish；为什么 QSS 不承担业务行为。</p></div>
-          <div class="lesson-meta"><span class="level-badge foundation">鍩虹蹇呭</span><span>第 10 课</span></div>
-          <h2>用 QSS 统一界面外观</h2><p>QSS 类似 CSS，但服务于 Qt 控件树；把主题规则集中管理。</p>
         </section>
 
         <section class="chapter lesson" id="mini-project" data-title="小型项目" data-level="project">
-          <div class="lesson-meta"><span class="level-badge project">椤圭洰蹇呭</span><span>项目练习</span></div>
+          <div class="lesson-meta"><span class="level-badge project">项目必学</span><span>项目练习</span></div>
           <h2>把前十课组合成一个可运行的小工具</h2><p>窗口、布局、信号、对话框和样式在一个小型任务中各司其职。最终程序不读取本项目、不加载模型：<code>QTimer.singleShot</code> 只是在“诊断中”后返回演示结果。</p>
 
           <h3>步骤 1：窗口骨架</h3>
@@ -1158,10 +1324,10 @@ class DiagnosisWindow(QWidget):
 
     def finish_simulation(self):
         self.show_result()
+        self.set_state(UiState.SUCCESS)
 
     def show_result(self):
         self.result_label.setText("诊断结果：悬浮放电（演示），置信度 92%。")
-        self.set_state(UiState.SUCCESS)
 
 app = QApplication(sys.argv)
 window = DiagnosisWindow()
@@ -1259,7 +1425,6 @@ class DiagnosisWindow(QWidget):
 
     def show_result(self):
         self.result_label.setText("诊断结果：悬浮放电（演示），置信度 92%。")
-        self.set_state(UiState.SUCCESS)
 
     @Slot()
     def reset(self):
@@ -1275,7 +1440,7 @@ raise SystemExit(app.exec())</code></pre>
           <div class="lesson-check"><strong>检查点</strong><p>选择文件后分别点“开始诊断”和“模拟失败”。两条路径结束时都应重新出现可用的“回到空闲”按钮。</p></div>
 
           <h3>把 UI 状态写成状态机</h3>
-          <p>不要用零散布尔变量猜测当前界面。状态流是 <code>idle → file selected → running → success/error → idle</code>；<code>set_state()</code> 是唯一集中改变按钮和提示的地方。</p>
+          <p>不要用零散布尔变量猜测当前界面。状态流是 <code>idle → file selected → running → success/error</code>；成功或失败后既可重置回 <code>idle</code>，也可直接选择新文件回到 <code>file selected</code>。<code>set_state()</code> 是唯一集中改变按钮和提示的地方。</p>
           <div class="table-wrap"><table class="compare"><thead><tr><th>状态</th><th>可用控件</th><th>可见信息</th><th>允许的下一步</th></tr></thead><tbody>
             <tr><td><code>idle</code></td><td>选择信号文件</td><td>“请选择一个信号文件”</td><td>选择文件</td></tr>
             <tr><td><code>file selected</code></td><td>选择文件、开始诊断、模拟失败、回到空闲</td><td>文件名与“文件已就绪”</td><td>开始、模拟失败、重置</td></tr>
@@ -1286,9 +1451,9 @@ raise SystemExit(app.exec())</code></pre>
           <p>运行时禁用按钮不是装饰：它阻止用户并发启动两次相同任务，避免两个回调争抢同一份结果。成功与失败必须共享最终清理路径；否则异常分支很容易遗漏“恢复按钮”的一句代码，界面就会卡死在运行态。</p>
         </section>
 
-        <section class="chapter lesson" id="threading" data-title="线程" data-level="advanced">
-          <div class="lesson-meta"><span class="level-badge advanced">杩涢樁閫夊</span><span>进阶</span></div>
-          <h2>耗时任务为什么不能堵住界面线程</h2><div class="advanced-note">完成基础窗口交互后，再学习后台任务和跨线程信号。上一节的 <code>QTimer</code> 只是在演示延迟；真实读取和推理要放到线程池。</div>
+        <section class="chapter lesson" id="threading" data-title="线程" data-level="project">
+          <div class="lesson-meta"><span class="level-badge project">项目必学</span><span>后台任务</span></div>
+          <h2>耗时任务为什么不能堵住界面线程</h2><p class="chapter-intro"><a class="term-link" href="#term-main-thread">GUI 主线程</a>创建并更新控件；<a class="term-link" href="#term-worker">工作者（worker）</a>执行不接触控件的耗时任务；<a class="term-link" href="#term-thread-pool">线程池</a>复用有限的工作线程来调度这些任务。</p><div class="advanced-note">完成基础窗口交互后，再学习后台任务和跨线程信号。上一节的 <code>QTimer</code> 只是在演示延迟；真实读取和推理要放到线程池。</div>
           <h3>完整线程池示例</h3>
           <p>这个例子把工作结果、错误和收尾分别用信号送回主线程。<strong><code>run()</code> 内没有任何 QWidget 调用。</strong></p>
           <pre><code data-python-example="thread-pool">import sys
@@ -1396,39 +1561,11 @@ raise SystemExit(app.exec())</code></pre>
           </tbody></table></div>
         </section>
 
-        <section class="chapter lesson" id="project-map" data-title="项目地图" data-level="project">
-          <div class="lesson-meta"><span class="level-badge project">椤圭洰蹇呭</span><span>连接真实项目</span></div>
-          <h2>把教程里的对象换成项目里的对象</h2>
-          <p class="chapter-intro">前面学过的事件循环、信号与槽、窗口和线程池都没有失效；真实项目只是把练习名换成了更明确的工程名。<strong>第一次阅读只追这一条线</strong>：按钮 → 槽函数 → 工作者 → 服务 → 结果信号 → 界面。</p>
-          <div class="table-wrap"><table class="compare">
-            <thead><tr><th>教程里的对象</th><th>真实项目中的文件 / 对象</th><th>它现在做什么</th><th>忘了就回看</th></tr></thead>
-            <tbody>
-              <tr><td><code>QApplication</code></td><td><code>src/pd_diagnosis/ui/app.py</code> 的 <code>main()</code></td><td>创建唯一应用对象，最后进入 <code>application.exec()</code></td><td>“事件循环与程序生命周期”</td></tr>
-              <tr><td>教程 <code>DiagnosisWindow</code></td><td><code>src/pd_diagnosis/ui/main_window.py</code> 的 <code>MainWindow</code></td><td>构建页面、接收用户操作、展示诊断结果</td><td>“QMainWindow 基础”和“引导式诊断界面”</td></tr>
-              <tr><td><code>QThreadPool</code></td><td><code>MainWindow.thread_pool</code></td><td>窗口私有线程池，<code>setMaxThreadCount(1)</code> 让模型任务串行</td><td>“长任务与线程池”</td></tr>
-              <tr><td>教程 <code>DiagnosisRunnable</code></td><td><code>src/pd_diagnosis/ui/workers.py</code> 的 <code>SingleDiagnosisTask</code></td><td>在工作线程读取一个 TXT 并调用诊断服务</td><td>“长任务与线程池”</td></tr>
-              <tr><td>教程 <code>result</code> 信号</td><td><code>TaskSignals.result</code> → <code>MainWindow._show_single_result()</code></td><td>把 <code>SingleDiagnosisOutcome</code> 送回 GUI 主线程</td><td>“信号与槽”和“长任务与线程池”</td></tr>
-              <tr><td>教程 <code>error</code> 信号</td><td><code>TaskSignals.error</code> → <code>MainWindow._show_single_error()</code></td><td>把异常文字送回主线程，由 <code>QMessageBox</code> 呈现</td><td>“信号与槽”和“错误恢复”</td></tr>
-            </tbody>
-          </table></div>
-          <div class="callout"><strong>你已经会的核心</strong><code>clicked.connect(...)</code>、<code>QRunnable.run()</code>、跨线程信号和 GUI 主线程更新，就是这个项目的界面骨架。</div>
-        </section>
-
-        <section class="chapter" id="start" data-title="学习路线">
-          <span class="chapter-kicker">Start here</span>
-          <h2>先建立一张“地图”</h2>
-          <p class="chapter-intro">初学工程项目最容易卡住的地方，是每一行好像都认识，合在一起却不知道为什么。先记住下面三层：最内层负责诊断，第二层负责业务，最外层负责让人操作。</p>
-          <div class="grid three">
-            <article class="card"><span class="number">1</span><h3>SDK / 核心层</h3><p>读取信号、提取特征、加载模型、完成推理。它不应该知道按钮、窗口和颜色。</p></article>
-            <article class="card"><span class="number">2</span><h3>应用服务层</h3><p>把“诊断”和“保存历史”组合成一次完整业务操作，连接核心能力与界面。</p></article>
-            <article class="card"><span class="number">3</span><h3>PySide6 / 表现层</h3><p>收集用户输入、展示结果、调度后台任务。它负责交互，不负责发明诊断算法。</p></article>
-          </div>
-          <div class="callout"><strong>学习方法</strong>第一遍只看标题和图；第二遍运行代码；第三遍完成练习。不要试图一次记住全部类名，先理解“谁调用谁”。</div>
-        </section>
-
-        <section class="chapter" id="sdk" data-title="什么是 SDK">
-          <span class="chapter-kicker">Chapter 01</span>
+        <section class="chapter lesson" id="sdk" data-title="什么是 SDK" data-level="project">
+          <div class="lesson-meta"><span class="level-badge project">项目必学</span><span>核心接口</span></div>
           <h2>先不用界面：直接调用 SDK</h2>
+          <span class="chapter-kicker">Chapter 01</span>
+          <p class="chapter-intro"><a class="term-link" href="#term-sdk">SDK</a> 是给其他程序调用的稳定开发套件；本项目的模型 <a class="term-link" href="#term-bundle">bundle</a> 把清单、权重与标准化参数作为一个可验证版本交给引擎加载。</p>
           <p class="chapter-intro">先把 PySide6 放在一边。如果一个普通 Python 脚本能完成诊断，就证明核心能力与界面是分开的。下面始终用同一台咖啡机来区分五个容易混淆的词。</p>
           <div class="table-wrap">
             <table class="compare">
@@ -1446,21 +1583,21 @@ raise SystemExit(app.exec())</code></pre>
           <p>先在仓库根目录安装项目，再把下面保存为 <code>try_sdk.py</code>并运行 <code>python try_sdk.py</code>。它不导入 PySide6，也不创建窗口。</p>
           <div class="codebox">
             <div class="code-head"><span><code>try_sdk.py</code> · 完整脚本</span><button class="copy" type="button">复制</button></div>
-            <pre><code><span class="kw">from</span> pathlib <span class="kw">import</span> Path
+            <pre><code data-python-example="sdk-diagnosis">from pathlib import Path
 
-<span class="kw">from</span> pd_diagnosis <span class="kw">import</span> DiagnosisEngine
+from pd_diagnosis import DiagnosisEngine
 
-model_path = <span class="fn">Path</span>(<span class="str">"models/default"</span>)
-signal_path = <span class="fn">Path</span>(<span class="str">"data/test/金属突出物缺陷/a1.txt"</span>)
-engine = DiagnosisEngine.<span class="fn">from_bundle</span>(model_path, device=<span class="str">"auto"</span>)
-result = engine.<span class="fn">diagnose_file</span>(signal_path)
+model_path = Path("models/default")
+signal_path = Path("data/test/金属突出物缺陷/a1.txt")
+engine = DiagnosisEngine.from_bundle(model_path, device="auto")
+result = engine.diagnose_file(signal_path)
 
-<span class="fn">print</span>(<span class="str">"label:"</span>, result.label)
-<span class="fn">print</span>(<span class="str">"confidence:"</span>, result.confidence)
-<span class="fn">print</span>(<span class="str">"probabilities:"</span>, <span class="fn">dict</span>(result.probabilities))
-<span class="fn">print</span>(<span class="str">"model_version:"</span>, result.model_version)
-<span class="fn">print</span>(<span class="str">"source_id:"</span>, result.source_id)
-<span class="fn">print</span>(<span class="str">"warnings:"</span>, result.warnings)</code></pre>
+print("label:", result.label)
+print("confidence:", result.confidence)
+print("probabilities:", dict(result.probabilities))
+print("model_version:", result.model_version)
+print("source_id:", result.source_id)
+print("warnings:", result.warnings)</code></pre>
           </div>
           <h3>逐行解释与预期输出</h3>
           <ol>
@@ -1474,10 +1611,49 @@ result = engine.<span class="fn">diagnose_file</span>(signal_path)
           <div class="callout warning"><strong>API 稳定，不等于内部永远不变</strong><code>engine.py</code> 里面可以从 PyTorch 换成其他推理方式，只要 <code>diagnose_file()</code> 的输入和返回值保持兼容，UI 和外部脚本就不必跟着大改。</div>
         </section>
 
+        <section class="chapter lesson" id="project-map" data-title="项目地图" data-level="project">
+          <div class="lesson-meta"><span class="level-badge project">项目必学</span><span>连接真实项目</span></div>
+          <h2>把教程里的对象换成项目里的对象</h2>
+          <p class="chapter-intro">前面学过的事件循环、信号与槽、窗口和线程池都没有失效；真实项目只是把练习名换成了更明确的工程名。<strong>第一次阅读只追这一条线</strong>：按钮 → 槽函数 → 工作者 → 服务 → 结果信号 → 界面。</p>
+          <div class="table-wrap"><table class="compare">
+            <thead><tr><th>教程里的对象</th><th>真实项目中的文件 / 对象</th><th>它现在做什么</th><th>忘了就回看</th></tr></thead>
+            <tbody>
+              <tr><td><code>QApplication</code></td><td><code>src/pd_diagnosis/ui/app.py</code> 的 <code>main()</code></td><td>创建唯一应用对象，最后进入 <code>application.exec()</code></td><td>“事件循环与程序生命周期”</td></tr>
+              <tr><td>教程 <code>DiagnosisWindow</code></td><td><code>src/pd_diagnosis/ui/main_window.py</code> 的 <code>MainWindow</code></td><td>构建页面、接收用户操作、展示诊断结果</td><td>“QMainWindow 基础”和“引导式诊断界面”</td></tr>
+              <tr><td><code>QThreadPool</code></td><td><code>MainWindow.thread_pool</code></td><td>窗口私有线程池，<code>setMaxThreadCount(1)</code> 让模型任务串行</td><td>“长任务与线程池”</td></tr>
+              <tr><td>教程 <code>DiagnosisRunnable</code></td><td><code>src/pd_diagnosis/ui/workers.py</code> 的 <code>SingleDiagnosisTask</code></td><td>在工作线程读取一个 TXT 并调用诊断服务</td><td>“长任务与线程池”</td></tr>
+              <tr><td>教程 <code>result</code> 信号</td><td><code>TaskSignals.result</code> → <code>MainWindow._show_single_result()</code></td><td>把 <code>SingleDiagnosisOutcome</code> 送回 GUI 主线程</td><td>“信号与槽”和“长任务与线程池”</td></tr>
+              <tr><td>教程 <code>error</code> 信号</td><td><code>TaskSignals.error</code> → <code>MainWindow._show_single_error()</code></td><td>把异常文字送回主线程，由 <code>QMessageBox</code> 呈现</td><td>“信号与槽”和“错误恢复”</td></tr>
+            </tbody>
+          </table></div>
+          <div class="callout"><strong>你已经会的核心</strong><code>clicked.connect(...)</code>、<code>QRunnable.run()</code>、跨线程信号和 GUI 主线程更新，就是这个项目的界面骨架。</div>
+        </section>
+
+        <section class="chapter lesson" id="flows" data-title="跟着程序运行" data-level="project">
+          <div class="lesson-meta"><span class="level-badge project">项目必学</span><span>真实调用链</span></div>
+          <h2>跟着程序完整运行一遍</h2>
+          <p class="chapter-intro">下面两张表都用同六个问题阅读：谁触发、进什么、出什么、在哪个线程、会怎么错、下一步去哪。工作线程把当次路径、独立的只读波形副本和诊断结果绑成<a class="term-link" href="#term-immutable-snapshot">结果快照</a>再发回界面；<code>frozen=True</code> 本身只阻止字段重绑定，波形还通过拷贝和只读标志隔离可变数组。</p>
+          <h3>应用启动链</h3>
+          <p><strong>第一次阅读只追这一条线：</strong><code>__main__.py</code> → <code>launcher.main()</code> → <code>ui.app.main()</code> → <code>MainWindow</code> → <code>application.exec()</code>。</p>
+          <div class="table-wrap"><table class="compare"><thead><tr><th>触发</th><th>精确文件与可调用对象</th><th>输入 → 输出</th><th>线程</th><th>可能错误</th><th>下一步</th></tr></thead><tbody>
+            <tr><td>运行 <code>python -m pd_diagnosis</code></td><td><code>src/pd_diagnosis/__main__.py</code> 调用 <code>main()</code></td><td>命令行 → 进程退出码</td><td>启动主线程</td><td>未处理异常终止进程</td><td><code>launcher.main()</code></td></tr>
+            <tr><td><code>launcher.main()</code></td><td><code>src/pd_diagnosis/ui/app.py</code> 的 <code>main()</code></td><td><code>argv</code> → 应用对象和启动结果</td><td>GUI 主线程</td><td>缺 GUI 依赖时返回 2；初始化失败返回 1</td><td>创建 engine、history 和 service</td></tr>
+            <tr><td>依赖已构造</td><td><code>src/pd_diagnosis/ui/main_window.py</code> 的 <code>MainWindow</code></td><td>service + history + model path → 已构建窗口</td><td>GUI 主线程</td><td>窗口构造异常向上传播</td><td><code>window.show()</code> 与 <code>application.exec()</code></td></tr>
+          </tbody></table></div>
+          <h3>单文件诊断链</h3>
+          <p><strong>第一次阅读只追这一条线：</strong><code>start_single_diagnosis()</code> → <code>SingleDiagnosisTask.run()</code> → <code>DiagnosisService.diagnose()</code> → <code>DiagnosisEngine.diagnose()</code> → <code>SingleDiagnosisOutcome</code> → GUI 槽。</p>
+          <div class="table-wrap"><table class="compare"><thead><tr><th>触发</th><th>精确文件与可调用对象</th><th>输入 → 输出</th><th>线程</th><th>可能错误</th><th>下一步</th></tr></thead><tbody>
+            <tr><td><code>diagnose_button.clicked</code></td><td><code>MainWindow.start_single_diagnosis()</code></td><td>输入框文本 → 已排队的 <code>SingleDiagnosisTask</code></td><td>GUI 主线程</td><td>空路径显示警告并返回</td><td>私有线程池执行 <code>run()</code></td></tr>
+            <tr><td>线程池取到任务</td><td><code>src/pd_diagnosis/ui/workers.py</code> 的 <code>SingleDiagnosisTask.run()</code></td><td>path → 只读 samples + <code>DiagnosisSignal</code></td><td>工作线程</td><td>TXT 读取或格式错误转为 error 信号</td><td><code>DiagnosisService.diagnose()</code></td></tr>
+            <tr><td>worker 获得结果</td><td><code>TaskSignals.result/error/finished</code> 与 <code>MainWindow</code> 三个对应槽</td><td>结果快照或错误 → 图表、结果卡和恢复后的控件</td><td>跨线程信号排队回 GUI 主线程</td><td>异常进错误槽；<code>finally</code> 总发 <code>finished</code></td><td>恢复按钮并刷新历史</td></tr>
+          </tbody></table></div>
+          <div class="callout"><strong>线程边界</strong>文件读取、推理和保存在工作线程；所有 QWidget 更新在 GUI 主线程。</div>
+        </section>
+
         <section class="chapter" id="architecture" data-title="项目分层">
           <span class="chapter-kicker">Chapter 02</span>
           <h2>看懂项目分层与依赖方向</h2>
-          <p class="chapter-intro"><strong>初读只需要知道：</strong>窗口收集输入，Service 组合一次业务，Engine 完成诊断。依赖方向从外向内：UI 可以调用 SDK，SDK 不反过来导入 UI。</p>
+          <p class="chapter-intro"><strong>初读只需要知道：</strong>窗口收集输入，<a class="term-link" href="#term-service">Service</a> 组合一次业务，Engine 完成诊断。通过<a class="term-link" href="#term-dependency-injection">依赖注入</a>把 Service 和 Repository 从外部交给窗口。依赖方向从外向内：UI 可以调用 SDK，SDK 不反过来导入 UI。</p>
           <div class="flow" aria-label="项目分层调用关系">
             <div class="flow-item"><strong>ui/</strong>窗口、控件、交互</div><span class="arrow">→</span>
             <div class="flow-item"><strong>service.py</strong>业务编排</div><span class="arrow">→</span>
@@ -1540,7 +1716,7 @@ result = engine.<span class="fn">diagnose_file</span>(signal_path)
           <h2>逐文件阅读指南</h2>
           <p class="chapter-intro">输入文件名或关键词可筛选。建议按照“类型 → 引擎 → 服务 → UI 启动 → 主窗口 → 后台任务”的顺序阅读。</p>
           <div class="file-tools">
-            <label class="hidden" for="fileSearch">筛选文件说明</label>
+            <label class="visually-hidden" for="fileSearch">筛选文件说明</label>
             <input class="search" id="fileSearch" type="search" placeholder="筛选，例如：线程、模型、SQLite、UI…">
             <span id="fileCount" aria-live="polite"></span>
           </div>
@@ -1632,27 +1808,28 @@ result = engine.<span class="fn">diagnose_file</span>(signal_path)
           </div>
         </section>
 
-        <section class="chapter" id="source-course" data-title="源码课堂">
+        <section class="chapter" id="source-course" data-title="源码课堂" data-level="advanced">
+          <span class="level-badge advanced">进阶选学</span>
           <span class="chapter-kicker">Complete source course</span>
-          <h2>源码课堂：每个文件、每个逻辑区块</h2>
-          <p class="chapter-intro">这里不是摘要。课程把仓库代码按函数、类、配置段和数据产物拆成可学习的区块；选择文件后，依次阅读“代码 → 解释 → 为什么 → 调用关系 → 修改风险”。行号对应当前仓库版本，修改源码后可能发生偏移。</p>
+          <h2>源码课堂：核心产品代码与重点测试</h2>
+          <p class="chapter-intro">这里不是摘要。课程优先覆盖核心生产 Python 文件和重点测试文件，按函数、类、配置段和数据产物拆成可学习的区块；选择文件后，依次阅读“代码 → 解释 → 为什么 → 调用关系 → 修改风险”。行号对应当前仓库版本，修改源码后可能发生偏移。</p>
           <div class="coverage-board" aria-label="课程覆盖统计">
             <div class="coverage-item"><strong id="coverageFiles">—</strong><span>文件/文件组</span></div>
             <div class="coverage-item"><strong id="coverageParts">—</strong><span>代码区块</span></div>
             <div class="coverage-item"><strong>2,000+</strong><span>源码与配置行</span></div>
-            <div class="coverage-item"><strong>100%</strong><span>正式 Python 文件</span></div>
+            <div class="coverage-item"><strong>100%</strong><span>核心生产 Python 文件</span></div>
           </div>
           <div class="callout"><strong>关于“每一个数据文件”</strong><code>data/</code> 中 460 个 TXT 是同一数据契约的样本实例，每个文件不包含不同的程序逻辑。因此课程逐目录、逐命名规则、逐文件格式讲解，并用代表样本解释 10,000 个数值如何进入 SDK；不会机械重复 460 次相同说明。二进制 <code>.pth/.npz/.pkl/.zip</code> 也按内部格式和读写链路解释。</div>
           <div class="source-lab">
             <aside class="source-browser" aria-label="源码文件选择器">
               <h3>文件导航</h3>
-              <label class="hidden" for="sourceSearch">搜索源码文件或区块</label>
+              <label class="visually-hidden" for="sourceSearch">搜索源码文件或区块</label>
               <input class="source-filter" id="sourceSearch" type="search" placeholder="搜索文件、函数、Qt、SQLite…">
               <div id="sourceFileNav"></div>
             </aside>
             <div class="source-detail" id="sourceDetail" aria-live="polite"></div>
           </div>
-          <noscript><div class="callout warning"><strong>需要启用 JavaScript</strong>源码课堂的数据嵌在此 HTML 中，但使用 JavaScript 切换文件。浏览器禁用脚本时，上方基础章节仍可阅读。</div></noscript>
+          <noscript><div class="callout warning"><strong>源码浏览器不可用</strong>源码课堂的数据嵌在此 HTML 中，但切换文件需要 JavaScript；基础课程、分级练习、答案解释和术语表仍可静态阅读。</div></noscript>
         </section>
 
         <section class="chapter" id="pyside" data-title="PySide6 核心">
@@ -1757,10 +1934,10 @@ QThreadPool.<span class="fn">globalInstance</span>().<span class="fn">start</spa
           </tbody></table></div>
         </section>
 
-        <section class="chapter" id="flows" data-title="跟着程序运行">
+        <section class="chapter" id="flows-reference" data-title="调用链详细参考">
           <span class="chapter-kicker">Chapter 06</span>
           <h2>跟着程序完整运行一遍</h2>
-          <p class="chapter-intro">下面两张表都用同七个问题阅读：谁触发、进什么、出什么、在哪个线程、会怎么错、下一步去哪。类名和方法名都来自当前源码。</p>
+          <p class="chapter-intro">下面两张表都用同六个问题阅读：谁触发、进什么、出什么、在哪个线程、会怎么错、下一步去哪。工作线程把一次输入与结果封成<a class="term-link" href="#term-immutable-snapshot">结果快照</a>再发回界面；数据类限制字段重绑定，波形数组另外通过拷贝和只读标志隔离，类名和方法名都来自当前源码。</p>
           <h3>应用启动链</h3>
           <p><strong>第一次阅读只追这一条线：</strong><code>__main__.py</code> → <code>launcher.main()</code> → <code>ui.app.main()</code> → <code>MainWindow</code> → <code>application.exec()</code>。</p>
           <div class="table-wrap"><table class="compare">
@@ -1784,8 +1961,8 @@ QThreadPool.<span class="fn">globalInstance</span>().<span class="fn">start</spa
               <tr><td>槽函数创建任务</td><td><code>MainWindow.start_single_diagnosis()</code> 连接 <code>result/error/finished</code>，调用 <code>self.thread_pool.start(task)</code></td><td>service + path + 信号连接 → 已排队的 runnable</td><td>GUI 主线程</td><td>启动调度异常未在该槽内捕获</td><td>窗口私有、最大线程数为 1 的线程池执行 <code>run()</code></td></tr>
               <tr><td>线程池取到任务</td><td><code>src/pd_diagnosis/ui/workers.py</code> 的 <code>SingleDiagnosisTask.run()</code></td><td>path → 只读 <code>float32</code> samples 和带采样率/绝对来源的 <code>Signal</code></td><td>私有线程池的工作线程</td><td>TXT 不存在、格式错或数值无效时进入 <code>except</code></td><td><code>self.service.diagnose(signal)</code></td></tr>
               <tr><td>worker 提交 <code>Signal</code></td><td><code>src/pd_diagnosis/service.py</code> 的 <code>DiagnosisService.diagnose()</code></td><td><code>Signal</code> → <code>DiagnosisResult</code>（可能附加保存警告）</td><td>同一工作线程</td><td><code>DiagnosisError</code> 会尝试记录失败后重新抛出；SQLite/OSError 保存失败被隔离，已有诊断结果仍返回</td><td><code>DiagnosisEngine.diagnose()</code> 完成推理，Service 再保存</td></tr>
-              <tr><td>Service 调用引擎</td><td><code>src/pd_diagnosis/engine.py</code> 的 <code>DiagnosisEngine.diagnose()</code></td><td><code>Signal</code> → 不可变 <code>DiagnosisResult</code></td><td>同一工作线程</td><td>采样率、特征、标准化、logits 或概率无效时抛出明确诊断异常</td><td>返回 Service，再返回 worker</td></tr>
-              <tr><td>worker 获得结果</td><td><code>ui/workers.py</code> 的 <code>SingleDiagnosisOutcome(...)</code> 与 <code>TaskSignals.result.emit()</code></td><td>path + 只读 samples + result → 不可变结果快照</td><td>工作线程发信号</td><td>任意异常都转为 <code>error.emit(str(exc))</code>；<code>finally</code> 总会发 <code>finished</code></td><td>Qt 将跨线程信号排队给 GUI 槽</td></tr>
+              <tr><td>Service 调用引擎</td><td><code>src/pd_diagnosis/engine.py</code> 的 <code>DiagnosisEngine.diagnose()</code></td><td><code>Signal</code> → <code>DiagnosisResult</code> 结果对象</td><td>同一工作线程</td><td>采样率、特征、标准化、logits 或概率无效时抛出明确诊断异常</td><td>返回 Service，再返回 worker</td></tr>
+              <tr><td>worker 获得结果</td><td><code>ui/workers.py</code> 的 <code>SingleDiagnosisOutcome(...)</code> 与 <code>TaskSignals.result.emit()</code></td><td>path + 独立只读 samples + result → 结果快照</td><td>工作线程发信号</td><td>任意异常都转为 <code>error.emit(str(exc))</code>；<code>finally</code> 总会发 <code>finished</code></td><td>Qt 将跨线程信号排队给 GUI 槽</td></tr>
               <tr><td><code>result</code> / <code>error</code> / <code>finished</code> 信号</td><td><code>MainWindow._show_single_result()</code> / <code>_show_single_error()</code> / <code>_finish_single()</code></td><td>快照或错误字符串 → 图表、结果卡、对话框和恢复后的控件</td><td>GUI 主线程</td><td>绘图异常被转为状态栏提示；诊断异常走错误槽</td><td>刷新历史，恢复路径和按钮</td></tr>
             </tbody>
           </table></div>
@@ -1868,7 +2045,7 @@ mypy src/pd_diagnosis</code></pre></div>
         <section class="chapter" id="hardening" data-title="当前版本工程加固">
           <span class="chapter-kicker">Current implementation</span>
           <h2>进阶选学：当前版本的可靠性边界</h2>
-          <p class="chapter-intro">你已经能沿启动链和单文件链读懂主干。下面是当前源码已实现的工程保护，需要时再逐项展开，不是完成入门的前置条件。</p>
+          <p class="chapter-intro">你已经能沿启动链和单文件链读懂主干。这里的<a class="term-link" href="#term-persistence">持久化</a>把历史写入 SQLite，使进程结束后仍能查询；下面是当前源码已实现的工程保护，需要时再逐项展开，不是完成入门的前置条件。</p>
           <div class="grid two">
             <article class="card"><h3>进阶选学：SQLite</h3><p><strong>初读只需要知道：</strong><code>DiagnosisService</code> 在推理后尝试保存历史。<strong>仅当历史保存抛出 <code>sqlite3.Error</code> 或 <code>OSError</code> 时</strong>，诊断结果仍会返回并附加 warning。<strong>其他异常继续传播</strong>；记录诊断错误时遇到它们，还可能替代原始 <code>DiagnosisError</code>。<strong>暂时可以跳过：</strong><code>storage.py</code> 的 schema、WAL、SQL 和数据库版本迁移。</p></article>
             <article class="card"><h3>进阶选学：bundle 验证</h3><p><strong>初读只需要知道：</strong><code>DiagnosisEngine.from_bundle()</code> 要求模型包与当前 SDK 兼容。<strong>暂时可以跳过：</strong><code>bundle.py</code> 对 schema、架构、特征顺序、类别 ID、mean/scale 和路径逃逸的逐项验证。</p></article>
@@ -1883,13 +2060,351 @@ mypy src/pd_diagnosis</code></pre></div>
 
         <section class="chapter" id="exercises" data-title="练习">
           <span class="chapter-kicker">Chapter 09</span>
-          <h2>从容易到困难的练习</h2>
-          <div class="grid three">
-            <article class="card"><span class="number">A</span><h3>基础：状态栏提示</h3><p>选择文件后，在状态栏显示文件名 3 秒。练习 <code>statusBar().showMessage()</code>。</p><details><summary>提示</summary><div class="details-body"><code>self.statusBar().showMessage(message, 3000)</code></div></details></article>
-            <article class="card"><span class="number">B</span><h3>进阶：置信度颜色</h3><p>置信度低于 0.6 时显示警告色，但不要只依赖颜色，还要显示文字。</p><details><summary>思路</summary><div class="details-body">把“判断状态”和“设置控件”封装为单独方法，并为阈值边界写测试。</div></details></article>
-            <article class="card"><span class="number">C</span><h3>挑战：阅读 CSV 导出 Worker</h3><p>沿 <code>HistoryExportTask → export_history_csv</code> 追踪后台读取、进度信号、异常和 GUI 收尾，再尝试设计协作取消。</p><details><summary>验收标准</summary><div class="details-body">导出期间窗口可拖动；异常能显示；UI 只在主线程更新；若增加取消，临时文件状态必须明确。</div></details></article>
+          <h2>分级练习：每学一层就闭环</h2>
+          <p class="chapter-intro">先做 7 个基础练习，再做 2 个项目练习。每题都写明前置课程、可见结果、限制条件、提示、完整答案和自我验证；先独立完成，再展开答案。</p>
+          <div class="practice-grid">
+            <article class="practice-card" data-level="foundation" data-prerequisite="widgets"><span class="number">1</span><h3>基础：一键清空资料表单</h3><p><strong>前置课程：</strong><a href="#widgets">控件</a></p><p><strong>可见结果：</strong>点击“清空”后，姓名、角色和结果同时恢复初始状态。</p><p><strong>限制条件：</strong>控件保存在 <code>self</code>；不重新创建窗口。</p><p><strong>提示：</strong>分别调用 <code>clear()</code>、<code>setCurrentIndex(0)</code>。</p><details class="practice-answer"><summary>完整答案：可直接运行的程序</summary><div class="details-body"><pre><code data-python-example="practice-widgets-clear">import sys
+
+from PySide6.QtCore import Slot
+from PySide6.QtWidgets import (
+    QApplication,
+    QComboBox,
+    QFormLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
+
+class ProfileForm(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.name_input = QLineEdit("小林")
+        self.role_box = QComboBox()
+        self.role_box.addItems(["检修员", "分析员"])
+        self.submit_button = QPushButton("显示资料")
+        self.clear_button = QPushButton("清空")
+        self.result_output = QTextEdit()
+        self.result_output.setReadOnly(True)
+
+        form = QFormLayout()
+        form.addRow(QLabel("姓名："), self.name_input)
+        form.addRow(QLabel("角色："), self.role_box)
+        layout = QVBoxLayout(self)
+        layout.addLayout(form)
+        layout.addWidget(self.submit_button)
+        layout.addWidget(self.clear_button)
+        layout.addWidget(self.result_output)
+
+        self.submit_button.clicked.connect(self.show_profile)
+        self.clear_button.clicked.connect(self.clear_form)
+
+    @Slot()
+    def show_profile(self):
+        self.result_output.setText(
+            f"已提交：{self.name_input.text()}（{self.role_box.currentText()}）"
+        )
+
+    @Slot()
+    def clear_form(self):
+        self.name_input.clear()
+        self.role_box.setCurrentIndex(0)
+        self.result_output.clear()
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = ProfileForm()
+    window.show()
+    raise SystemExit(app.exec())</code></pre></div></details><p><strong>自我验证：</strong>先提交一份资料，再清空；输入框为空、下拉框回到第一项、结果框为空。</p></article>
+            <article class="practice-card" data-level="foundation" data-prerequisite="layouts"><span class="number">2</span><h3>基础：让表单按钮贴近窗口底部</h3><p><strong>前置课程：</strong><a href="#layouts">布局</a></p><p><strong>可见结果：</strong>拉高窗口时，设备表单留在上方，“取消 / 保存”按钮留在下方。</p><p><strong>限制条件：</strong>不使用 <code>move()</code> 或固定坐标。</p><p><strong>提示：</strong>把 stretch 放在表单与按钮行之间。</p><details class="practice-answer"><summary>完整答案：可直接运行的程序</summary><div class="details-body"><pre><code data-python-example="practice-layouts-bottom">import sys
+
+from PySide6.QtWidgets import (
+    QApplication,
+    QFormLayout,
+    QHBoxLayout,
+    QLineEdit,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
+
+class BottomButtonWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("表单按钮布局")
+        form = QFormLayout()
+        form.addRow("设备名：", QLineEdit())
+        form.addRow("位置：", QLineEdit())
+
+        self.cancel_button = QPushButton("取消")
+        self.save_button = QPushButton("保存")
+        button_row = QHBoxLayout()
+        button_row.addStretch(1)
+        button_row.addWidget(self.cancel_button)
+        button_row.addWidget(self.save_button)
+
+        self.root_layout = QVBoxLayout(self)
+        self.root_layout.addLayout(form)
+        self.root_layout.addStretch(1)
+        self.root_layout.addLayout(button_row)
+        self.root_layout.setContentsMargins(20, 20, 20, 20)
+        self.root_layout.setSpacing(12)
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = BottomButtonWindow()
+    window.resize(420, 300)
+    window.show()
+    raise SystemExit(app.exec())</code></pre></div></details><p><strong>自我验证：</strong>把窗口从 300 像素拉高到 600 像素；控件不重叠且多余空间只出现在中间。</p></article>
+            <article class="practice-card" data-level="foundation" data-prerequisite="signals-slots"><span class="number">3</span><h3>基础：计数器重置槽</h3><p><strong>前置课程：</strong><a href="#signals-slots">信号与槽</a></p><p><strong>可见结果：</strong>任意计数后点击“重置”，数字变为 0；下次点击从 1 开始。</p><p><strong>限制条件：</strong>连接只做一次，槽不接收按钮返回值。</p><p><strong>提示：</strong>同时更新 Python 状态和可见标签。</p><details class="practice-answer"><summary>完整答案：可直接运行的程序</summary><div class="details-body"><pre><code data-python-example="practice-signals-reset">import sys
+
+from PySide6.QtCore import Slot
+from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QVBoxLayout, QWidget
+
+class ResetCounter(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.count = 0
+        self.value_label = QLabel("0")
+        self.add_button = QPushButton("加一")
+        self.reset_button = QPushButton("重置")
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.value_label)
+        layout.addWidget(self.add_button)
+        layout.addWidget(self.reset_button)
+
+        self.add_button.clicked.connect(self.increment)
+        self.reset_button.clicked.connect(self.reset_count)
+
+    @Slot()
+    def increment(self):
+        self.count += 1
+        self.value_label.setText(str(self.count))
+
+    @Slot()
+    def reset_count(self):
+        self.count = 0
+        self.value_label.setText("0")
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = ResetCounter()
+    window.show()
+    raise SystemExit(app.exec())</code></pre></div></details><p><strong>自我验证：</strong>点击加一 3 次、重置 1 次、再加一 1 次；屏幕依次显示 3、0、1。</p></article>
+            <article class="practice-card" data-level="foundation" data-prerequisite="dialogs"><span class="number">4</span><h3>基础：取消时保留旧路径</h3><p><strong>前置课程：</strong><a href="#dialogs">对话框</a></p><p><strong>可见结果：</strong>选中图片后显示路径；第二次取消时仍保留原路径。</p><p><strong>限制条件：</strong>空路径不能触发读取或成功消息。</p><p><strong>提示：</strong>先处理 <code>if not path</code>，再更新标签。</p><details class="practice-answer"><summary>完整答案：可直接运行的程序</summary><div class="details-body"><pre><code data-python-example="practice-dialog-cancel">import sys
+
+from PySide6.QtCore import Slot
+from PySide6.QtWidgets import (
+    QApplication,
+    QFileDialog,
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
+
+class ImageChooser(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.path_label = QLabel("尚未选择图片")
+        self.choose_button = QPushButton("选择图片")
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.path_label)
+        layout.addWidget(self.choose_button)
+        self.choose_button.clicked.connect(self.choose_image)
+
+    @Slot()
+    def choose_image(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "选择图片", "", "图片 (*.png *.jpg);;所有文件 (*)"
+        )
+        if not path:
+            return
+        self.path_label.setText(path)
+        QMessageBox.information(self, "已选择", path)
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = ImageChooser()
+    window.show()
+    raise SystemExit(app.exec())</code></pre></div></details><p><strong>自我验证：</strong>选择一个文件并记住文字，再打开对话框按取消；文字不变且没有成功消息。</p></article>
+            <article class="practice-card" data-level="foundation" data-prerequisite="stacked-pages"><span class="number">5</span><h3>基础：加入第三个历史页面</h3><p><strong>前置课程：</strong><a href="#stacked-pages">多页面</a></p><p><strong>可见结果：</strong>第三个按钮切换到“历史页”，原两页仍能来回切换。</p><p><strong>限制条件：</strong>按钮顺序与页面索引保持一致。</p><p><strong>提示：</strong>第三个 <code>addWidget</code> 对应索引 2。</p><details class="practice-answer"><summary>完整答案：可直接运行的程序</summary><div class="details-body"><pre><code data-python-example="practice-stacked-history">import sys
+
+from PySide6.QtCore import Slot
+from PySide6.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QStackedWidget,
+    QVBoxLayout,
+    QWidget,
+)
+
+class HistoryPageWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.pages = QStackedWidget()
+        self.pages.addWidget(QLabel("概览页"))
+        self.pages.addWidget(QLabel("设置页"))
+        self.pages.addWidget(QLabel("历史页：暂无记录"))
+
+        self.overview_button = QPushButton("概览")
+        self.settings_button = QPushButton("设置")
+        self.history_button = QPushButton("历史")
+        self.navigation = QHBoxLayout()
+        self.navigation.addWidget(self.overview_button)
+        self.navigation.addWidget(self.settings_button)
+        self.navigation.addWidget(self.history_button)
+
+        layout = QVBoxLayout(self)
+        layout.addLayout(self.navigation)
+        layout.addWidget(self.pages)
+        self.overview_button.clicked.connect(self.show_overview)
+        self.settings_button.clicked.connect(self.show_settings)
+        self.history_button.clicked.connect(self.show_history)
+
+    @Slot()
+    def show_overview(self):
+        self.pages.setCurrentIndex(0)
+
+    @Slot()
+    def show_settings(self):
+        self.pages.setCurrentIndex(1)
+
+    @Slot()
+    def show_history(self):
+        self.pages.setCurrentIndex(2)
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = HistoryPageWindow()
+    window.show()
+    raise SystemExit(app.exec())</code></pre></div></details><p><strong>自我验证：</strong>依次点击概览、设置、历史、概览；每次标题都与按钮一致。</p></article>
+            <article class="practice-card" data-level="foundation" data-prerequisite="qss"><span class="number">6</span><h3>基础：成功状态不只靠绿色</h3><p><strong>前置课程：</strong><a href="#qss">QSS</a></p><p><strong>可见结果：</strong>成功时标签变色且明确显示“已完成”。</p><p><strong>限制条件：</strong>业务状态由 Python 设置；QSS 只改变呈现。</p><p><strong>提示：</strong>动态属性变化后重新 polish。</p><details class="practice-answer"><summary>完整答案：可直接运行的程序</summary><div class="details-body"><pre><code data-python-example="practice-qss-success">import sys
+
+from PySide6.QtCore import Slot
+from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QVBoxLayout, QWidget
+
+STYLE = """
+QLabel[severity="success"] {
+    color: #27823a;
+    font-weight: bold;
+}
+"""
+
+class SuccessStatusWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.status_label = QLabel("尚未完成")
+        self.success_button = QPushButton("标记成功")
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.status_label)
+        layout.addWidget(self.success_button)
+        self.setStyleSheet(STYLE)
+        self.success_button.clicked.connect(self.show_success)
+
+    @Slot()
+    def show_success(self):
+        self.status_label.setProperty("severity", "success")
+        self.status_label.setText("已完成")
+        self.status_label.style().unpolish(self.status_label)
+        self.status_label.style().polish(self.status_label)
+        self.status_label.update()
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = SuccessStatusWindow()
+    window.show()
+    raise SystemExit(app.exec())</code></pre></div></details><p><strong>自我验证：</strong>临时用灰度模式查看页面；即使看不出颜色，也能从“已完成”理解状态。</p></article>
+            <article class="practice-card" data-level="foundation" data-prerequisite="threading"><span class="number">7</span><h3>基础进阶：失败也要恢复按钮</h3><p><strong>前置课程：</strong><a href="#threading">线程</a></p><p><strong>可见结果：</strong>后台任务成功或失败后，“开始”按钮都会恢复。</p><p><strong>限制条件：</strong><code>run()</code> 不访问 QWidget；收尾信号必须位于 <code>finally</code>。</p><p><strong>提示：</strong>结果、错误、完成使用三个独立信号。</p><details class="practice-answer"><summary>完整答案：可直接运行的程序</summary><div class="details-body"><pre><code data-python-example="practice-thread-finish">import sys
+
+from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal, Slot
+from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QVBoxLayout, QWidget
+
+class DemoService:
+    def diagnose(self, filename):
+        if not filename:
+            raise ValueError("文件名不能为空")
+        return f"已处理：{filename}"
+
+class TaskSignals(QObject):
+    result = Signal(str)
+    error = Signal(str)
+    finished = Signal()
+
+class DiagnosisTask(QRunnable):
+    def __init__(self, service, filename):
+        super().__init__()
+        self.service = service
+        self.filename = filename
+        self.signals = TaskSignals()
+
+    @Slot()
+    def run(self):
+        try:
+            result = self.service.diagnose(self.filename)
+            self.signals.result.emit(result)
+        except Exception as error:
+            self.signals.error.emit(str(error))
+        finally:
+            self.signals.finished.emit()
+
+class TaskWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.service = DemoService()
+        self.pool = QThreadPool.globalInstance()
+        self.active_task = None
+        self.filename = "sample.txt"
+        self.status_label = QLabel("就绪")
+        self.start_button = QPushButton("开始")
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.status_label)
+        layout.addWidget(self.start_button)
+        self.start_button.clicked.connect(self.start_task)
+
+    @Slot()
+    def start_task(self):
+        self.start_button.setEnabled(False)
+        task = DiagnosisTask(self.service, self.filename)
+        task.signals.result.connect(self.status_label.setText)
+        task.signals.error.connect(self.status_label.setText)
+        task.signals.finished.connect(self.finish_task)
+        self.active_task = task
+        self.pool.start(task)
+
+    @Slot()
+    def finish_task(self):
+        self.start_button.setEnabled(True)
+        self.active_task = None
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = TaskWindow()
+    window.show()
+    raise SystemExit(app.exec())</code></pre></div></details><p><strong>自我验证：</strong>先使用 <code>sample.txt</code>，再把 <code>self.filename</code> 临时改为空字符串；两次结束后按钮都可再次点击，界面始终能拖动。</p></article>
+            <article class="practice-card" data-level="project" data-prerequisite="sdk"><span class="number">8</span><h3>项目：用 SDK 输出可审计摘要</h3><p><strong>前置课程：</strong><a href="#sdk">SDK</a></p><p><strong>可见结果：</strong>普通 Python 脚本输出标签、置信度、模型版本和输入来源。</p><p><strong>限制条件：</strong>不导入 PySide6，不直接构造内部模型类。</p><p><strong>提示：</strong>只从包顶层导入 <code>DiagnosisEngine</code>。</p><details class="practice-answer"><summary>完整答案：在项目根目录运行</summary><div class="details-body"><pre><code data-python-example="practice-sdk-summary">from pathlib import Path
+
+from pd_diagnosis import DiagnosisEngine
+
+def main():
+    engine = DiagnosisEngine.from_bundle(Path("models/default"), device="auto")
+    result = engine.diagnose_file(Path("data/test/金属突出物缺陷/a1.txt"))
+    print("label:", result.label)
+    print("confidence:", result.confidence)
+    print("model_version:", result.model_version)
+    print("source_id:", result.source_id)
+
+if __name__ == "__main__":
+    main()</code></pre></div></details><p><strong>自我验证：</strong>运行脚本；四个字段都有值，且文件中没有 <code>PySide6</code> 或 <code>MainWindow</code>。</p></article>
+            <article class="practice-card" data-level="project" data-prerequisite="flows"><span class="number">9</span><h3>项目：画出单文件诊断链</h3><p><strong>前置课程：</strong><a href="#flows">单文件诊断链</a></p><p><strong>可见结果：</strong>得到一张标出 GUI/工作线程边界和错误出口的调用图。</p><p><strong>限制条件：</strong>必须写精确文件与方法名，不能只写“UI → 模型”。</p><p><strong>提示：</strong>从 <code>start_single_diagnosis()</code> 开始，沿 worker、service、engine 再回到三个 GUI 槽。</p><details class="practice-answer"><summary>完整答案</summary><div class="details-body"><p><code>MainWindow.start_single_diagnosis()</code>（GUI）→ <code>SingleDiagnosisTask.run()</code>（工作线程）→ <code>DiagnosisService.diagnose()</code> → <code>DiagnosisEngine.diagnose()</code> → <code>TaskSignals.result/error/finished</code> → <code>_show_single_result() / _show_single_error() / _finish_single()</code>（GUI）。文件读取、推理和保存留在工作线程；所有 QWidget 更新留在 GUI 主线程。</p></div></details><p><strong>自我验证：</strong>逐项在源码课堂找到这些名字；给每条箭头标注输入输出，并确认错误和成功都经过 <code>finished</code> 收尾。</p></article>
           </div>
-          <h3>推荐的源码阅读任务</h3>
+          <h3>完成练习后的源码阅读任务</h3>
           <ul class="checklist">
             <li>在 <code>ui/app.py</code> 中找出 QApplication 创建和事件循环开始的位置。</li>
             <li>在 <code>workers.py</code> 中标出哪些代码运行在工作线程、哪些槽回到主线程。</li>
@@ -1901,53 +2416,51 @@ mypy src/pd_diagnosis</code></pre></div>
 
         <section class="chapter" id="quiz" data-title="自测">
           <span class="chapter-kicker">Chapter 10</span>
-          <h2>5 题自测：你是否建立了工程思维？</h2>
+          <h2>12 题自测：从窗口到真实项目</h2>
+          <p class="chapter-intro">每题只有一个正确答案。提交后会显示分数，并为每道错题给出解释和直接复习链接；不运行 JavaScript 时仍可展开题下答案解释静态复习。</p>
           <form id="quizForm">
-            <div class="quiz-question"><p>1. 用户点击按钮后，需要运行 5 秒的模型推理。应该放在哪里？</p><div class="options">
-              <label class="option"><input type="radio" name="q1" value="a"> 按钮的槽函数中直接运行</label>
-              <label class="option"><input type="radio" name="q1" value="b"> QRunnable 工作线程中，结果通过信号返回</label>
-              <label class="option"><input type="radio" name="q1" value="c"> QSS 文件中</label>
-            </div></div>
-            <div class="quiz-question"><p>2. 哪个类最适合作为外部脚本的诊断入口？</p><div class="options">
-              <label class="option"><input type="radio" name="q2" value="a"> MainWindow</label>
-              <label class="option"><input type="radio" name="q2" value="b"> ClassificationModel</label>
-              <label class="option"><input type="radio" name="q2" value="c"> DiagnosisEngine</label>
-            </div></div>
-            <div class="quiz-question"><p>3. Qt 中 <code>clicked.connect(self.run)</code> 为什么不写括号？</p><div class="options">
-              <label class="option"><input type="radio" name="q3" value="a"> 要传递函数对象，等信号发生时再调用</label>
-              <label class="option"><input type="radio" name="q3" value="b"> PySide6 不支持函数参数</label>
-              <label class="option"><input type="radio" name="q3" value="c"> 括号只能在线程中使用</label>
-            </div></div>
-            <div class="quiz-question"><p>4. 修改了特征顺序，但沿用旧模型和 scaler，最大风险是什么？</p><div class="options">
-              <label class="option"><input type="radio" name="q4" value="a"> 只是界面颜色变化</label>
-              <label class="option"><input type="radio" name="q4" value="b"> 预测含义错位，可能静默地产生错误结果</label>
-              <label class="option"><input type="radio" name="q4" value="c"> Python 自动重新训练模型</label>
-            </div></div>
-            <div class="quiz-question"><p>5. DiagnosisService 相比 DiagnosisEngine 多负责什么？</p><div class="options">
-              <label class="option"><input type="radio" name="q5" value="a"> 绘制按钮</label>
-              <label class="option"><input type="radio" name="q5" value="b"> 定义神经网络</label>
-              <label class="option"><input type="radio" name="q5" value="c"> 编排诊断并保存成功或错误历史</label>
-            </div></div>
-            <button class="button primary" type="submit">提交答案</button>
-            <button class="button" type="reset">重新作答</button>
-            <div class="quiz-result" id="quizResult" role="status" aria-live="polite">完成后点击“提交答案”。</div>
+            <fieldset class="quiz-question" data-answer="b" data-review-section="event-loop"><legend>1. <code>application.exec()</code> 的主要职责是什么？</legend><div class="options"><label class="option"><input type="radio" name="q1" value="a" required> 创建每一个 QWidget</label><label class="option"><input type="radio" name="q1" value="b"> 启动事件循环，持续分发输入、计时器和重绘事件</label><label class="option"><input type="radio" name="q1" value="c"> 自动把耗时任务移到后台</label></div><details class="quiz-answer"><summary>答案解释</summary><div class="details-body"><p class="answer-explanation"><code>exec()</code> 让 Qt 持续等待并分发事件；它不会自动创建控件，也不会自动迁移耗时工作。</p><a class="review-link" href="#event-loop">复习：事件循环</a></div></details></fieldset>
+            <fieldset class="quiz-question" data-answer="a" data-review-section="main-window-basics"><legend>2. 哪种写法最能保证子控件随窗口一起清理？</legend><div class="options"><label class="option"><input type="radio" name="q2" value="a" required> 把窗口或其中央控件作为父对象</label><label class="option"><input type="radio" name="q2" value="b"> 只把控件名称写进字符串</label><label class="option"><input type="radio" name="q2" value="c"> 每次点击都重新创建 QApplication</label></div><details class="quiz-answer"><summary>答案解释</summary><div class="details-body"><p class="answer-explanation">Qt 父子所有权会让父对象销毁时清理子对象；顶层窗口还需要 Python 引用保持存活。</p><a class="review-link" href="#main-window-basics">复习：主窗口与所有权</a></div></details></fieldset>
+            <fieldset class="quiz-question" data-answer="c" data-review-section="layouts"><legend>3. 为什么表单应使用布局而不是固定坐标？</legend><div class="options"><label class="option"><input type="radio" name="q3" value="a" required> 布局能让 Python 自动训练模型</label><label class="option"><input type="radio" name="q3" value="b"> 固定坐标不能创建按钮</label><label class="option"><input type="radio" name="q3" value="c"> 布局会随窗口、字体和文字长度重新分配空间</label></div><details class="quiz-answer"><summary>答案解释</summary><div class="details-body"><p class="answer-explanation">布局拥有几何管理权，会响应缩放和文本变化；固定坐标很容易重叠或裁切。</p><a class="review-link" href="#layouts">复习：布局</a></div></details></fieldset>
+            <fieldset class="quiz-question" data-answer="a" data-review-section="signals-slots"><legend>4. <code>clicked.connect(self.run)</code> 为什么不写括号？</legend><div class="options"><label class="option"><input type="radio" name="q4" value="a" required> 传递函数对象，等信号发出时再调用</label><label class="option"><input type="radio" name="q4" value="b"> PySide6 不支持带括号的方法</label><label class="option"><input type="radio" name="q4" value="c"> 括号只能在工作线程使用</label></div><details class="quiz-answer"><summary>答案解释</summary><div class="details-body"><p class="answer-explanation">连接需要保存可稍后调用的槽；写 <code>self.run()</code> 会在连接阶段立即执行，并把返回值交给 connect。</p><a class="review-link" href="#signals-slots">复习：信号与槽</a></div></details></fieldset>
+            <fieldset class="quiz-question" data-answer="b" data-review-section="main-window-basics"><legend>5. <code>QMainWindow</code> 应怎样安装主要内容？</legend><div class="options"><label class="option"><input type="radio" name="q5" value="a" required> 直接给 QMainWindow 设置 QVBoxLayout</label><label class="option"><input type="radio" name="q5" value="b"> 创建中央 QWidget，再调用 <code>setCentralWidget()</code></label><label class="option"><input type="radio" name="q5" value="c"> 把所有控件放进 QMessageBox</label></div><details class="quiz-answer"><summary>答案解释</summary><div class="details-body"><p class="answer-explanation"><code>QMainWindow</code> 自带菜单、工具栏、状态栏等结构，普通内容应放进中央控件。</p><a class="review-link" href="#main-window-basics">复习：QMainWindow</a></div></details></fieldset>
+            <fieldset class="quiz-question" data-answer="c" data-review-section="dialogs"><legend>6. 文件对话框返回空路径时应怎样处理？</legend><div class="options"><label class="option"><input type="radio" name="q6" value="a" required> 仍读取空路径以便抛错</label><label class="option"><input type="radio" name="q6" value="b"> 显示“选择成功”再返回</label><label class="option"><input type="radio" name="q6" value="c"> 把它视为取消，不读取文件也不覆盖旧选择</label></div><details class="quiz-answer"><summary>答案解释</summary><div class="details-body"><p class="answer-explanation">取消是正常分支；先检查空路径可以避免错误读取和误导性的成功消息。</p><a class="review-link" href="#dialogs">复习：对话框取消</a></div></details></fieldset>
+            <fieldset class="quiz-question" data-answer="a" data-review-section="stacked-pages"><legend>7. <code>QStackedWidget</code> 的页面索引由什么决定？</legend><div class="options"><label class="option"><input type="radio" name="q7" value="a" required> 页面加入堆叠控件的顺序</label><label class="option"><input type="radio" name="q7" value="b"> 页面标题的字母顺序</label><label class="option"><input type="radio" name="q7" value="c"> 当前主题是浅色还是深色</label></div><details class="quiz-answer"><summary>答案解释</summary><div class="details-body"><p class="answer-explanation">第一次 <code>addWidget</code> 得到索引 0，后续依次递增；导航项必须与这个顺序同步。</p><a class="review-link" href="#stacked-pages">复习：多页面</a></div></details></fieldset>
+            <fieldset class="quiz-question" data-answer="b" data-review-section="qss"><legend>8. QSS 最适合承担哪类职责？</legend><div class="options"><label class="option"><input type="radio" name="q8" value="a" required> 读取文件和运行模型</label><label class="option"><input type="radio" name="q8" value="b"> 根据类型、对象名、状态或属性统一控件外观</label><label class="option"><input type="radio" name="q8" value="c"> 把历史写入 SQLite</label></div><details class="quiz-answer"><summary>答案解释</summary><div class="details-body"><p class="answer-explanation">QSS 管呈现；诊断、存储和状态变更属于 Python 业务逻辑，状态也不能只靠颜色表达。</p><a class="review-link" href="#qss">复习：QSS 边界</a></div></details></fieldset>
+            <fieldset class="quiz-question" data-answer="c" data-review-section="threading"><legend>9. 用户点击后要运行 5 秒推理，正确做法是什么？</legend><div class="options"><label class="option"><input type="radio" name="q9" value="a" required> 在按钮槽里直接运行并 sleep</label><label class="option"><input type="radio" name="q9" value="b"> 在 QSS 文件中运行</label><label class="option"><input type="radio" name="q9" value="c"> 在线程池工作者中运行，用信号把数据送回 GUI 主线程</label></div><details class="quiz-answer"><summary>答案解释</summary><div class="details-body"><p class="answer-explanation">耗时工作离开 GUI 主线程才能保持响应；工作者不碰 QWidget，结果、错误和完成都通过信号返回。</p><a class="review-link" href="#threading">复习：线程与工作者</a></div></details></fieldset>
+            <fieldset class="quiz-question" data-answer="a" data-review-section="sdk"><legend>10. 外部脚本最合适的稳定诊断入口是什么？</legend><div class="options"><label class="option"><input type="radio" name="q10" value="a" required> <code>DiagnosisEngine</code></label><label class="option"><input type="radio" name="q10" value="b"> <code>MainWindow</code></label><label class="option"><input type="radio" name="q10" value="c"> <code>ClassificationModel</code> 的内部层</label></div><details class="quiz-answer"><summary>答案解释</summary><div class="details-body"><p class="answer-explanation"><code>DiagnosisEngine</code> 是不依赖 UI 的 SDK 门面，隐藏模型加载、特征与推理内部步骤。</p><a class="review-link" href="#sdk">复习：SDK 入口</a></div></details></fieldset>
+            <fieldset class="quiz-question" data-answer="b" data-review-section="architecture"><legend>11. <code>DiagnosisService</code> 比 <code>DiagnosisEngine</code> 多负责什么？</legend><div class="options"><label class="option"><input type="radio" name="q11" value="a" required> 绘制按钮和图表</label><label class="option"><input type="radio" name="q11" value="b"> 编排诊断与可选历史保存，并落实持久化错误策略</label><label class="option"><input type="radio" name="q11" value="c"> 定义 QSS 选择器</label></div><details class="quiz-answer"><summary>答案解释</summary><div class="details-body"><p class="answer-explanation">Engine 负责纯诊断；Service 组合 Engine 与 Repository，形成一次带业务保存策略的动作。</p><a class="review-link" href="#architecture">复习：Service 分层</a></div></details></fieldset>
+            <fieldset class="quiz-question" data-answer="c" data-review-section="hardening"><legend>12. 修改特征顺序却沿用旧模型和 scaler，最大风险是什么？</legend><div class="options"><label class="option"><input type="radio" name="q12" value="a" required> 只会改变按钮颜色</label><label class="option"><input type="radio" name="q12" value="b"> Python 会自动重新训练</label><label class="option"><input type="radio" name="q12" value="c"> 输入语义错位，可能静默产生错误预测</label></div><details class="quiz-answer"><summary>答案解释</summary><div class="details-body"><p class="answer-explanation">模型、scaler、特征名称、顺序和 schema 是同一兼容性契约；只改一端可能数值形状仍正确但含义已错。</p><a class="review-link" href="#hardening">复习：模型兼容性</a></div></details></fieldset>
+            <div class="quiz-actions"><button class="button primary" type="submit">提交答案</button><button class="button" type="reset">重新作答</button></div>
+            <div class="quiz-result" id="quizResult" role="status" aria-live="polite" tabindex="-1">完成后点击“提交答案”。</div>
           </form>
         </section>
 
         <section class="chapter" id="glossary" data-title="术语表">
           <span class="chapter-kicker">Reference</span>
-          <h2>常用术语速查</h2>
-          <div class="table-wrap"><table class="compare"><thead><tr><th>术语</th><th>含义</th></tr></thead><tbody>
-            <tr><td>事件循环</td><td>持续接收和分发鼠标、键盘、重绘、定时器等事件的循环。</td></tr>
-            <tr><td>信号 / 槽</td><td>对象之间低耦合的通知机制；信号发生，已连接的槽被调用。</td></tr>
-            <tr><td>主线程 / GUI 线程</td><td>创建 QApplication 和 QWidget 的线程；所有控件更新都应在这里。</td></tr>
-            <tr><td>依赖注入</td><td>从外部把 service、repository 等对象交给窗口，而不是窗口内部硬编码创建。</td></tr>
-            <tr><td>门面（Facade）</td><td>用一个简单入口隐藏多个内部步骤；<code>DiagnosisEngine</code> 就是诊断门面。</td></tr>
-            <tr><td>数据契约</td><td>模块之间约定的输入输出结构，如 <code>Signal</code> 与 <code>DiagnosisResult</code>。</td></tr>
-            <tr><td>持久化</td><td>把内存数据保存到数据库或文件，使程序重启后仍存在。</td></tr>
-            <tr><td>模型 bundle</td><td>可共同验证和版本化的模型清单、权重、标准化参数等产物集合。</td></tr>
-            <tr><td>可编辑安装</td><td><code>pip install -e .</code>，安装包指向当前源码，适合开发。</td></tr>
-            <tr><td>回归测试</td><td>确认新改动没有破坏原本已经正确的行为。</td></tr>
+          <h2>20 个核心术语速查</h2>
+          <p class="chapter-intro">正文第一次解释这些概念时会链接到这里；每条定义也提供返回课程的链接。</p>
+          <div class="table-wrap"><table class="compare"><thead><tr><th>术语</th><th>初学者定义与回看</th></tr></thead><tbody>
+            <tr><td><dfn id="term-binding">绑定（binding）</dfn></td><td>把一种语言的 API 暴露给另一种语言使用的桥。PySide6 让 Python 对象调用底层 Qt。<br><a class="glossary-backlink" href="#pyside-intro">回看：认识 PySide6</a></td></tr>
+            <tr><td><dfn id="term-widget">控件（widget）</dfn></td><td>可显示内容或接收交互的界面对象，例如标签、输入框和按钮；多数继承 <code>QWidget</code>。<br><a class="glossary-backlink" href="#widgets">回看：控件</a></td></tr>
+            <tr><td><dfn id="term-parent-child">父对象 / 子对象</dfn></td><td>Qt 的对象所有权关系。父对象销毁时会清理子对象；顶层窗口仍需 Python 引用保活。<br><a class="glossary-backlink" href="#main-window-basics">回看：主窗口所有权</a></td></tr>
+            <tr><td><dfn id="term-layout">布局（layout）</dfn></td><td>按规则为子控件分配位置和大小的几何管理器，会响应窗口缩放、字体和文字变化。<br><a class="glossary-backlink" href="#layouts">回看：布局</a></td></tr>
+            <tr><td><dfn id="term-event">事件（event）</dfn></td><td>一次等待处理的输入或系统通知，例如点击、按键、定时器到期或重绘请求。<br><a class="glossary-backlink" href="#event-loop">回看：事件循环</a></td></tr>
+            <tr><td><dfn id="term-event-loop">事件循环（event loop）</dfn></td><td>持续等待事件并把它们分发给相应对象的循环，由 <code>application.exec()</code> 启动。<br><a class="glossary-backlink" href="#event-loop">回看：事件循环</a></td></tr>
+            <tr><td><dfn id="term-signal">信号（signal）</dfn></td><td>Qt 对象发出的“发生了什么”通知，可以连接一个或多个槽。<br><a class="glossary-backlink" href="#signals-slots">回看：信号与槽</a></td></tr>
+            <tr><td><dfn id="term-slot">槽（slot）</dfn></td><td>信号发出后由 Qt 调用的方法；通常读取状态、调用业务能力或更新界面。<br><a class="glossary-backlink" href="#signals-slots">回看：信号与槽</a></td></tr>
+            <tr><td><dfn id="term-callback">回调（callback）</dfn></td><td>先交给系统保存、等未来事件发生再调用的函数或方法对象。<br><a class="glossary-backlink" href="#signals-slots">回看：信号连接</a></td></tr>
+            <tr><td><dfn id="term-main-thread">GUI 主线程</dfn></td><td>创建 QApplication 和 QWidget 的线程；所有控件读取与更新都应回到这里。<br><a class="glossary-backlink" href="#threading">回看：线程边界</a></td></tr>
+            <tr><td><dfn id="term-worker">工作者（worker）</dfn></td><td>在后台执行读取、计算或推理的任务对象；只传普通数据，不直接访问 QWidget。<br><a class="glossary-backlink" href="#threading">回看：工作者</a></td></tr>
+            <tr><td><dfn id="term-thread-pool">线程池（thread pool）</dfn></td><td>复用有限工作线程并调度多个任务的组件；Qt 中常用 <code>QThreadPool</code>。<br><a class="glossary-backlink" href="#threading">回看：线程池</a></td></tr>
+            <tr><td><dfn id="term-modal-dialog">模态对话框</dfn></td><td>要求用户先完成或取消当前对话，才能继续操作父窗口的临时界面。<br><a class="glossary-backlink" href="#dialogs">回看：对话框</a></td></tr>
+            <tr><td><dfn id="term-qss">QSS</dfn></td><td>Qt Widgets 的样式表语言，用选择器统一控件外观；不负责业务状态或持久化。<br><a class="glossary-backlink" href="#qss">回看：QSS</a></td></tr>
+            <tr><td><dfn id="term-sdk">SDK</dfn></td><td>给其他程序调用的一组稳定 API、类型、错误和文档；本项目入口是 <code>DiagnosisEngine</code>。<br><a class="glossary-backlink" href="#sdk">回看：SDK</a></td></tr>
+            <tr><td><dfn id="term-service">Service</dfn></td><td>编排一次业务动作的应用层对象；这里组合诊断引擎与可选历史保存。<br><a class="glossary-backlink" href="#architecture">回看：项目分层</a></td></tr>
+            <tr><td><dfn id="term-dependency-injection">依赖注入</dfn></td><td>从外部把 Service、Repository 等对象交给窗口，而不是让窗口内部硬编码创建。<br><a class="glossary-backlink" href="#architecture">回看：依赖方向</a></td></tr>
+            <tr><td><dfn id="term-persistence">持久化</dfn></td><td>把内存数据写入数据库或文件，使进程结束后仍可读取。<br><a class="glossary-backlink" href="#hardening">回看：可靠性边界</a></td></tr>
+            <tr><td><dfn id="term-bundle">模型 bundle</dfn></td><td>共同验证和版本化的模型清单、权重、标准化参数与兼容性信息。<br><a class="glossary-backlink" href="#sdk">回看：SDK 与模型包</a></td></tr>
+            <tr><td><dfn id="term-immutable-snapshot">不可变快照</dfn></td><td>把某次输入和结果绑定后跨线程传递，不重读已变化的界面状态。<code>frozen=True</code> 只限制字段重绑定；本项目还复制 NumPy 波形并设为只读，才隔离其可变内容。<br><a class="glossary-backlink" href="#flows">回看：单文件诊断链</a></td></tr>
           </tbody></table></div>
           <div class="callout"><strong>你接下来最值得做的事</strong>先运行应用，再分别打开 <code>ui/app.py</code>、<code>ui/workers.py</code> 和 <code>engine.py</code>，沿着一次按钮点击画出调用箭头。能画清这条线，你就已经从“会语法”跨到了“懂工程”。</div>
         </section>
@@ -1975,7 +2488,7 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"入口与配置", path:"src/pd_diagnosis/__init__.py", lines:27,
+        group:"入口与配置", path:"src/pd_diagnosis/__init__.py", lines:29,
         level:"项目必学", prerequisites:"第 1 课：模块与属性；第 13 课：SDK。", firstRead:"先看 __all__，理解哪些名字是项目承诺的公共入口。", skipOnFirstPass:"重导出清单的每个名字不必第一次就背下来。",
         role:"稳定 SDK 的顶层橱窗；控制 from pd_diagnosis import ... 能看到什么。", depends:"engine、errors、types", usedBy:"README 示例、外部脚本、测试夹具",
         parts:[
@@ -1995,7 +2508,7 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"核心 SDK", path:"src/pd_diagnosis/errors.py", lines:10,
+        group:"核心 SDK", path:"src/pd_diagnosis/errors.py", lines:14,
         level:"项目必学", prerequisites:"会读 class 继承；第 13 课：SDK 边界。", firstRead:"先记住所有业务错误都继承 DiagnosisError，UI 可统一捕获。", skipOnFirstPass:"每个空异常类的命名差异不必背诵。",
         role:"定义 SDK 可识别的异常层次，让调用者按错误类别处理。", depends:"Python Exception、ValueError", usedBy:"signal_io、features、bundle、engine、service、UI",
         parts:[
@@ -2006,7 +2519,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"核心 SDK", path:"src/pd_diagnosis/types.py", lines:61,
-        level:"项目必学", prerequisites:"第 4 课：控件状态；会读 dataclass 与类型标注。", firstRead:"先分清 Signal、DiagnosisResult 和 BatchDiagnosisResult 各自跨哪一层传递。", skipOnFirstPass:"slots、UTC 默认工厂和批量 cancelled 字段可第二遍细看。",
+        level:"项目必学", prerequisites:"第 4 课：控件状态；会读 dataclass 与类型标注。", firstRead:"先分清 Signal、DiagnosisResult 和 BatchDiagnosisResult 各自跨哪一层传递。", skipOnFirstPass:"slots、UTC 默认工厂和批量条目的 result/error 互斥不变量可第二遍细看。",
         role:"定义模块之间交换的数据结构，也就是 SDK 的输入输出契约。", depends:"dataclasses、datetime、uuid、typing", usedBy:"engine、service、storage、workers、UI、外部脚本",
         parts:[
           {range:"1–8",title:"类型所需导入",code:`from dataclasses import dataclass, field\nfrom datetime import datetime, timezone\nfrom typing import Mapping, Sequence`,explain:"Sequence 接受 list、tuple、NumPy 数组等序列；Mapping 表示只依赖键值映射行为；field 用于每个实例动态生成 UUID/时间。",why:"使用抽象协议而非具体 list/dict，让 API 更灵活。",risk:"Sequence 只是类型提示，真正的数值和维度校验仍由 features.py 完成。"},
@@ -2034,7 +2547,7 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"核心 SDK", path:"src/pd_diagnosis/signal_io.py", lines:32,
+        group:"核心 SDK", path:"src/pd_diagnosis/signal_io.py", lines:34,
         level:"项目必学", prerequisites:"第 8 课：文件对话框；先读 Signal 数据契约。", firstRead:"沿 Path.read_text → token 解析 → float32 数组追踪一份 TXT。", skipOnFirstPass:"编码异常与坏 token 的全部错误消息可第二遍再看。",
         role:"把正式 TXT 文件解析成 float32 一维数组，并给出精确错误位置。", depends:"pathlib、NumPy、公共错误与 Pathish", usedBy:"engine.diagnose_file、training、UI 图表加载、测试",
         parts:[
@@ -2056,23 +2569,20 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"核心 SDK", path:"src/pd_diagnosis/bundle.py", lines:106,
+        group:"核心 SDK", path:"src/pd_diagnosis/bundle.py", lines:204,
         level:"进阶选学", prerequisites:"先读 engine.py、model.py 与 manifest.json；理解哈希用途。", firstRead:"先画出 manifest → 校验工件 → 构造模型与 scaler 的顺序。", skipOnFirstPass:"每个兼容性错误分支和 NumPy dtype 校验可第二遍再读。",
-        role:"加载模型目录并验证清单、哈希、特征、类别和标准化参数兼容性。", depends:"hashlib、json、NumPy、features 契约", usedBy:"DiagnosisEngine.from_bundle、migration/training 的格式规范",
+        role:"由 ModelBundle.load 加载模型目录；严格验证清单字段、架构、特征契约、类别、哈希和 scaler。", depends:"json、math、re、NumPy、artifacts.resolve_bundle_artifact/sha256_file、features/types 契约", usedBy:"DiagnosisEngine.from_bundle；migration/training 写入相同格式",
         parts:[
-          {range:"1–14",title:"安全加载所需导入",code:`import hashlib, json\nimport numpy as np\nfrom .features import FEATURE_NAMES, FEATURE_SCHEMA`,explain:"JSON 读取可审计清单；SHA-256 检查文件完整性；np.load 读取不执行代码的 scaler 参数。",why:"模型是代码运行前的外部工件，必须把兼容性检查集中在入口。",risk:"不要用 allow_pickle=True 读取不可信模型参数。"},
-          {range:"16–20",title:"ClassDefinition",code:`@dataclass(frozen=True, slots=True)\nclass ClassDefinition:\n    id: int\n    name: str`,explain:"把类别 ID 与显示名称绑定为不可变对象。ID 对应神经网络输出列。",why:"比在不同地方维护两个列表更不易错位。",risk:"ID 顺序不能脱离模型输出含义。"},
-          {range:"22–33",title:"ModelBundle 数据对象",code:`class ModelBundle:\n    root: Path\n    model_version: str\n    ...\n    scaler_mean: np.ndarray\n    scaler_scale: np.ndarray`,explain:"加载成功后，把清单元数据、工件路径和 scaler 数组集中保存。engine 不再重复打开 manifest。",why:"一次验证，后续使用强类型属性。",risk:"dataclass frozen 不能阻止 NumPy 数组内容被原地修改；内部代码应把它当只读。"},
-          {range:"36–47",title:"定位并解析 manifest",code:`root = Path(path).expanduser().resolve()\nmanifest_path = root / "manifest.json"\nmanifest = json.loads(manifest_path.read_text(encoding="utf-8"))`,explain:"expanduser 展开用户目录写法，resolve 得到绝对路径。缺文件、JSON 语法错和 I/O 错都转成 ArtifactCompatibilityError。",why:"调用者得到统一且有上下文的模型错误。",risk:"JSON 能解析不代表字段正确，后面仍需逐项验证。"},
-          {range:"49–58",title:"schema 与特征检查",code:`if manifest.get("schema_version") != 1: ...\nif manifest.get("feature_schema") != FEATURE_SCHEMA: ...\nif manifest.get("feature_names") != list(FEATURE_NAMES): ...`,explain:"格式版本控制 manifest 结构；feature_schema 控制公式语义；feature_names 进一步检查确切顺序。",why:"阻止权重与错误特征组合产生看似正常的预测。",risk:"不能为了“先跑起来”而跳过检查。"},
-          {range:"60–70",title:"工件路径与 SHA-256",code:`for artifact, expected_hash in ((weights_path,...),(scaler_path,...)):\n    if not artifact.is_file(): ...\n    if expected_hash and _sha256(artifact) != expected_hash: ...`,explain:"根据清单定位权重/scaler，先查存在，再在清单提供哈希时验证内容。",why:"可发现复制损坏、版本混放或文件被替换。",risk:"哈希保证完整性，不等同于来源可信或数字签名。"},
-          {range:"72–84",title:"安全读取 scaler",code:`with np.load(scaler_path, allow_pickle=False) as scaler:\n    mean = np.asarray(scaler["mean"], dtype=np.float64)\n    scale = np.asarray(scaler["scale"], dtype=np.float64)`,explain:"只允许 NumPy 数组，不允许 pickle 对象；随后验证形状、零 scale、NaN 和无穷。",why:"标准化除以 scale，零或坏值会污染全部推理。",risk:"mean/scale 必须来自训练集拟合，不能用测试集重新计算。"},
-          {range:"86–96",title:"类别解析与连续 ID",code:`classes = tuple(ClassDefinition(...) for item in manifest["classes"])\nif [item.id for item in classes] != list(range(len(classes))): ...`,explain:"把 JSON 字段显式转成 int/str，并要求 ID 是 0..N-1，正好对应 logits 下标。",why:"engine 可以直接用 argmax 下标访问类别。",risk:"重新排序类别但不重新训练会把预测标签整体错配。"},
-          {range:"98–106",title:"返回对象与哈希函数",code:`return cls(root=root, model_version=..., scaler_mean=mean, ...)\n\ndef _sha256(path):\n    for chunk in iter(lambda: stream.read(1024 * 1024), b"")`,explain:"验证全部通过后才构造 ModelBundle。哈希按 1 MiB 分块读取，避免大权重一次全部进内存。",why:"失败不返回半有效对象；分块算法适合大文件。",risk:"_sha256 以前导下划线标为内部函数，外部代码不应依赖其稳定性。"}
+          {range:"1–18",title:"导入与顶层契约",code:`from .artifacts import resolve_bundle_artifact, sha256_file\nSUPPORTED_ARCHITECTURE = "classification-mlp-v1"\nSHA256_PATTERN = re.compile(...)`,explain:"路径限定与流式哈希复用 artifacts.py；本文件定义可接受的网络架构和 64 位 SHA-256 形式。",why:"读写端共用安全工件边界，不在 bundle.py 重复哈希实现。",risk:"不能恢复任意绝对路径或可选哈希。"},
+          {range:"21–39",title:"加载后的类别与 bundle 对象",code:`ClassDefinition\nModelBundle\nscaler_mean: np.ndarray\nconfidence_warning_threshold: float`,explain:"两个 frozen dataclass 集中暴露已验证元数据；<code>frozen</code> 限制字段重绑定，不代表深度冻结 NumPy 数组。",why:"引擎不需重读 manifest。",risk:"调用者不应原地改 scaler 数组。"},
+          {range:"41–95",title:"ModelBundle.load 完整校验链",code:`ModelBundle.load\nSUPPORTED_ARCHITECTURE\nresolve_bundle_artifact(...)\n_verify_artifact(...)\n_load_scaler(...)`,explain:"先用强类型 helper 验证 schema、architecture、feature schema/name、采样率、最小点数、类别和置信阈值；再解析 bundle 内路径、强制哈希并加载 scaler，全部通过后才返回。",why:"失败不会暴露半有效对象。",risk:"任一验证放宽都可能把不匹配工件带入推理。"},
+          {range:"98–134",title:"清单与必填值 helper",code:`_read_manifest\n_required_string\n_required_integer\n_required_positive_integer\n_required_sha256`,explain:"把 JSON/I/O 错误统一为 ArtifactCompatibilityError，并显式拒绝空字符串、bool 假装整数、非正整数和非法哈希。",why:"每个字段的错误都可定位。",risk:"不要用宽泛的 int()/str() 静默矫正坏清单。"},
+          {range:"137–184",title:"工件、类别和阈值",code:`_verify_artifact\n_parse_classes\n_confidence_threshold`,explain:"_verify_artifact 强制文件存在并用 sha256_file 比较哈希；类别 ID 必须从 0 连续且名称唯一；阈值必须是 [0, 1] 内的有限数。",why:"权重列、显示标签和不确定性策略必须一致。",risk:"哈希保证完整性，不是来源签名。"},
+          {range:"187–204",title:"安全加载 scaler",code:`def _load_scaler(path):\n    with np.load(path, allow_pickle=False) as scaler:\n        ...`,explain:"禁用 pickle，然后校验 mean/scale 形状、有限性和 scale 全大于 0。",why:"标准化参数错一位也会使预测失真。",risk:"不要使用测试数据重新拟合 scaler。"}
         ]
       },
       {
-        group:"核心 SDK", path:"src/pd_diagnosis/engine.py", lines:124,
+        group:"核心 SDK", path:"src/pd_diagnosis/engine.py", lines:143,
         level:"项目必学", prerequisites:"第 13 课：SDK；先读 types.py、signal_io.py。", firstRead:"先追 diagnose：校验 → 特征 → 标准化 → 推理 → DiagnosisResult。", skipOnFirstPass:"设备选择、批量取消与概率字典细节可第二遍再看。",
         role:"线程安全、与 UI 无关的诊断门面；把模型加载、单次和批量推理封装为稳定 API。", depends:"bundle、features、model、signal_io、types、NumPy、Torch", usedBy:"脚本、Service、测试、未来其他前端",
         parts:[
@@ -2102,7 +2612,7 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"应用与存储", path:"src/pd_diagnosis/storage.py", lines:170,
+        group:"应用与存储", path:"src/pd_diagnosis/storage.py", lines:241,
         level:"进阶选学", prerequisites:"先读 service.py 与 DiagnosisResult；了解 SQL 基本增删查改。", firstRead:"先看建表、save_success 和 list_records 三个边界。", skipOnFirstPass:"WAL、分页搜索、JSON 反序列化与删除细节可后读。",
         role:"SQLite Repository：初始化 schema，并保存、查询、删除结构化诊断历史。", depends:"sqlite3、json、dataclass、types", usedBy:"DiagnosisService、MainWindow、测试",
         parts:[
@@ -2120,7 +2630,7 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"应用与存储", path:"src/pd_diagnosis/paths.py", lines:23,
+        group:"应用与存储", path:"src/pd_diagnosis/paths.py", lines:38,
         level:"进阶选学", prerequisites:"会使用 pathlib.Path；了解环境变量。", firstRead:"先看默认路径与三个 PD_DIAGNOSIS_* 覆盖入口。", skipOnFirstPass:"各操作系统用户数据目录的展开规则可按需查。",
         role:"集中决定用户数据与默认模型路径，并允许环境变量覆盖。", depends:"os、pathlib、platformdirs", usedBy:"ui.app",
         parts:[
@@ -2142,7 +2652,7 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"模型工具", path:"src/pd_diagnosis/migration.py", lines:94,
+        group:"模型工具", path:"src/pd_diagnosis/migration.py", lines:86,
         level:"进阶选学", prerequisites:"先读 bundle.py、manifest.json；理解 pickle 信任边界。", firstRead:"先看 --trusted 门槛与旧工件如何转换成安全模型包。", skipOnFirstPass:"命令行参数解析和文件写入顺序可后读。",
         role:"把可信的旧权重和 pickle scaler 一次性迁移为安全、版本化 bundle。", depends:"argparse、joblib 可选依赖、NumPy、hash/json/shutil", usedBy:"pd-migrate-model 命令、旧项目升级",
         parts:[
@@ -2164,7 +2674,7 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"模型工具", path:"src/pd_diagnosis/experimental/training.py", lines:178,
+        group:"模型工具", path:"src/pd_diagnosis/experimental/training.py", lines:179,
         level:"进阶选学", prerequisites:"先读 features.py、model.py、bundle.py；了解训练/验证/测试集。", firstRead:"先画数据加载 → 标准化 → 训练/早停 → 写 bundle 的流水线。", skipOnFirstPass:"优化器、每轮指标和取消清理的实现细节可后读。",
         role:"完整训练管线：读样本、提特征、分割、标准化、训练、早停、测试并输出新 bundle。", depends:"NumPy、Torch、scikit-learn 可选依赖、核心特征和模型", usedBy:"实验训练脚本/未来训练 UI",
         parts:[
@@ -2190,7 +2700,7 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"PySide6 UI", path:"src/pd_diagnosis/ui/app.py", lines:76,
+        group:"PySide6 UI", path:"src/pd_diagnosis/ui/app.py", lines:91,
         level:"项目必学", prerequisites:"第 2–3 课：QApplication 与事件循环；先读 launcher.py。", firstRead:"按 QApplication → service → MainWindow → exec 追踪启动链。", skipOnFirstPass:"启动页计时、字体候选和异常弹窗样式可第二遍再看。",
         role:"桌面应用组合根：创建 QApplication、设置本地化、加载模型/数据库、显示主窗口并进入事件循环。", depends:"PySide6、engine、paths、service、storage、theme", usedBy:"pd-diagnosis 命令、python -m pd_diagnosis",
         parts:[
@@ -2204,7 +2714,7 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"PySide6 UI", path:"src/pd_diagnosis/ui/theme.py", lines:133,
+        group:"PySide6 UI", path:"src/pd_diagnosis/ui/theme.py", lines:132,
         level:"进阶选学", prerequisites:"第 10 课：QSS；了解 QApplication 级样式。", firstRead:"先看 select_font 与 build_stylesheet 的输入输出。", skipOnFirstPass:"每个选择器、颜色 token 和控件状态可按需查阅。",
         role:"集中管理中文字体发现、浅深色 QSS 与 Matplotlib 语义色。", depends:"pathlib、QFontDatabase", usedBy:"ui.app、MainWindow、charts、UI smoke test",
         parts:[
@@ -2216,7 +2726,7 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"PySide6 UI", path:"src/pd_diagnosis/ui/charts.py", lines:122,
+        group:"PySide6 UI", path:"src/pd_diagnosis/ui/charts.py", lines:140,
         level:"进阶选学", prerequisites:"第 5 课：布局；先读 prpd.py 与 theme.py。", firstRead:"先看三个 Canvas 各接收什么数据、由谁调用。", skipOnFirstPass:"字体注册、降采样和 Matplotlib 坐标轴细节可后读。",
         role:"把 Matplotlib FigureCanvas 封装为可放进 Qt 布局的波形、PRPD 和概率控件。", depends:"NumPy、Matplotlib QtAgg、prpd、theme", usedBy:"MainWindow 诊断页",
         parts:[
@@ -2233,15 +2743,16 @@ mypy src/pd_diagnosis</code></pre></div>
       {
         group:"PySide6 UI", path:"src/pd_diagnosis/ui/workers.py", lines:148,
         level:"项目必学", prerequisites:"第 12 课：后台任务；第 6 课：信号与槽。", firstRead:"先看任务如何发出 result/error/finished，不需要记住所有信号名称。", skipOnFirstPass:"批量进度、协作取消和导出分页细节可第二遍再看。",
-        role:"在后台执行单次/批量诊断与历史导出，通过 Qt Signal 安全回传不可变结果、进度和错误。", depends:"threading.Event、QObject、QRunnable、Signal、Slot、Service、Storage", usedBy:"MainWindow",
+        role:"在后台执行单次/批量诊断与历史导出，通过 Qt Signal 安全回传结果快照、进度和错误。", depends:"threading.Event、QObject、QRunnable、Signal、Slot、Service、Storage", usedBy:"MainWindow",
         parts:[
           {range:"1–15",title:"线程与 Qt 导入",code:`from threading import Event\nfrom PySide6.QtCore import QObject, QRunnable, Signal, Slot\nfrom .history_export import export_history_csv`,explain:"QRunnable 不是 QObject，不能直接声明 Signal，因此另建 QObject 信号容器。Event 是线程安全取消标志；CSV 纯函数可在工作线程调用。",why:"任务只做业务与 I/O，QWidget 更新全部由主线程槽处理。",risk:"工作线程不能直接操作 QWidget。"},
           {range:"11–17",title:"TaskSignals 信号协议",code:`class TaskSignals(QObject):\n    result = Signal(object)\n    item = Signal(int, object)\n    progress = Signal(int, int)\n    error = Signal(str)\n    finished = Signal()`,explain:"类属性形式声明 Qt 信号。result 用于单次；item 携带行号和批量条目；progress 是完成数/总数；error 是可显示文本；finished 无参数。",why:"一个信号容器可被两种任务复用。",risk:"object 类型灵活但运行时不校验，连接槽必须知道真实类型。"},
           {range:"19–24",title:"SingleDiagnosisTask 构造",code:`class SingleDiagnosisTask(QRunnable):\n    def __init__(self, service, path):\n        super().__init__()\n        self.service = service\n        self.path = path\n        self.signals = TaskSignals()`,explain:"保存任务所需的不可变上下文，并为每个任务创建独立信号对象。",why:"MainWindow 连接这个实例的结果/错误/完成槽。",risk:"不要让多个同时任务共享同一个 TaskSignals，否则结果难区分。"},
-          {range:"50–74",title:"单次 run 与不可变 Outcome",code:`samples = np.array(read_txt_signal(source), dtype=np.float32, copy=True)\nsamples.setflags(write=False)\nresult = self.service.diagnose(DiagnosisSignal(samples, ...))\nself.signals.result.emit(SingleDiagnosisOutcome(self.path, samples, result))`,explain:"文件只读取一次；快照设为只读；Service 使用同一信号完成推理与保存；路径、samples、result 一起发回。异常用 logger.exception 保留 traceback，finally 总发 finished。",why:"消除用户改路径或文件变化导致图表与预测不一致的竞态。",risk:"不要退回 diagnose_file 后让 UI 再读一次文件。"},
-          {range:"36–45",title:"批量任务与取消标志",code:`self._cancelled = Event()\ndef cancel(self):\n    self._cancelled.set()`,explain:"主线程调用 cancel 只是设置标志，不强杀线程。Event 的 set/is_set 可跨线程安全使用。",why:"Python/Qt 没有安全的任意线程强制终止；协作取消不会破坏正在写的数据库。",risk:"取消要等当前文件结束后才响应。"},
+          {range:"21–37",title:"只读结果快照",code:`class SingleDiagnosisOutcome:\n    path: str\n    samples: np.ndarray\n    result: DiagnosisResult\n\nclass HistoryExportOutcome:\n    path: Path\n    count: int`,explain:"SingleDiagnosisOutcome 在 __post_init__ 中复制 samples 并设为只读；HistoryExportOutcome 只携带输出路径和行数。frozen 限制字段重绑定，NumPy 数组的深度不可变由显式复制与 write=False 保证。",why:"结果、波形和导出状态不会因跨线程后的外部数组而漂移。",risk:"只读标志不是加密；不要在业务层原地修改 outcome.samples。"},
+          {range:"47–75",title:"单次 run 与结果信号",code:`source = Path(self.path)\nsamples = np.array(read_txt_signal(source), dtype=np.float32, copy=True)\nsamples.setflags(write=False)\nresult = self.service.diagnose(DiagnosisSignal(samples, ...))\nself.signals.result.emit(SingleDiagnosisOutcome(...))\nfinally:\n    self.signals.finished.emit()`,explain:"文件只读取一次；快照设为只读；Service 使用同一信号完成推理与保存；路径、samples、result 一起发回。异常记录日志并通过 error 信号传回，finally 总发 finished。",why:"消除用户改路径或文件变化导致图表与预测不一致的竞态。",risk:"不要退回 diagnose_file 后让 UI 再读一次文件。"},
+          {range:"77–103",title:"BatchDiagnosisTask 与协作取消",code:`class BatchDiagnosisTask(QRunnable):\n    self._cancelled = Event()\n\ndef cancel(self):\n    self._cancelled.set()`,explain:"主线程调用 cancel 只是设置标志，不强杀线程。Event 的 set/is_set 可跨线程安全使用。",why:"Python/Qt 没有安全的任意线程强制终止；协作取消不会破坏正在写的数据库。",risk:"取消要等当前文件结束后才响应。"},
           {range:"77–106",title:"批量 run",code:`for index, path in enumerate(self.paths):\n    if self._cancelled.is_set(): break\n    try: item = BatchDiagnosisItem(... result=...)\n    except Exception as exc: item = BatchDiagnosisItem(... error=...)\n    self.signals.item.emit(index, item)\n    self.signals.progress.emit(index + 1, total)`,explain:"每个文件前检查协作取消；失败也构造合法二选一条目；错误写完整日志；内容和进度增量返回。",why:"单文件失败不丢失批次，取消不会强杀数据库写入。",risk:"若槽渲染很慢，主线程事件队列仍可能积压。"},
-          {range:"109–148",title:"HistoryExportTask",code:`total = repository.count(query=query)\npage = repository.list(limit=1000, offset=completed, query=query)\ncount = export_history_csv(records(), self.path)`,explain:"在工作线程中分页读取全部匹配记录，用生成器交给纯 CSV 函数，每页发进度；成功发路径与行数，失败发错误，最终统一 finished。",why:"历史页只渲染 100 行，导出却不受 UI 页和 1000 行限制。",risk:"导出期间数据库可能继续新增记录；若要求严格快照，需要显式事务策略。"}
+          {range:"106–148",title:"HistoryExportTask",code:`total = repository.count(query=query)\npage = repository.list(limit=1000, offset=completed, query=query)\ncount = export_history_csv(records(), self.path)\nself.signals.result.emit(HistoryExportOutcome(self.path, count))`,explain:"在工作线程中分页读取全部匹配记录，把记录逐条交给纯 CSV 函数，每页发进度；成功用 HistoryExportOutcome 发路径与行数，失败发错误，最终统一 finished。",why:"历史页只渲染 100 行，导出却不受 UI 页和 1000 行限制。",risk:"导出期间数据库可能继续新增记录；若要求严格快照，需要显式事务策略。"}
         ]
       },
       {
@@ -2278,7 +2789,7 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"测试", path:"tests/conftest.py", lines:20,
+        group:"测试", path:"tests/conftest.py", lines:19,
         level:"进阶选学", prerequisites:"会运行 pytest；了解 fixture 的用途。", firstRead:"先看 project_root 与临时 Qt 环境怎样供所有测试复用。", skipOnFirstPass:"session scope 和环境变量的细节可稍后研究。",
         role:"定义整个 pytest 测试会话共享的仓库根路径和 CPU 诊断引擎夹具。", depends:"pytest、DiagnosisEngine", usedBy:"bundle/engine/features/storage/UI 测试",
         parts:[
@@ -2288,7 +2799,7 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"测试", path:"tests/test_bundle.py", lines:21,
+        group:"测试", path:"tests/test_bundle.py", lines:144,
         level:"进阶选学", prerequisites:"先读 bundle.py 与 manifest.json；会读 pytest 断言。", firstRead:"先看测试如何证明模型包能加载并拒绝坏哈希。", skipOnFirstPass:"临时目录中的工件搭建细节可第二遍再读。",
         role:"验证 bundle 会拒绝与 SDK 不兼容的特征 schema。", depends:"pytest、json、shutil、ModelBundle", usedBy:"回归保护模型兼容性闸门",
         parts:[
@@ -2297,7 +2808,7 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"测试", path:"tests/test_engine.py", lines:40,
+        group:"测试", path:"tests/test_engine.py", lines:111,
         level:"进阶选学", prerequisites:"先读 engine.py、types.py；会运行 pytest。", firstRead:"先看黄金输入怎样验证标签、概率和模型版本。", skipOnFirstPass:"设备与批量边界的各个断言可后读。",
         role:"用黄金概率验证迁移模型行为，并测试采样率和批量容错。", depends:"NumPy、pytest、公共 API", usedBy:"模型/特征/推理回归",
         parts:[
@@ -2308,7 +2819,7 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"测试", path:"tests/test_features.py", lines:42,
+        group:"测试", path:"tests/test_features.py", lines:52,
         level:"进阶选学", prerequisites:"先读 features.py；了解 NumPy 近似比较。", firstRead:"先看无效输入和固定特征向量两类保护。", skipOnFirstPass:"每个统计量容差的来由可在理解公式后再看。",
         role:"验证 10 维特征与旧实现一致，并覆盖长度、维度、非有限值校验。", depends:"NumPy、pytest、features、signal_io", usedBy:"算法回归",
         parts:[
@@ -2318,7 +2829,7 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"测试", path:"tests/test_public_api.py", lines:20,
+        group:"测试", path:"tests/test_public_api.py", lines:26,
         level:"进阶选学", prerequisites:"先读包 __init__.py；理解公共 API 兼容性。", firstRead:"先看测试保证纯 SDK 导入与公开名字稳定。", skipOnFirstPass:"子进程环境隔离的实现细节可第二遍再看。",
         role:"在独立 Python 进程中保证只导入公共 SDK 不会加载 PySide6。", depends:"subprocess、sys、os", usedBy:"依赖边界回归",
         parts:[
@@ -2327,7 +2838,7 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"测试", path:"tests/test_signal_io.py", lines:26,
+        group:"测试", path:"tests/test_signal_io.py", lines:42,
         level:"进阶选学", prerequisites:"先读 signal_io.py；会使用 tmp_path。", firstRead:"先看正常空白分隔与坏 token 定位两个案例。", skipOnFirstPass:"编码和后缀边界的组合可后读。",
         role:"验证 TXT 空白符格式、精确坏 token 位置和非 TXT 拒绝策略。", depends:"NumPy、pytest、signal_io", usedBy:"文件输入契约回归",
         parts:[
@@ -2337,7 +2848,7 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"测试", path:"tests/test_storage.py", lines:35,
+        group:"测试", path:"tests/test_storage.py", lines:90,
         level:"进阶选学", prerequisites:"先读 storage.py 与 types.py；了解 SQLite。", firstRead:"先看保存成功/失败记录后怎样查询和计数。", skipOnFirstPass:"搜索、分页、删除和 JSON 往返细节可第二遍再看。",
         role:"验证 SQLite 跨实例持久化、搜索、JSON 恢复，以及错误记录删除。", depends:"datetime、HistoryRepository、engine fixture", usedBy:"持久化回归",
         parts:[
@@ -2346,7 +2857,7 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"测试", path:"tests/test_ui_smoke.py", lines:35,
+        group:"测试", path:"tests/test_ui_smoke.py", lines:130,
         level:"进阶选学", prerequisites:"先读 app.py、main_window.py；了解 pytest-qt。", firstRead:"先看离屏窗口如何验证页面与关键控件可创建。", skipOnFirstPass:"Qt 事件等待和 widget 查找细节可按需查阅。",
         role:"在无显示器环境创建真实 MainWindow，直接渲染结果并检查关键控件。", depends:"PySide6、QtAgg、Service、Repository、MainWindow", usedBy:"UI 基础回归",
         parts:[
@@ -2357,7 +2868,7 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"文档", path:"README.md", lines:58,
+        group:"文档", path:"README.md", lines:94,
         level:"项目必学", prerequisites:"完成第 13 课：SDK；会运行终端命令。", firstRead:"先读安装、SDK 最小示例和桌面启动三段。", skipOnFirstPass:"迁移、完整目录清单与开发命令可第二遍再看。",
         role:"仓库首页：说明用途、类别、安装、SDK/UI 示例、模型迁移和目录。", depends:"项目实际公共 API 与命令", usedBy:"首次访问仓库的用户",
         parts:[
@@ -2368,7 +2879,7 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"文档", path:"docs/API.md", lines:54,
+        group:"文档", path:"docs/API.md", lines:88,
         level:"项目必学", prerequisites:"先读 __init__.py、types.py 与 engine.py。", firstRead:"先按公共类和函数查输入、返回值及可预期异常。", skipOnFirstPass:"批量、迁移与每个字段的参考表可按需阅读。",
         role:"稳定 Python SDK 的参数、结果、异常、批量行为和持久化组合文档。", depends:"顶层公共 API", usedBy:"集成 SDK 的开发者",
         parts:[
@@ -2379,7 +2890,7 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"文档", path:"docs/MODEL_BUNDLE.md", lines:10,
+        group:"文档", path:"docs/MODEL_BUNDLE.md", lines:49,
         level:"进阶选学", prerequisites:"先读 bundle.py 与 manifest.json；理解模型工件。", firstRead:"先看一个 bundle 必须同时包含哪些文件及校验关系。", skipOnFirstPass:"迁移命令和兼容错误排查可需要时再看。",
         role:"定义模型目录的三件套、安全性、兼容性和特征升级规则。", depends:"bundle/migration 实现", usedBy:"模型训练、发布、迁移维护者",
         parts:[
@@ -2388,7 +2899,7 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"数据与模型", path:"models/default/manifest.json", lines:42,
+        group:"数据与模型", path:"models/default/manifest.json", lines:43,
         level:"进阶选学", prerequisites:"先读 bundle.py；了解 JSON 和 SHA-256。", firstRead:"先对应模型版本、类别、特征 schema 与三个工件路径。", skipOnFirstPass:"精确哈希值和训练备注不必记忆。",
         role:"默认模型机器可读清单；把权重与其训练/输入/类别契约绑定。", depends:"JSON、bundle.ModelBundle.load", usedBy:"应用启动、SDK 引擎、审计",
         parts:[
@@ -2434,7 +2945,7 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"Legacy", path:"legacy/main.py", lines:1600,
+        group:"Legacy", path:"legacy/main.py", lines:1572,
         level:"进阶选学", prerequisites:"先理解新架构的 engine、service、workers 与 MainWindow。", firstRead:"只用职责对照表观察旧单体怎样被拆层。", skipOnFirstPass:"1600 行旧 UI、训练和设置实现不必顺序通读。",
         role:"重构前单体桌面程序：特征、预测、图表、UI、设置、历史、评估和训练混在一个文件，仅供追溯。", depends:"旧 PySide6/PyTorch/sklearn/Matplotlib 环境", usedBy:"迁移对照，不是新应用入口",
         parts:[
@@ -2449,7 +2960,7 @@ mypy src/pd_diagnosis</code></pre></div>
         ]
       },
       {
-        group:"Legacy", path:"legacy/fc_save_train.py", lines:280,
+        group:"Legacy", path:"legacy/fc_save_train.py", lines:281,
         level:"进阶选学", prerequisites:"先读 experimental/training.py 与 model.py。", firstRead:"只对照旧特征、旧模型与新训练流水线的迁移关系。", skipOnFirstPass:"旧训练循环、早停和测试函数实现可整段跳过。",
         role:"旧独立训练脚本，提供 Dataset、特征、数据加载、网络、训练/早停和测试。", depends:"Torch、sklearn、NumPy", usedBy:"experimental.training 的迁移参考",
         parts:[
@@ -2534,7 +3045,7 @@ mypy src/pd_diagnosis</code></pre></div>
       },
       {
         group:"PySide6 UI", path:"src/pd_diagnosis/ui/history_export.py", lines:40,
-        level:"项目必学", prerequisites:"第 12 课：后台任务；先读 workers.py 与 HistoryRecord。", firstRead:"先看纯函数怎样固定列顺序、转义 CSV 并返回行数。", skipOnFirstPass:"BOM、空值格式化和生成器细节可第二遍再看。",
+        level:"项目必学", prerequisites:"第 12 课：后台任务；先读 workers.py 与 HistoryRecord。", firstRead:"先看纯函数怎样固定列顺序、转义 CSV 并返回行数。", skipOnFirstPass:"BOM、空值格式化和分页读取的边界可第二遍再看。",
         role:"与 QWidget 无关的纯 CSV 导出函数，供后台 QRunnable 调用。", depends:"csv、pathlib、HistoryRecord", usedBy:"HistoryExportTask、导出测试",
         parts:[
           {range:"9–17",title:"固定字段契约",code:`HISTORY_CSV_FIELDS = ("时间", "来源", "模型建议", "置信度", "模型版本", "状态", "错误")`,explain:"列顺序集中定义，测试可以直接验证，不由 UI 临时拼接。",why:"稳定字段便于 Excel 和下游脚本消费。",risk:"改列名或顺序属于导出格式变更，应同步文档和测试。"},
@@ -2571,7 +3082,14 @@ mypy src/pd_diagnosis</code></pre></div>
       function readStoredJson(key, fallback) {
         try {
           const value = localStorage.getItem(key);
-          return value ? JSON.parse(value) : fallback;
+          if (!value) return fallback;
+          try {
+            return JSON.parse(value);
+          } catch (_) {
+            const isLegacyTheme = key === 'pd-educate-theme'
+              && (value === 'dark' || value === 'light');
+            return isLegacyTheme ? value : fallback;
+          }
         } catch (_) {
           return fallback;
         }
@@ -2591,12 +3109,22 @@ mypy src/pd_diagnosis</code></pre></div>
 
       root.dataset.theme = activeTheme || (preferredDark ? 'dark' : 'light');
 
+      function updateThemeControls() {
+        const isDark = root.dataset.theme === 'dark';
+        document.querySelectorAll('.theme-toggle').forEach(button => {
+          button.setAttribute('aria-pressed', String(isDark));
+          button.setAttribute('title', isDark ? '切换到浅色主题' : '切换到深色主题');
+        });
+      }
+
       document.querySelectorAll('.theme-toggle').forEach(button => {
         button.addEventListener('click', () => {
           root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
           writeStoredJson('pd-educate-theme', root.dataset.theme);
+          updateThemeControls();
         });
       });
+      updateThemeControls();
 
       const storedProgressValue = readStoredJson('pd-educate-progress', {});
       const storedProgress = storedProgressValue
@@ -2652,18 +3180,36 @@ mypy src/pd_diagnosis</code></pre></div>
       if (continuedLesson) continueLearning.textContent = `继续学习：${continuedLesson.dataset.title}`;
       updateCompletionTotal();
 
+      const mobileSidebarQuery = window.matchMedia('(max-width: 980px)');
+      function setSidebarOpen(open, { restoreMenuFocus = false, focusTarget = null } = {}) {
+        const isMobile = mobileSidebarQuery.matches;
+        const isOpen = isMobile && open;
+        sidebar.classList.toggle('open', isOpen);
+        sidebar.inert = isMobile && !isOpen;
+        sidebar.setAttribute('aria-hidden', String(isMobile && !isOpen));
+        if (menuButton) {
+          menuButton.setAttribute('aria-expanded', String(isOpen));
+          menuButton.setAttribute('aria-label', isOpen ? '关闭课程目录' : '打开课程目录');
+          if (restoreMenuFocus) menuButton.focus();
+        }
+        if (focusTarget && isMobile) {
+          focusTarget.setAttribute('tabindex', '-1');
+          setTimeout(() => focusTarget.focus({ preventScroll: true }), 0);
+        }
+      }
+
       if (menuButton) {
         menuButton.addEventListener('click', () => {
-          const open = sidebar.classList.toggle('open');
-          menuButton.setAttribute('aria-expanded', String(open));
-          menuButton.setAttribute('aria-label', open ? '关闭课程目录' : '打开课程目录');
+          setSidebarOpen(!sidebar.classList.contains('open'));
         });
       }
 
       tocLinks.forEach(link => link.addEventListener('click', () => {
-        sidebar.classList.remove('open');
-        if (menuButton) menuButton.setAttribute('aria-expanded', 'false');
+        const target = document.getElementById(link.hash.slice(1));
+        setSidebarOpen(false, { focusTarget: target });
       }));
+      mobileSidebarQuery.addEventListener('change', () => setSidebarOpen(false));
+      setSidebarOpen(false);
 
       function updateScrollState(rememberLesson = true) {
         const max = document.documentElement.scrollHeight - window.innerHeight;
@@ -2675,6 +3221,11 @@ mypy src/pd_diagnosis</code></pre></div>
         tocLinks.forEach(link => link.classList.toggle('active', link.hash === `#${activeId}`));
         if (rememberLesson) setLastActiveLesson(activeId);
       }
+
+      document.addEventListener('keydown', event => {
+        if (event.key !== 'Escape' || !sidebar.classList.contains('open')) return;
+        setSidebarOpen(false, { restoreMenuFocus: true });
+      });
       document.addEventListener('scroll', () => updateScrollState(), { passive: true });
       updateScrollState(false);
 
@@ -2832,23 +3383,57 @@ mypy src/pd_diagnosis</code></pre></div>
       sourceSearch.addEventListener('input', renderSourceNav);
       renderSourceNav();
 
-      const answers = { q1: 'b', q2: 'c', q3: 'a', q4: 'b', q5: 'c' };
       const quiz = document.getElementById('quizForm');
       const quizResult = document.getElementById('quizResult');
+      const quizQuestions = [...quiz.querySelectorAll('.quiz-question')];
+      const quizAnswers = new Map(quizQuestions.map((question, index) => {
+        const name = `q${index + 1}`;
+        const correctInput = question.querySelector(`input[value="${question.dataset.answer}"]`);
+        const explanation = question.querySelector('.answer-explanation').textContent.trim();
+        const reviewLink = question.querySelector('.review-link');
+        return [name, {
+          answer: question.dataset.answer,
+          answerText: correctInput.parentElement.textContent.trim(),
+          explanation,
+          review: reviewLink.getAttribute('href'),
+          reviewLabel: reviewLink.textContent.trim(),
+          reviewSection: question.dataset.reviewSection,
+        }];
+      }));
       quiz.addEventListener('submit', event => {
         event.preventDefault();
         let score = 0;
         const missed = [];
-        Object.entries(answers).forEach(([name, answer], index) => {
-          const selected = quiz.elements[name].value;
-          if (selected === answer) score += 1;
-          else missed.push(index + 1);
+        [...quizAnswers.entries()].forEach(([name, feedback], index) => {
+          const selected = quiz.elements[name]?.value || '';
+          if (selected === feedback.answer) score += 1;
+          else missed.push({ number: index + 1, ...feedback });
         });
-        const message = score === 5
-          ? '5 / 5，太好了！你已经理解了这个项目最重要的架构原则。'
-          : `${score} / 5。建议复习第 ${missed.join('、')} 题对应章节，再沿源码画一次调用链。`;
-        quizResult.textContent = message;
-        quizResult.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        quizResult.replaceChildren();
+        const total = quizAnswers.size;
+        addTextElement(
+          quizResult,
+          'p',
+          score === total
+            ? `${score} / ${total}，全部正确！你已经串起了从 Qt 基础到项目调用链的关键概念。`
+            : `${score} / ${total}。下面按错题给出答案、解释和复习入口。`
+        );
+        if (missed.length) {
+          const list = document.createElement('ol');
+          missed.forEach(item => {
+            const row = document.createElement('li');
+            addTextElement(row, 'strong', `第 ${item.number} 题：正确答案是“${item.answerText}”。`);
+            row.append(` ${item.explanation} `);
+            const link = addTextElement(row, 'a', item.reviewLabel);
+            link.href = item.review;
+            link.dataset.reviewSection = item.reviewSection;
+            list.appendChild(row);
+          });
+          quizResult.appendChild(list);
+        }
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        quizResult.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' });
+        quizResult.focus({ preventScroll: true });
       });
       quiz.addEventListener('reset', () => { setTimeout(() => { quizResult.textContent = '完成后点击“提交答案”。'; }, 0); });
     })();
