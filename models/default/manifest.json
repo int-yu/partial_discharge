@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "model_version": "legacy-2025-12-30",
+  "architecture": "classification-mlp-v1",
+  "feature_schema": "legacy-v1",
+  "feature_names": [
+    "最大值(mV)",
+    "峰峰值(mV)",
+    "脉冲均值(V)",
+    "脉冲方差",
+    "频谱主频率(Hz)",
+    "频谱主频率峰值(V)",
+    "频谱均值(V)",
+    "频谱方差",
+    "峰度",
+    "偏度"
+  ],
+  "sampling_rate_hz": 1000000,
+  "min_samples": 100,
+  "classes": [
+    {
+      "id": 0,
+      "name": "金属突出物缺陷"
+    },
+    {
+      "id": 1,
+      "name": "自由微粒缺陷"
+    },
+    {
+      "id": 2,
+      "name": "绝缘子表面金属污染物缺陷"
+    },
+    {
+      "id": 3,
+      "name": "气隙缺陷"
+    }
+  ],
+  "weights_file": "weights.pth",
+  "weights_sha256": "8d6ba30b1e8dc7a97489fd7dbdb09cb00b8e7054c142c404139537a370e5a25b",
+  "scaler_file": "scaler.npz",
+  "scaler_sha256": "3495e91c920aee6b7bf72b6751bfa343cec5fd2df90502ed611595153e28e57a"
+}
