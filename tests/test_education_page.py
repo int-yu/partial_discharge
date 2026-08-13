@@ -1544,3 +1544,43 @@ console.log("runtime storage regression OK");
     )
     assert completed.returncode == 0, completed.stderr
     assert "runtime storage regression OK" in completed.stdout
+
+
+def test_current_installation_guides_are_conda_first(project_root):
+    readme = (project_root / "README.md").read_text(encoding="utf-8")
+    api = (project_root / "docs" / "API.md").read_text(encoding="utf-8")
+    education = (project_root / "docs" / "educate" / "index.html").read_text(
+        encoding="utf-8"
+    )
+
+    canonical_commands = (
+        "conda create -n pd-diagnosis python=3.10 -y",
+        "conda activate pd-diagnosis",
+        "python -m pip install --upgrade pip",
+        'python -m pip install -e ".[gui,dev]"',
+    )
+    for guide in (readme, api, education):
+        for command in canonical_commands:
+            assert command in guide
+
+    assert "不要安装到 `base` 环境" in readme
+    assert "Conda 负责创建和隔离 Python 环境" in readme
+    assert "pip 只把当前项目及依赖安装进已经激活的 Conda 环境" in readme
+    assert "不要同时激活 Conda 环境和 `.venv`" in readme
+    assert "python -m venv .venv" not in readme
+    assert "py -3.11 -m venv .venv" not in education
+    assert "python -m pip install PySide6" not in education
+    assert "Python 3.11.9" not in education
+    assert "重建虚拟环境" not in education
+
+    assert "不要把开发依赖安装到 Conda `base`" in api
+    assert "不要同时激活 Conda 环境和 `.venv`" in api
+    assert "Conda 负责隔离 Python 环境" in api
+    assert "`python -m pip` 负责把当前源码及可选依赖安装进" in api
+
+    assert "不要安装到 <code>base</code>" in education
+    assert "不要同时激活 Conda 环境和 <code>.venv</code>" in education
+    assert "Conda 负责环境隔离，pip 只负责把项目装进当前环境" in education
+
+    assert "python -m pip install partial-discharge-diagnosis" in api
+    assert 'python -m pip install -e ".[gui,train,dev]"' in readme

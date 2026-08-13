@@ -11,20 +11,24 @@
 
 ## 安装
 
-推荐使用 Python 3.10 或 3.11。PyTorch 的 CPU/CUDA 构建请先按运行环境从官方源安装，再安装本项目：
+推荐为本项目创建独立的 Conda 环境。不要安装到 `base` 环境，也不要同时激活 Conda 环境和 `.venv`：
+
+```powershell
+conda create -n pd-diagnosis python=3.10 -y
+conda activate pd-diagnosis
+python -m pip install --upgrade pip
+python -m pip install -e ".[gui,dev]"
+```
+
+Conda 负责创建和隔离 Python 环境；pip 只把当前项目及依赖安装进已经激活的 Conda 环境，因此不会污染 `base`。请使用 `python -m pip`，确保调用的是当前环境里的 pip。
+
+如果还需要训练模型，再安装训练依赖：
 
 ```powershell
 python -m pip install -e ".[gui,train,dev]"
 ```
 
-建议在干净虚拟环境中安装，避免系统环境中的 Qt、NumPy 或 PyTorch 版本互相影响：
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -e ".[gui,dev]"
-```
+PyTorch 的 CPU/CUDA 构建与硬件和驱动有关；需要指定 CUDA 版本时，请先在已激活的 `pd-diagnosis` 环境中按 PyTorch 官方说明安装对应构建，再执行项目安装命令。
 
 ## Python SDK
 
@@ -54,8 +58,11 @@ result = engine.diagnose(
 ## 桌面应用
 
 ```powershell
-pd-diagnosis
+conda activate pd-diagnosis
+python -m pd_diagnosis
 ```
+
+也可以使用安装时注册的 `pd-diagnosis` 命令启动。
 
 默认模型按以下优先级解析：
 

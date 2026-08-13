@@ -13,8 +13,13 @@ python -m pip install partial-discharge-diagnosis
 开发桌面应用：
 
 ```powershell
+conda create -n pd-diagnosis python=3.10 -y
+conda activate pd-diagnosis
+python -m pip install --upgrade pip
 python -m pip install -e ".[gui,dev]"
 ```
+
+不要把开发依赖安装到 Conda `base`，也不要同时激活 Conda 环境和 `.venv`。Conda 负责隔离 Python 环境，`python -m pip` 负责把当前源码及可选依赖安装进已经激活的 `pd-diagnosis` 环境。需要训练功能时改用 `python -m pip install -e ".[gui,train,dev]"`。
 
 ```python
 from pd_diagnosis import DiagnosisEngine

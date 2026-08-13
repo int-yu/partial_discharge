@@ -370,9 +370,10 @@
           <p class="chapter-intro">先认识两个词：PySide6 是把 Python 对象连接到 Qt 的<a class="term-link" href="#term-binding">绑定（binding）</a>；<a class="term-link" href="#term-widget">控件（widget）</a>是可显示或接收交互的界面对象，<code>QWidget</code> 是多数可视控件的基础类，<code>QLabel</code> 等具体控件继承它。</p>
           <div class="lesson-goals" aria-label="本节学习目标"><strong>本节只学三件事</strong><ol><li>说清 Qt 与 PySide6 的关系。</li><li>知道 QWidget 是界面对象的基础类型。</li><li>知道下一课为什么先创建 QApplication。</li></ol></div>
           <p>Qt 是负责窗口、绘制、输入和事件分发的跨平台界面框架；PySide6 是让 Python 能调用 Qt 的绑定包。你在代码里持有的是 <code>QLabel</code>、<code>QApplication</code> 等 Python 对象；调用它们的方法时，PySide6 会把请求交给底层 Qt。Python 负责表达你的意图，Qt 负责实际的桌面界面行为。</p>
-          <div class="execution-steps"><strong>运行前准备</strong><ol><li>在项目目录激活准备运行示例的虚拟环境。</li><li>安装：<code>python -m pip install PySide6</code>。</li><li>依次执行下面三条命令；始终使用同一个 <code>python</code>，避免安装到另一个环境。</li></ol><pre><code>python --version
+          <div class="execution-steps"><strong>运行前准备</strong><ol><li>在项目目录执行 <code>conda activate pd-diagnosis</code>；不要使用 <code>base</code>，也不要再激活 <code>.venv</code>。</li><li>若尚未安装项目，执行 <code>python -m pip install -e ".[gui,dev]"</code>；它会把 PySide6 和开发依赖安装进当前 Conda 环境。</li><li>依次执行下面四条命令；始终使用同一个 <code>python</code>，避免安装到另一个环境。</li></ol><pre><code>where.exe python
+python --version
 python -m pip show PySide6
-python -c "import PySide6; print(PySide6.__version__)"</code></pre><p><code>python --version</code> 应输出类似 <code>Python 3.11.9</code>；第二条应显示 <code>Name</code>、<code>Version</code>、<code>Location</code> 等包信息；第三条应只打印一个版本号，例如 <code>6.8.0</code>。若看到 <code>No module named PySide6</code>，用同一条 <code>python -m pip install PySide6</code> 安装。若 <code>Location</code> 不在当前虚拟环境，先重新激活环境，再安装。若 pip 报当前 Python 不受支持，请安装 PySide6 支持的较新 CPython 版本，重建虚拟环境后重试。</p></div>
+python -c "import PySide6; print(PySide6.__version__)"</code></pre><p><code>where.exe python</code> 的第一条路径应位于 Conda 的 <code>envs\pd-diagnosis</code>；<code>python --version</code> 应输出 <code>Python 3.10.x</code>。第三条应显示 <code>Name</code>、<code>Version</code>、<code>Location</code> 等包信息，最后一条只打印 PySide6 版本号。若看到 <code>No module named PySide6</code>，确认已激活 <code>pd-diagnosis</code>，再执行 <code>python -m pip install -e ".[gui,dev]"</code>。若 <code>Location</code> 不在当前 Conda 环境，重新激活环境并检查 <code>python -m pip --version</code> 后再安装。若 Python 版本不是 3.10，删除并按本章规范命令重新创建 <code>pd-diagnosis</code> 环境。</p></div>
           <pre><code data-python-example="pyside-import-check">import PySide6
 
 print(f"PySide6 {PySide6.__version__} 已成功导入")</code></pre>
@@ -380,8 +381,8 @@ print(f"PySide6 {PySide6.__version__} 已成功导入")</code></pre>
           <div class="execution-steps"><strong>程序按什么顺序运行</strong><ol><li>Python 先定位并导入 <code>PySide6</code> 包。</li><li>如果导入成功，下一行读取包的 <code>__version__</code> 属性并打印版本。</li><li>文件末尾没有事件循环，因此输出后正常结束；窗口和事件循环会在下一课出现。</li></ol></div>
           <div class="line-explanation"><strong>逐行解释</strong><table class="compare"><thead><tr><th>代码</th><th>作用</th></tr></thead><tbody><tr><td><code>import PySide6</code></td><td>让当前 Python 进程载入绑定包；这一步失败就说明环境还不能运行 PySide6 代码。</td></tr><tr><td><code>print(f"...")</code></td><td>f 字符串把 <code>PySide6.__version__</code> 的实际值放入输出，既验证导入，也记录正在使用的版本。</td></tr></tbody></table></div>
           <div class="syntax-zoom"><strong>关键语法放大镜</strong><p><code>模块.属性</code> 用点号读取模块暴露的信息；前缀 <code>f</code> 让字符串中的花括号表达式在运行时求值。这里不讲 Python 字符串基础，只把它当成“把版本显示出来”的工具。</p></div>
-          <div class="experiment"><strong>改一个地方看变化</strong><p>把输出文字中的“已成功导入”改成你的项目名，重新运行；版本号应保持不变。然后分别在已激活和未激活虚拟环境的终端运行，比较输出或错误信息。</p></div>
-          <div class="mistake"><strong>常见错误</strong><table class="compare"><thead><tr><th>症状</th><th>原因、修复与验证</th></tr></thead><tbody><tr><td><code>ModuleNotFoundError: No module named 'PySide6'</code></td><td>当前解释器没有安装该包。修复：执行 <code>python -m pip install PySide6</code>。验证：重跑本程序，看到版本行。</td></tr><tr><td>pip 显示已安装，但程序仍导入失败。</td><td>安装与运行用了不同的 Python/虚拟环境。修复：激活目标环境，并用同一个 <code>python -m pip</code> 安装。验证：比较 <code>python -m pip show PySide6</code> 的 <code>Location</code>。</td></tr><tr><td>pip 提示当前 Python 版本不受支持。</td><td>解释器版本不在当前 PySide6 发布包的支持范围。修复：安装受支持的 CPython，重建虚拟环境。验证：先运行 <code>python --version</code>，再执行本程序。</td></tr></tbody></table></div>
+          <div class="experiment"><strong>改一个地方看变化</strong><p>把输出文字中的“已成功导入”改成你的项目名，重新运行；版本号应保持不变。然后执行 <code>conda deactivate</code> 再运行一次，比较 <code>where.exe python</code> 的第一条路径；观察结束后重新执行 <code>conda activate pd-diagnosis</code>。</p></div>
+          <div class="mistake"><strong>常见错误</strong><table class="compare"><thead><tr><th>症状</th><th>原因、修复与验证</th></tr></thead><tbody><tr><td><code>ModuleNotFoundError: No module named 'PySide6'</code></td><td>当前解释器没有安装 GUI extra。修复：激活 <code>pd-diagnosis</code>，执行 <code>python -m pip install -e ".[gui,dev]"</code>。验证：重跑本程序，看到版本行。</td></tr><tr><td>pip 显示已安装，但程序仍导入失败。</td><td>安装与运行用了不同的 Python 环境。修复：用 <code>where.exe python</code> 确认第一条路径位于 <code>envs\pd-diagnosis</code>，并使用同一个 <code>python -m pip</code> 安装。验证：检查 <code>python -m pip show PySide6</code> 的 <code>Location</code>。</td></tr><tr><td>Python 版本不是 3.10。</td><td>激活了错误环境或环境创建参数不一致。修复：退出当前环境，按 <code>conda create -n pd-diagnosis python=3.10 -y</code> 创建并激活。验证：<code>python --version</code> 输出 3.10.x。</td></tr></tbody></table></div>
           <div class="lesson-check"><strong>最小练习</strong><p>只改 <code>print</code> 的文字，让它输出“我的环境已准备好：”和实际 PySide6 版本；不要删除 <code>PySide6.__version__</code>。</p></div>
           <details><summary>参考答案：环境验证的完整程序</summary><div class="details-body"><pre><code>import PySide6
 
@@ -2006,14 +2007,15 @@ self.clear_button.clicked.<span class="fn">connect</span>(self.clear_selection)
         <section class="chapter" id="run" data-title="安装运行调试">
           <span class="chapter-kicker">Chapter 08</span>
           <h2>安装、运行、测试与调试</h2>
-          <div class="callout"><strong>初学者最短路径</strong>先执行 <code>python -m pip install -e .</code>，运行上一节的 <code>try_sdk.py</code>；这一步不需要 PySide6。确认 SDK 脚本会输出六个字段后，再安装 <code>.[gui,dev]</code> 并进入界面调用链。</div>
-          <h3>推荐开发流程（PowerShell）</h3>
-          <div class="codebox"><div class="code-head"><span>在仓库根目录运行</span><button class="copy" type="button">复制</button></div><pre><code><span class="cm"># 1. 创建并激活虚拟环境</span>
-py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1
+          <div class="callout"><strong>初学者最短路径</strong>先创建并激活独立的 Conda 环境，再用 <code>python -m pip</code> 安装项目。Conda 负责环境隔离，pip 只负责把项目装进当前环境；不要安装到 <code>base</code>，也不要同时激活 Conda 环境和 <code>.venv</code>。</div>
+          <h3>推荐开发流程（Conda + PowerShell）</h3>
+          <div class="codebox"><div class="code-head"><span>在仓库根目录运行</span><button class="copy" type="button">复制</button></div><pre><code><span class="cm"># 1. 只需创建一次；不要使用 base</span>
+conda create -n pd-diagnosis python=3.10 -y
+conda activate pd-diagnosis
 
-<span class="cm"># 2. 可编辑安装：改 src 后无需反复安装</span>
-python -m pip install -e <span class="str">".[gui,dev]"</span>
+<span class="cm"># 2. pip 属于当前 Conda 环境；-e 表示可编辑安装</span>
+python -m pip install --upgrade pip
+python -m pip install -e ".[gui,dev]"
 
 <span class="cm"># 3. 启动桌面应用（二选一）</span>
 python -m pd_diagnosis
@@ -2026,12 +2028,12 @@ python -m pytest
 ruff check .
 mypy src/pd_diagnosis</code></pre></div>
           <div class="grid two">
-            <article class="card"><h3>为什么用虚拟环境？</h3><p>每个项目拥有独立依赖版本，不污染全局 Python。出现问题时也容易删除并重建。</p></article>
+            <article class="card"><h3>Conda 和 pip 各做什么？</h3><p>Conda 创建独立的 Python 3.10 环境；<code>python -m pip</code> 只向当前环境安装本项目。这样不会污染 <code>base</code>，也不需要再创建 <code>.venv</code>。</p></article>
             <article class="card"><h3><code>-e</code> 是什么？</h3><p>editable install。Python 包指向当前源码目录，适合开发期；它仍遵循真实的包安装和导入规则。</p></article>
           </div>
           <h3>常见问题排查</h3>
           <div class="table-wrap"><table class="compare"><thead><tr><th>现象</th><th>检查</th><th>原因</th></tr></thead><tbody>
-            <tr><td><code>No module named pd_diagnosis</code></td><td>虚拟环境是否激活；是否执行 <code>pip install -e</code></td><td><code>src</code> 布局不会自动出现在导入路径</td></tr>
+            <tr><td><code>No module named pd_diagnosis</code></td><td><code>conda activate pd-diagnosis</code> 是否执行；<code>python -m pip --version</code> 是否指向该环境</td><td><code>src</code> 布局不会自动出现在导入路径</td></tr>
             <tr><td>缺少 <code>PySide6</code></td><td>是否安装 <code>.[gui]</code></td><td>GUI 是可选依赖，纯 SDK 用户不必安装</td></tr>
             <tr><td>窗口启动后立即报模型错误</td><td>检查 <code>PD_DIAGNOSIS_MODEL</code>、仓库模型和安装模型</td><td>bundle 缺失、路径越界、哈希、架构或 schema 不兼容</td></tr>
             <tr><td>中文显示乱码</td><td>源文件 UTF-8；终端编码；Qt 字体回退</td><td>文本编码和字体是两个不同问题</td></tr>
@@ -2868,25 +2870,25 @@ if __name__ == "__main__":
         ]
       },
       {
-        group:"文档", path:"README.md", lines:94,
+        group:"文档", path:"README.md", lines:101,
         level:"项目必学", prerequisites:"完成第 13 课：SDK；会运行终端命令。", firstRead:"先读安装、SDK 最小示例和桌面启动三段。", skipOnFirstPass:"迁移、完整目录清单与开发命令可第二遍再看。",
         role:"仓库首页：说明用途、类别、安装、SDK/UI 示例、模型迁移和目录。", depends:"项目实际公共 API 与命令", usedBy:"首次访问仓库的用户",
         parts:[
           {range:"1–11",title:"产品定位与四类缺陷",code:`# 局部放电类型智能诊断\n...Python SDK 和基于 PySide6 的 Windows 桌面应用...`,explain:"先回答项目是什么、给谁用、解决什么问题，再列模型能识别的四类。",why:"README 的首屏应建立边界，不先堆安装细节。",risk:"类别变化时 README、manifest、默认类别和 UI 都要同步。"},
-          {range:"13–20",title:"安装",code:`python -m pip install -e ".[gui,train,dev]"`,explain:"推荐 Python 3.10/3.11，并提醒 PyTorch CPU/CUDA 构建与环境相关；可编辑安装适合开发。",why:"避免用户误装错误 CUDA wheel。",risk:"普通 GUI 用户不一定需要 train/dev，可进一步给最小安装命令。"},
-          {range:"22–43",title:"SDK 数组与文件示例",code:`engine = DiagnosisEngine.from_bundle("models/default")\nresult = engine.diagnose_file(...)\nresult = engine.diagnose(Signal(...))`,explain:"先给最小文件路径，再展示含采样率/source_id 的进阶数组输入，并写明 1 MHz、至少 100 点和 TXT 契约。",why:"从最常见路径渐进披露。",risk:"示例路径必须与仓库真实数据一致。"},
-          {range:"45–58",title:"桌面、迁移与目录",code:`pd-diagnosis\npd-migrate-model ... --trusted`,explain:"说明启动命令、环境变量、旧 pickle 风险及高层目录。",why:"把日常运行和一次性迁移分开。",risk:"--trusted 的安全警告不能省略。"}
+          {range:"13–31",title:"Conda 安装",code:`conda create -n pd-diagnosis python=3.10 -y\nconda activate pd-diagnosis\npython -m pip install -e ".[gui,dev]"`,explain:"Conda 隔离 Python 环境，python -m pip 只向当前环境安装项目；明确不使用 base、不与 .venv 混用，训练依赖按需安装。",why:"避免 Qt、NumPy、PyTorch 版本污染其他项目，同时让 pip 始终指向正确环境。",risk:"CUDA 构建仍需按硬件、驱动和 PyTorch 官方说明选择。"},
+          {range:"33–56",title:"SDK 数组与文件示例",code:`engine = DiagnosisEngine.from_bundle("models/default")\nresult = engine.diagnose_file(...)\nresult = engine.diagnose(Signal(...))`,explain:"先给最小文件路径，再展示含采样率/source_id 的进阶数组输入，并写明 1 MHz、至少 100 点和 TXT 契约。",why:"从最常见路径渐进披露。",risk:"示例路径必须与仓库真实数据一致。"},
+          {range:"58–101",title:"桌面、检查、迁移与目录",code:`conda activate pd-diagnosis\npython -m pd_diagnosis\npd-migrate-model ... --trusted`,explain:"说明日常启动、质量检查、模型查找、旧 pickle 风险及高层目录。",why:"把日常运行和一次性迁移分开。",risk:"--trusted 的安全警告不能省略。"}
         ]
       },
       {
-        group:"文档", path:"docs/API.md", lines:88,
+        group:"文档", path:"docs/API.md", lines:93,
         level:"项目必学", prerequisites:"先读 __init__.py、types.py 与 engine.py。", firstRead:"先按公共类和函数查输入、返回值及可预期异常。", skipOnFirstPass:"批量、迁移与每个字段的参考表可按需阅读。",
         role:"稳定 Python SDK 的参数、结果、异常、批量行为和持久化组合文档。", depends:"顶层公共 API", usedBy:"集成 SDK 的开发者",
         parts:[
-          {range:"1–12",title:"公共边界和设备",code:`engine = DiagnosisEngine.from_bundle("models/default", device="auto")`,explain:"强调顶层导入不加载 Qt/训练依赖，并列出 auto/cpu/cuda 设备语义。",why:"开发者需要知道失败是否会静默回退。",risk:"实现设备策略变化时文档必须同步。"},
-          {range:"14–33",title:"数组输入与结果字段",code:`Signal(samples=[...], sampling_rate_hz=1_000_000, source_id=...)`,explain:"给完整 Signal 示例并逐项列 DiagnosisResult 字段。",why:"结果不仅是 label，审计字段属于契约。",risk:"新增/废弃结果字段需要版本说明。"},
-          {range:"35–47",title:"文件、批量与异常",code:`batch = engine.diagnose_files([...], continue_on_error=True)`,explain:"说明 TXT token 错误位置、每项 result/error 二选一，以及三类异常。",why:"调用者能设计正确的错误处理。",risk:"不要建议捕获所有 Exception 代替领域异常。"},
-          {range:"49–54",title:"显式持久化与实验边界",code:`history = HistoryRepository("diagnosis.sqlite3")\nservice = DiagnosisService(engine, history)`,explain:"纯 SDK 不写磁盘；需要历史时显式组合。训练明确不稳定。",why:"副作用和兼容承诺透明。",risk:"未来稳定训练 API 时应迁出 experimental 并补版本策略。"}
+          {range:"1–32",title:"安装、公共边界和设备",code:`conda create -n pd-diagnosis python=3.10 -y\nconda activate pd-diagnosis\npython -m pip install -e ".[gui,dev]"\nengine = DiagnosisEngine.from_bundle("models/default", device="auto")`,explain:"外部 SDK 用户保留 PyPI 安装；源码开发使用独立 Conda 环境，并列出 auto/cpu/cuda 设备语义。",why:"开发者需要同时知道环境隔离和设备失败是否会静默回退。",risk:"不要把开发依赖安装到 base；设备策略变化时文档也必须同步。"},
+          {range:"34–57",title:"数组输入与结果字段",code:`Signal(samples=[...], sampling_rate_hz=1_000_000, source_id=...)`,explain:"给完整 Signal 示例并逐项列 DiagnosisResult 字段。",why:"结果不仅是 label，审计字段属于契约。",risk:"新增/废弃结果字段需要版本说明。"},
+          {range:"58–74",title:"文件、批量与异常",code:`batch = engine.diagnose_files([...], continue_on_error=True)`,explain:"说明 TXT token 错误位置、每项 result/error 二选一，以及三类异常。",why:"调用者能设计正确的错误处理。",risk:"不要建议捕获所有 Exception 代替领域异常。"},
+          {range:"76–93",title:"显式持久化与实验边界",code:`history = HistoryRepository("diagnosis.sqlite3")\nservice = DiagnosisService(engine, history)`,explain:"纯 SDK 不写磁盘；需要历史时显式组合。训练明确不稳定。",why:"副作用和兼容承诺透明。",risk:"未来稳定训练 API 时应迁出 experimental 并补版本策略。"}
         ]
       },
       {
@@ -3004,7 +3006,7 @@ if __name__ == "__main__":
         role:"重构前留下的 Conda、普通 pip 和其他环境配置说明，仅供历史环境排查。", depends:"旧 environment.yml / requirement.txt", usedBy:"需要复现旧开发机环境的维护者",
         parts:[
           {range:"conda环境配置方法.txt",title:"旧 Conda 安装路线",code:`创建环境 → 安装 PyTorch/CUDA → 安装科学计算和 GUI 依赖`,explain:"记录旧项目以 Conda 复现 GPU 环境的步骤。当前正式项目的依赖权威来源是 pyproject.toml。",why:"保留原作者环境经验，便于迁移问题追溯。",risk:"版本与命令可能过时，不能不经核对直接用于新机器。"},
-          {range:"普通环境配置方式.txt",title:"旧 pip/venv 路线",code:`创建虚拟环境 → pip 安装 requirement.txt → 运行旧 main.py`,explain:"针对未使用 Conda 的旧安装方式。新项目应使用 pip install -e \".[gui,dev]\" 和 pd-diagnosis。",why:"明确旧入口与新入口的差异。",risk:"不要从 legacy/.venv 复制环境；虚拟环境不可可靠跨机器搬运。"},
+          {range:"普通环境配置方式.txt",title:"旧 pip/venv 路线",code:`创建虚拟环境 → pip 安装 requirement.txt → 运行旧 main.py`,explain:"这是未使用 Conda 的历史方式。当前项目应创建 pd-diagnosis Conda 环境，再用 python -m pip 安装 .[gui,dev]。",why:"明确旧入口与新入口的差异。",risk:"不要从 legacy/.venv 复制环境；虚拟环境不可可靠跨机器搬运。"},
           {range:"其他环境设置.txt",title:"补充环境事项",code:`字体、CUDA、IDE 或路径等旧设置说明`,explain:"属于平台经验文档，不参与程序运行。遇到问题时可对照，但以当前代码错误和官方依赖文档为准。",why:"避免删除可能仍有诊断价值的历史笔记。",risk:"其中绝对路径或版本仅适用于当时机器。"}
         ]
       },
