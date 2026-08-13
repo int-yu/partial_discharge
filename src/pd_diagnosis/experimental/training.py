@@ -4,14 +4,14 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 from threading import Event
-from typing import Callable
+from typing import Callable, Sized, cast
 
 import numpy as np
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from ..bundle import _sha256
+from ..artifacts import sha256_file
 from ..features import FEATURE_NAMES, FEATURE_SCHEMA, extract_feature_vector
 from ..migration import DEFAULT_CLASSES
 from ..model import ClassificationModel
@@ -113,7 +113,7 @@ def train(
             loss.backward()
             optimizer.step()
             train_loss += loss.item() * len(inputs)
-        train_loss /= len(train_loader.dataset)
+        train_loss /= len(cast(Sized, train_loader.dataset))
 
         model.eval()
         validation_loss = 0.0
@@ -121,7 +121,7 @@ def train(
             for inputs, batch_labels in validation_loader:
                 inputs, batch_labels = inputs.to(device), batch_labels.to(device)
                 validation_loss += criterion(model(inputs), batch_labels).item() * len(inputs)
-        validation_loss /= len(validation_loader.dataset)
+        validation_loss /= len(cast(Sized, validation_loader.dataset))
         completed_epochs = epoch
         if progress is not None:
             progress(epoch, config.epochs, train_loss, validation_loss)
@@ -160,11 +160,12 @@ def train(
         "feature_names": list(FEATURE_NAMES),
         "sampling_rate_hz": 1_000_000,
         "min_samples": 100,
+        "confidence_warning_threshold": 0.6,
         "classes": [{"id": index, "name": name} for index, name in enumerate(DEFAULT_CLASSES)],
         "weights_file": weights_path.name,
-        "weights_sha256": _sha256(weights_path),
+        "weights_sha256": sha256_file(weights_path),
         "scaler_file": scaler_path.name,
-        "scaler_sha256": _sha256(scaler_path),
+        "scaler_sha256": sha256_file(scaler_path),
     }
     (output / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"

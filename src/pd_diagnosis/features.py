@@ -23,9 +23,11 @@ FEATURE_NAMES = (
 FEATURE_SCHEMA = "legacy-v1"
 
 
-def validate_signal(samples: Sequence[float], *, min_samples: int = 100) -> np.ndarray:
+def validate_signal(
+    samples: Sequence[float] | np.ndarray, *, min_samples: int = 100
+) -> np.ndarray:
     try:
-        values = np.asarray(samples, dtype=np.float32)
+        values = np.array(samples, dtype=np.float32, copy=True)
     except (TypeError, ValueError) as exc:
         raise InvalidSignalError("信号必须是一维数值序列") from exc
     if values.ndim != 1:
@@ -39,7 +41,7 @@ def validate_signal(samples: Sequence[float], *, min_samples: int = 100) -> np.n
 
 
 def extract_feature_vector(
-    samples: Sequence[float],
+    samples: Sequence[float] | np.ndarray,
     *,
     sampling_rate_hz: int = 1_000_000,
     min_samples: int = 100,
@@ -101,7 +103,7 @@ def extract_feature_vector(
     )
 
 
-def feature_mapping(vector: Sequence[float]) -> Mapping[str, float]:
+def feature_mapping(vector: Sequence[float] | np.ndarray) -> Mapping[str, float]:
     if len(vector) != len(FEATURE_NAMES):
         raise ValueError(f"Expected {len(FEATURE_NAMES)} features, got {len(vector)}")
     return OrderedDict((name, float(value)) for name, value in zip(FEATURE_NAMES, vector))

@@ -11,11 +11,24 @@
 
 ## 安装
 
-推荐使用 Python 3.10 或 3.11。PyTorch 的 CPU/CUDA 构建请先按运行环境从官方源安装，再安装本项目：
+推荐为本项目创建独立的 Conda 环境。不要安装到 `base` 环境，也不要同时激活 Conda 环境和 `.venv`：
+
+```powershell
+conda create -n pd-diagnosis python=3.10 -y
+conda activate pd-diagnosis
+python -m pip install --upgrade pip
+python -m pip install -e ".[gui,dev]"
+```
+
+Conda 负责创建和隔离 Python 环境；pip 只把当前项目及依赖安装进已经激活的 Conda 环境，因此不会污染 `base`。请使用 `python -m pip`，确保调用的是当前环境里的 pip。
+
+如果还需要训练模型，再安装训练依赖：
 
 ```powershell
 python -m pip install -e ".[gui,train,dev]"
 ```
+
+PyTorch 的 CPU/CUDA 构建与硬件和驱动有关；需要指定 CUDA 版本时，请先在已激活的 `pd-diagnosis` 环境中按 PyTorch 官方说明安装对应构建，再执行项目安装命令。
 
 ## Python SDK
 
@@ -45,10 +58,29 @@ result = engine.diagnose(
 ## 桌面应用
 
 ```powershell
-pd-diagnosis
+conda activate pd-diagnosis
+python -m pd_diagnosis
 ```
 
-默认模型位于 `models/default`。也可通过环境变量 `PD_DIAGNOSIS_MODEL` 指定模型 bundle。
+也可以使用安装时注册的 `pd-diagnosis` 命令启动。
+
+默认模型按以下优先级解析：
+
+1. 环境变量 `PD_DIAGNOSIS_MODEL` 指定的 bundle；
+2. 当前仓库的 `models/default`；
+3. 随 Python 包安装到共享数据目录的默认模型。
+
+运行日志默认写入平台用户数据目录下的 `logs/application.log`，采用滚动文件，便于排查启动、推理、持久化和后台任务错误。
+
+## 开发检查
+
+```powershell
+ruff check .
+mypy src/pd_diagnosis
+pytest --cov=pd_diagnosis --cov-report=term-missing
+```
+
+GUI 测试使用无窗口平台插件；本地自动化环境可设置 `QT_QPA_PLATFORM=offscreen` 和 `MPLBACKEND=QtAgg`。
 
 ## 旧模型迁移
 

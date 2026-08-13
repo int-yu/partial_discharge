@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-import csv
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QThreadPool
-from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtCore import QLocale, QSettings, Qt, QThreadPool
+from PySide6.QtGui import QCloseEvent, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QAbstractItemView,
-    QApplication,
     QComboBox,
     QFileDialog,
     QFrame,
@@ -23,20 +21,28 @@ from PySide6.QtWidgets import (
     QSplitter,
     QStackedWidget,
     QStatusBar,
-    QTabWidget,
     QTableWidget,
     QTableWidgetItem,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
 
 from ..service import DiagnosisService
-from ..signal_io import read_txt_signal
 from ..storage import HistoryRecord, HistoryRepository
-from ..types import BatchDiagnosisItem, DiagnosisResult
+from ..types import BatchDiagnosisItem
 from .charts import ProbabilityCanvas, PrpdCanvas, WaveformCanvas
+from .formatting import display_time
 from .theme import build_stylesheet
-from .workers import BatchDiagnosisTask, SingleDiagnosisTask
+from .workers import (
+    BatchDiagnosisTask,
+    HistoryExportOutcome,
+    HistoryExportTask,
+    SingleDiagnosisOutcome,
+    SingleDiagnosisTask,
+)
+
+PAGE_SIZE = 100
 
 
 class MainWindow(QMainWindow):
@@ -46,21 +52,27 @@ class MainWindow(QMainWindow):
         history: HistoryRepository,
         *,
         model_path: Path,
+        settings: QSettings | None = None,
     ) -> None:
         super().__init__()
         self.service = service
         self.history = history
         self.model_path = model_path
-        self.thread_pool = QThreadPool.globalInstance()
+        self.settings = settings or QSettings()
+        self.thread_pool = QThreadPool(self)
+        self.thread_pool.setMaxThreadCount(1)
         self.current_batch_task: BatchDiagnosisTask | None = None
-        self.dark_theme = False
+        self.current_history_export: HistoryExportTask | None = None
+        self.history_offset = 0
+        self.dark_theme = self.settings.value("ui/dark_theme", False, type=bool)
 
         self.setWindowTitle("局部放电类型智能诊断")
         self.resize(1280, 800)
         self.setMinimumSize(1024, 720)
-        self.setStyleSheet(build_stylesheet())
+        self.setStyleSheet(build_stylesheet(dark=self.dark_theme))
         self._build_shell()
         self._install_shortcuts()
+        self._restore_settings()
         self.refresh_history()
 
     def _build_shell(self) -> None:
@@ -79,6 +91,8 @@ class MainWindow(QMainWindow):
         sidebar_layout.addWidget(subtitle)
         sidebar_layout.addSpacing(22)
         self.navigation = QListWidget(objectName="Navigation")
+        self.navigation.setAccessibleName("主导航")
+        self.navigation.setAccessibleDescription("切换诊断、批量、历史和设置页面")
         self.navigation.setSpacing(2)
         self.navigation.addItems(["诊断工作台", "批量诊断", "历史与报告", "模型与设置"])
         sidebar_layout.addWidget(self.navigation)
@@ -135,17 +149,19 @@ class MainWindow(QMainWindow):
         self.single_path = QLineEdit()
         self.single_path.setPlaceholderText("选择一维信号 TXT 文件")
         self.single_path.setAccessibleName("单次诊断文件路径")
-        browse = QPushButton("选择文件")
-        browse.clicked.connect(self._browse_single)
+        self.single_path.setAccessibleDescription("输入或选择要诊断的一维 TXT 信号文件")
+        self.single_browse = QPushButton("选择文件")
+        self.single_browse.clicked.connect(self._browse_single)
         self.diagnose_button = QPushButton("开始诊断", objectName="PrimaryButton")
         self.diagnose_button.clicked.connect(self.start_single_diagnosis)
         input_row.addWidget(self.single_path, 1)
-        input_row.addWidget(browse)
+        input_row.addWidget(self.single_browse)
         input_row.addWidget(self.diagnose_button)
         input_layout.addLayout(input_row)
         layout.addWidget(input_card)
 
         splitter = QSplitter(Qt.Horizontal)
+        self.diagnosis_splitter = splitter
         charts_card, charts_layout = card()
         tabs = QTabWidget()
         self.waveform_canvas = WaveformCanvas()
@@ -165,8 +181,12 @@ class MainWindow(QMainWindow):
         result_layout.addLayout(result_header)
         self.result_label = QLabel("尚无结果", objectName="ResultLabel")
         self.result_label.setWordWrap(True)
+        self.result_label.setAccessibleName("模型建议结果")
+        self.result_label.setAccessibleDescription("显示模型建议的局部放电缺陷类别")
         self.confidence_label = QLabel("置信度 —", objectName="ConfidenceLabel")
+        self.confidence_label.setAccessibleName("模型置信度")
         self.warning_label = QLabel("结果仅供辅助判断，请结合现场信息复核。", objectName="WarningLabel")
+        self.warning_label.setAccessibleName("诊断提示")
         self.warning_label.setWordWrap(True)
         self.probability_canvas = ProbabilityCanvas()
         result_layout.addWidget(self.result_label)
@@ -180,6 +200,8 @@ class MainWindow(QMainWindow):
         features_card, features_layout = card()
         features_layout.addWidget(QLabel("特征摘要", objectName="SectionTitle"))
         self.feature_table = QTableWidget(4, 5)
+        self.feature_table.setAccessibleName("信号特征摘要表")
+        self.feature_table.setAccessibleDescription("显示模型使用的十项信号特征及数值")
         self.feature_table.setVerticalHeaderLabels(["特征", "数值", "特征", "数值"])
         self.feature_table.horizontalHeader().setVisible(False)
         self.feature_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -199,6 +221,8 @@ class MainWindow(QMainWindow):
         control_layout.addWidget(QLabel("批量任务", objectName="SectionTitle"))
         row = QHBoxLayout()
         self.batch_path = QLineEdit()
+        self.batch_path.setAccessibleName("批量诊断目录路径")
+        self.batch_path.setAccessibleDescription("选择包含 TXT 信号文件的目录")
         self.batch_path.setPlaceholderText("选择包含 TXT 文件的目录")
         browse = QPushButton("选择目录")
         browse.clicked.connect(self._browse_batch)
@@ -225,6 +249,8 @@ class MainWindow(QMainWindow):
         table_header.addWidget(self.batch_summary)
         table_layout.addLayout(table_header)
         self.batch_table = QTableWidget(0, 5)
+        self.batch_table.setAccessibleName("批量诊断结果表")
+        self.batch_table.setAccessibleDescription("逐项显示批量文件的诊断状态和结果")
         self.batch_table.setHorizontalHeaderLabels(["文件", "状态", "诊断类型", "置信度", "说明"])
         self.batch_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self.batch_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
@@ -244,28 +270,45 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(QLabel("诊断历史", objectName="SectionTitle"))
         row = QHBoxLayout()
         self.history_query = QLineEdit()
+        self.history_query.setAccessibleName("历史记录搜索")
         self.history_query.setPlaceholderText("搜索文件、诊断类型或模型版本")
-        self.history_query.returnPressed.connect(self.refresh_history)
+        self.history_query.returnPressed.connect(self._search_history)
         search = QPushButton("搜索")
-        search.clicked.connect(self.refresh_history)
+        search.clicked.connect(self._search_history)
         detail = QPushButton("查看详情")
         detail.clicked.connect(self.show_history_detail)
-        export = QPushButton("导出 CSV")
-        export.clicked.connect(self.export_history)
+        self.history_export_button = QPushButton("导出 CSV")
+        self.history_export_button.clicked.connect(self.export_history)
         delete = QPushButton("删除", objectName="DangerButton")
         delete.clicked.connect(self.delete_history)
         row.addWidget(self.history_query, 1)
         row.addWidget(search)
         row.addWidget(detail)
-        row.addWidget(export)
+        row.addWidget(self.history_export_button)
         row.addWidget(delete)
         toolbar.addLayout(row)
         layout.addWidget(toolbar_card)
 
         table_card, table_layout = card()
+        summary_row = QHBoxLayout()
         self.history_summary = QLabel(objectName="MutedLabel")
-        table_layout.addWidget(self.history_summary)
+        summary_row.addWidget(self.history_summary)
+        summary_row.addStretch()
+        self.history_previous = QPushButton("上一页")
+        self.history_previous.setAccessibleName("历史记录上一页")
+        self.history_previous.clicked.connect(self._previous_history_page)
+        self.history_page_label = QLabel(objectName="MutedLabel")
+        self.history_page_label.setAccessibleName("历史记录页码")
+        self.history_next = QPushButton("下一页")
+        self.history_next.setAccessibleName("历史记录下一页")
+        self.history_next.clicked.connect(self._next_history_page)
+        summary_row.addWidget(self.history_previous)
+        summary_row.addWidget(self.history_page_label)
+        summary_row.addWidget(self.history_next)
+        table_layout.addLayout(summary_row)
         self.history_table = QTableWidget(0, 6)
+        self.history_table.setAccessibleName("诊断历史记录表")
+        self.history_table.setAccessibleDescription("显示已保存的诊断和错误记录")
         self.history_table.setHorizontalHeaderLabels(
             ["时间", "来源", "模型建议", "置信度", "模型版本", "状态"]
         )
@@ -291,9 +334,14 @@ class MainWindow(QMainWindow):
         path_label = QLabel(f"Bundle：{self.model_path}", objectName="MutedLabel")
         path_label.setWordWrap(True)
         model_layout.addWidget(path_label)
-        model_layout.addWidget(
-            QLabel("特征模式：legacy-v1 · 采样率：1 MHz · 输入：数组或 TXT", objectName="MutedLabel")
+        bundle = self.service.engine.bundle
+        self.model_contract_label = QLabel(
+            f"特征模式：{bundle.feature_schema} · "
+            f"采样率：{QLocale().toString(bundle.sampling_rate_hz)} Hz · 输入：数组或 TXT",
+            objectName="MutedLabel",
         )
+        self.model_contract_label.setAccessibleName("模型输入契约")
+        model_layout.addWidget(self.model_contract_label)
         layout.addWidget(model_card)
 
         storage_card, storage_layout = card()
@@ -305,6 +353,8 @@ class MainWindow(QMainWindow):
         theme_row.addWidget(QLabel("界面主题"))
         self.theme_combo = QComboBox()
         self.theme_combo.addItems(["浅色", "深色"])
+        self.theme_combo.setCurrentIndex(1 if self.dark_theme else 0)
+        self.theme_combo.setAccessibleName("界面主题")
         self.theme_combo.currentIndexChanged.connect(self._change_theme)
         theme_row.addWidget(self.theme_combo)
         theme_row.addStretch()
@@ -353,20 +403,22 @@ class MainWindow(QMainWindow):
         if not path:
             QMessageBox.warning(self, "缺少输入", "请先选择 TXT 信号文件。")
             return
-        self.diagnose_button.setEnabled(False)
+        self._set_single_running(True)
         self.result_state.setText("分析中…")
         self.statusBar().showMessage("正在提取特征并执行模型推理…")
         task = SingleDiagnosisTask(self.service, path)
         task.signals.result.connect(self._show_single_result)
         task.signals.error.connect(self._show_single_error)
-        task.signals.finished.connect(lambda: self.diagnose_button.setEnabled(True))
+        task.signals.finished.connect(self._finish_single)
         self.thread_pool.start(task)
 
-    def _show_single_result(self, result: DiagnosisResult) -> None:
+    def _show_single_result(self, outcome: SingleDiagnosisOutcome) -> None:
+        result = outcome.result
         try:
-            samples = read_txt_signal(self.single_path.text())
-            self.waveform_canvas.plot_signal(samples)
-            self.prpd_canvas.plot_signal(samples, self.service.engine.bundle.sampling_rate_hz)
+            self.waveform_canvas.plot_signal(outcome.samples)
+            self.prpd_canvas.plot_signal(
+                outcome.samples, self.service.engine.bundle.sampling_rate_hz
+            )
         except Exception as exc:
             self.statusBar().showMessage(f"诊断完成，但图表加载失败：{exc}")
         self.result_label.setText(result.label)
@@ -388,6 +440,14 @@ class MainWindow(QMainWindow):
             )
         self.statusBar().showMessage(f"诊断完成：{result.label}（{result.confidence:.1%}）", 8000)
         self.refresh_history()
+
+    def _set_single_running(self, running: bool) -> None:
+        self.single_path.setEnabled(not running)
+        self.single_browse.setEnabled(not running)
+        self.diagnose_button.setEnabled(not running)
+
+    def _finish_single(self) -> None:
+        self._set_single_running(False)
 
     def _show_single_error(self, message: str) -> None:
         self.result_state.setText("诊断失败")
@@ -453,9 +513,17 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("批量任务已结束", 5000)
 
     def refresh_history(self) -> None:
-        records = self.history.list(limit=500, query=self.history_query.text() if hasattr(self, "history_query") else "")
         if not hasattr(self, "history_table"):
             return
+        query = self.history_query.text().strip()
+        total = self.history.count(query=query)
+        if self.history_offset >= total and self.history_offset > 0:
+            self.history_offset = max(0, ((max(total, 1) - 1) // PAGE_SIZE) * PAGE_SIZE)
+        records = self.history.list(
+            limit=PAGE_SIZE,
+            offset=self.history_offset,
+            query=query,
+        )
         self.history_table.setRowCount(len(records))
         for row, record in enumerate(records):
             values = [
@@ -471,7 +539,27 @@ class MainWindow(QMainWindow):
                 if column == 0:
                     item.setData(Qt.UserRole, record.run_id)
                 self.history_table.setItem(row, column, item)
-        self.history_summary.setText(f"显示 {len(records)} 条 · 数据库共 {self.history.count()} 条")
+        start = self.history_offset + 1 if records else 0
+        end = self.history_offset + len(records)
+        page = self.history_offset // PAGE_SIZE + 1
+        page_count = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
+        self.history_summary.setText(f"显示 {start}–{end} 条 · 当前筛选共 {total} 条")
+        self.history_page_label.setText(f"第 {page}/{page_count} 页")
+        self.history_previous.setEnabled(self.history_offset > 0)
+        self.history_next.setEnabled(end < total)
+
+    def _search_history(self) -> None:
+        self.history_offset = 0
+        self.refresh_history()
+
+    def _previous_history_page(self) -> None:
+        self.history_offset = max(0, self.history_offset - PAGE_SIZE)
+        self.refresh_history()
+
+    def _next_history_page(self) -> None:
+        if self.history_next.isEnabled():
+            self.history_offset += PAGE_SIZE
+            self.refresh_history()
 
     def _selected_history(self) -> HistoryRecord | None:
         row = self.history_table.currentRow()
@@ -514,35 +602,62 @@ class MainWindow(QMainWindow):
         self.refresh_history()
 
     def export_history(self) -> None:
-        records = self.history.list(limit=1000, query=self.history_query.text())
-        if not records:
+        query = self.history_query.text().strip()
+        if self.history.count(query=query) == 0:
             QMessageBox.information(self, "没有记录", "当前没有可导出的诊断记录。")
             return
         path, _ = QFileDialog.getSaveFileName(self, "导出诊断历史", "diagnosis-history.csv", "CSV (*.csv)")
         if not path:
             return
-        with Path(path).open("w", encoding="utf-8-sig", newline="") as stream:
-            writer = csv.writer(stream)
-            writer.writerow(["时间", "来源", "模型建议", "置信度", "模型版本", "状态", "错误"])
-            for record in records:
-                writer.writerow(
-                    [
-                        record.created_at,
-                        record.source_id,
-                        record.label,
-                        record.confidence,
-                        record.model_version,
-                        record.status,
-                        record.error_message,
-                    ]
-                )
-        self.statusBar().showMessage(f"已导出：{path}", 6000)
+        self.history_export_button.setEnabled(False)
+        self.statusBar().showMessage("正在后台导出诊断历史…")
+        task = HistoryExportTask(self.history, path, query=query)
+        task.signals.progress.connect(self._show_history_export_progress)
+        task.signals.result.connect(self._show_history_export_result)
+        task.signals.error.connect(self._show_history_export_error)
+        task.signals.finished.connect(self._finish_history_export)
+        self.current_history_export = task
+        self.thread_pool.start(task)
+
+    def _show_history_export_progress(self, completed: int, total: int) -> None:
+        self.statusBar().showMessage(f"正在导出诊断历史：{completed}/{total}")
+
+    def _show_history_export_result(self, outcome: HistoryExportOutcome) -> None:
+        self.statusBar().showMessage(
+            f"已导出 {outcome.count} 条记录：{outcome.path}", 6000
+        )
+
+    def _show_history_export_error(self, message: str) -> None:
+        QMessageBox.critical(self, "导出失败", message)
+        self.statusBar().showMessage("诊断历史导出失败", 6000)
+
+    def _finish_history_export(self) -> None:
+        self.history_export_button.setEnabled(True)
+        self.current_history_export = None
 
     def _change_theme(self, index: int) -> None:
         self.dark_theme = index == 1
         self.setStyleSheet(build_stylesheet(dark=self.dark_theme))
+        self.settings.setValue("ui/dark_theme", self.dark_theme)
         for canvas in (self.waveform_canvas, self.prpd_canvas, self.probability_canvas):
             canvas.apply_theme(self.dark_theme)
+
+    def _restore_settings(self) -> None:
+        geometry = self.settings.value("window/geometry")
+        if geometry is not None:
+            self.restoreGeometry(geometry)
+        splitter_state = self.settings.value("window/diagnosis_splitter")
+        if splitter_state is not None:
+            self.diagnosis_splitter.restoreState(splitter_state)
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        self.settings.setValue("ui/dark_theme", self.dark_theme)
+        self.settings.setValue("window/geometry", self.saveGeometry())
+        self.settings.setValue(
+            "window/diagnosis_splitter", self.diagnosis_splitter.saveState()
+        )
+        self.settings.sync()
+        super().closeEvent(event)
 
 
 def card() -> tuple[QFrame, QVBoxLayout]:
@@ -558,7 +673,3 @@ def format_feature(value: float) -> str:
     if absolute >= 100_000 or (absolute and absolute < 0.001):
         return f"{value:.4e}"
     return f"{value:.4f}"
-
-
-def display_time(value: str) -> str:
-    return value.replace("T", " ")[:19]

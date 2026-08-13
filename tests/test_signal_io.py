@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -24,3 +26,17 @@ def test_non_txt_is_not_advertised(tmp_path):
     path.write_text("1,2", encoding="utf-8")
     with pytest.raises(InvalidSignalError, match="仅支持 TXT"):
         read_txt_signal(path)
+
+
+def test_txt_wraps_operating_system_read_errors(monkeypatch, tmp_path):
+    path = tmp_path / "signal.txt"
+    path.write_text("1 2 3", encoding="utf-8")
+
+    def deny_read(self, *args, **kwargs):
+        raise PermissionError("access denied")
+
+    monkeypatch.setattr(Path, "read_text", deny_read)
+
+    with pytest.raises(InvalidSignalError, match="无法读取信号文件") as captured:
+        read_txt_signal(path)
+    assert isinstance(captured.value.__cause__, PermissionError)

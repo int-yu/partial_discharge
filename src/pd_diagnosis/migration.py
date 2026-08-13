@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import shutil
 from pathlib import Path
@@ -9,6 +8,7 @@ from typing import Sequence
 
 import numpy as np
 
+from .artifacts import sha256_file
 from .features import FEATURE_NAMES, FEATURE_SCHEMA
 
 DEFAULT_CLASSES = (
@@ -57,26 +57,18 @@ def migrate_legacy_bundle(
         "feature_names": list(FEATURE_NAMES),
         "sampling_rate_hz": 1_000_000,
         "min_samples": 100,
+        "confidence_warning_threshold": 0.6,
         "classes": [{"id": index, "name": name} for index, name in enumerate(DEFAULT_CLASSES)],
         "weights_file": target_weights.name,
-        "weights_sha256": _sha256(target_weights),
+        "weights_sha256": sha256_file(target_weights),
         "scaler_file": target_scaler.name,
-        "scaler_sha256": _sha256(target_scaler),
+        "scaler_sha256": sha256_file(target_scaler),
     }
     (target / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     return target
-
-
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="将可信旧模型迁移为版本化 bundle")

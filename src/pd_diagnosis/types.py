@@ -6,10 +6,12 @@ from os import PathLike
 from typing import Mapping, Sequence
 from uuid import uuid4
 
+import numpy as np
+
 
 @dataclass(frozen=True, slots=True)
 class Signal:
-    samples: Sequence[float]
+    samples: Sequence[float] | np.ndarray
     sampling_rate_hz: int = 1_000_000
     source_id: str | None = None
 
@@ -33,6 +35,10 @@ class BatchDiagnosisItem:
     source: str
     result: DiagnosisResult | None = None
     error: str | None = None
+
+    def __post_init__(self) -> None:
+        if (self.result is None) == (self.error is None):
+            raise ValueError("result 与 error 必须且只能提供一个")
 
     @property
     def succeeded(self) -> bool:

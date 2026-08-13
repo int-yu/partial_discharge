@@ -17,6 +17,7 @@
   ],
   "sampling_rate_hz": 1000000,
   "min_samples": 100,
+  "confidence_warning_threshold": 0.6,
   "classes": [
     {
       "id": 0,

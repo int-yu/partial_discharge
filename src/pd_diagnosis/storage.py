@@ -46,6 +46,7 @@ class HistoryRepository:
             connection.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS schema_info (
+                    singleton INTEGER PRIMARY KEY CHECK(singleton = 1),
                     version INTEGER NOT NULL
                 );
                 CREATE TABLE IF NOT EXISTS diagnosis_history (
@@ -68,21 +69,71 @@ class HistoryRepository:
                     ON diagnosis_history(label);
                 """
             )
-            row = connection.execute("SELECT version FROM schema_info LIMIT 1").fetchone()
-            if row is None:
-                connection.execute("INSERT INTO schema_info(version) VALUES (?)", (self.SCHEMA_VERSION,))
-            elif row["version"] != self.SCHEMA_VERSION:
-                raise RuntimeError(f"不支持的历史数据库版本：{row['version']}")
+            self._initialize_schema_info(connection)
+
+    def _initialize_schema_info(self, connection: sqlite3.Connection) -> None:
+        columns = {
+            row["name"]
+            for row in connection.execute("PRAGMA table_info(schema_info)").fetchall()
+        }
+        if "singleton" not in columns:
+            versions = [
+                int(row["version"])
+                for row in connection.execute("SELECT version FROM schema_info").fetchall()
+            ]
+            unsupported = {version for version in versions if version != self.SCHEMA_VERSION}
+            if unsupported:
+                raise RuntimeError(
+                    f"不支持的历史数据库版本：{sorted(unsupported)}"
+                )
+            connection.execute("ALTER TABLE schema_info RENAME TO schema_info_legacy")
+            connection.execute(
+                "CREATE TABLE schema_info ("
+                "singleton INTEGER PRIMARY KEY CHECK(singleton = 1), "
+                "version INTEGER NOT NULL)"
+            )
+            connection.execute(
+                "INSERT INTO schema_info(singleton, version) VALUES (1, ?)",
+                (self.SCHEMA_VERSION,),
+            )
+            connection.execute("DROP TABLE schema_info_legacy")
+            return
+
+        rows = connection.execute(
+            "SELECT singleton, version FROM schema_info"
+        ).fetchall()
+        if not rows:
+            connection.execute(
+                "INSERT INTO schema_info(singleton, version) VALUES (1, ?)",
+                (self.SCHEMA_VERSION,),
+            )
+            return
+        if len(rows) != 1 or rows[0]["singleton"] != 1:
+            raise RuntimeError("历史数据库版本元数据无效")
+        if rows[0]["version"] != self.SCHEMA_VERSION:
+            raise RuntimeError(f"不支持的历史数据库版本：{rows[0]['version']}")
 
     def save_result(self, result: DiagnosisResult) -> None:
         with self._connect() as connection:
             connection.execute(
                 """
-                INSERT OR REPLACE INTO diagnosis_history (
+                INSERT INTO diagnosis_history (
                     run_id, created_at, source_id, model_version, class_id, label,
                     confidence, probabilities_json, features_json, warnings_json,
                     status, error_message
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'success', NULL)
+                ON CONFLICT(run_id) DO UPDATE SET
+                    created_at = excluded.created_at,
+                    source_id = excluded.source_id,
+                    model_version = excluded.model_version,
+                    class_id = excluded.class_id,
+                    label = excluded.label,
+                    confidence = excluded.confidence,
+                    probabilities_json = excluded.probabilities_json,
+                    features_json = excluded.features_json,
+                    warnings_json = excluded.warnings_json,
+                    status = 'success',
+                    error_message = NULL
                 """,
                 (
                     result.run_id,
@@ -110,9 +161,23 @@ class HistoryRepository:
         with self._connect() as connection:
             connection.execute(
                 """
-                INSERT OR REPLACE INTO diagnosis_history (
-                    run_id, created_at, source_id, model_version, status, error_message
-                ) VALUES (?, ?, ?, ?, 'error', ?)
+                INSERT INTO diagnosis_history (
+                    run_id, created_at, source_id, model_version, class_id, label,
+                    confidence, probabilities_json, features_json, warnings_json,
+                    status, error_message
+                ) VALUES (?, ?, ?, ?, NULL, NULL, NULL, '{}', '{}', '[]', 'error', ?)
+                ON CONFLICT(run_id) DO UPDATE SET
+                    created_at = excluded.created_at,
+                    source_id = excluded.source_id,
+                    model_version = excluded.model_version,
+                    class_id = NULL,
+                    label = NULL,
+                    confidence = NULL,
+                    probabilities_json = '{}',
+                    features_json = '{}',
+                    warnings_json = '[]',
+                    status = 'error',
+                    error_message = excluded.error_message
                 """,
                 (run_id, created_at.isoformat(), source_id, model_version, message),
             )
@@ -148,9 +213,15 @@ class HistoryRepository:
             connection.executemany("DELETE FROM diagnosis_history WHERE run_id = ?", values)
             return connection.total_changes - before
 
-    def count(self) -> int:
+    def count(self, *, query: str = "") -> int:
+        sql = "SELECT COUNT(*) FROM diagnosis_history"
+        parameters: list[object] = []
+        if query.strip():
+            sql += " WHERE source_id LIKE ? OR label LIKE ? OR model_version LIKE ?"
+            pattern = f"%{query.strip()}%"
+            parameters.extend([pattern, pattern, pattern])
         with self._connect() as connection:
-            return int(connection.execute("SELECT COUNT(*) FROM diagnosis_history").fetchone()[0])
+            return int(connection.execute(sql, parameters).fetchone()[0])
 
     @staticmethod
     def _to_record(row: sqlite3.Row) -> HistoryRecord:

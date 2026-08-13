@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    env:
+      QT_QPA_PLATFORM: offscreen
+      MPLBACKEND: QtAgg
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install project and quality tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[gui,dev]"
+      - name: Ruff
+        run: ruff check .
+      - name: Mypy
+        run: mypy src/pd_diagnosis
+      - name: Pytest
+        run: pytest --cov=pd_diagnosis --cov-report=term-missing

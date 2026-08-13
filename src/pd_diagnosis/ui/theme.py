@@ -60,17 +60,16 @@ def build_stylesheet(*, dark: bool = False) -> str:
     return f"""
     * {{
         font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif;
-        font-size: 16px;
         color: {colors['text']};
     }}
     QMainWindow, QWidget#AppRoot {{ background: {colors['window']}; }}
     QWidget#Sidebar {{ background: {colors['surface']}; border-right: 1px solid {colors['outline']}; }}
-    QLabel#AppTitle {{ font-size: 23px; font-weight: 600; }}
-    QLabel#PageTitle {{ font-size: 23px; font-weight: 600; }}
-    QLabel#SectionTitle {{ font-size: 19px; font-weight: 600; }}
+    QLabel#AppTitle {{ font-size: 17pt; font-weight: 600; }}
+    QLabel#PageTitle {{ font-size: 17pt; font-weight: 600; }}
+    QLabel#SectionTitle {{ font-size: 14pt; font-weight: 600; }}
     QLabel#MutedLabel {{ color: {colors['muted']}; }}
-    QLabel#ResultLabel {{ font-size: 23px; font-weight: 600; color: {colors['primary']}; }}
-    QLabel#ConfidenceLabel {{ font-size: 19px; font-weight: 600; }}
+    QLabel#ResultLabel {{ font-size: 17pt; font-weight: 600; color: {colors['primary']}; }}
+    QLabel#ConfidenceLabel {{ font-size: 14pt; font-weight: 600; }}
     QLabel#WarningLabel {{ color: {colors['warning']}; }}
     QFrame#Card {{
         background: {colors['surface']};

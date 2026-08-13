@@ -5,6 +5,7 @@ __pycache__/
 .pytest-tmp/
 .mypy_cache/
 .ruff_cache/
+.worktrees/
 .coverage
 htmlcov/
 
