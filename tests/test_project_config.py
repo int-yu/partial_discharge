@@ -22,6 +22,7 @@ def test_pyproject_declares_quality_typing_and_repository_contract():
     dev = project["optional-dependencies"]["dev"]
 
     assert project["urls"]["Repository"] == "https://github.com/int-yu/partial_discharge"
+    assert project["requires-python"] == ">=3.10,<3.11"
     assert "license" not in project
     assert any(requirement.startswith("ruff") for requirement in dev)
     assert any(requirement.startswith("mypy") for requirement in dev)
@@ -39,14 +40,16 @@ def test_pyproject_declares_quality_typing_and_repository_contract():
     }
 
 
-def test_windows_ci_matrix_runs_all_quality_gates():
+def test_windows_ci_runs_python_310_quality_gates():
     workflow = (PROJECT_ROOT / ".github" / "workflows" / "ci.yml").read_text(
         encoding="utf-8"
     )
 
     assert "windows-latest" in workflow
-    for version in ('"3.10"', '"3.11"', '"3.12"'):
-        assert version in workflow
+    assert 'python-version: "3.10"' in workflow
+    assert '"3.11"' not in workflow
+    assert '"3.12"' not in workflow
+    assert "matrix.python-version" not in workflow
     assert 'pip install -e ".[gui,dev]"' in workflow
     assert "ruff check ." in workflow
     assert "mypy src/pd_diagnosis" in workflow
