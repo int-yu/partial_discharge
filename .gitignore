@@ -29,6 +29,12 @@ artifacts/
 legacy/save/*.csv
 legacy/save/*.txt
 
+# Local-only teaching and project-planning materials
+docs/educate/
+docs/legacy/
+docs/superpowers/
+tests/test_education_page.py
+
 # Local settings and databases
 *.db
 *.sqlite3
