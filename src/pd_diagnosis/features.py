@@ -71,8 +71,8 @@ def extract_feature_vector(
             dominant_index = int(np.argmax(positive_magnitude))
             dominant_frequency = positive_frequencies[dominant_index]
             dominant_peak = positive_magnitude[dominant_index]
-            spectral_mean = np.mean(positive_magnitude)
-            spectral_variance = np.var(positive_magnitude)
+            spectral_mean = float(np.mean(positive_magnitude))
+            spectral_variance = float(np.var(positive_magnitude))
 
     standard_deviation = np.std(signal)
     kurtosis = (
